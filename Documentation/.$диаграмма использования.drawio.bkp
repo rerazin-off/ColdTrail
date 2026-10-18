@@ -1,0 +1,151 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
+  <diagram name="Use case" id="uc1">
+    <mxGraphModel dx="1426" dy="875" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sys" value="Приложение «Холодный след»" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=top;fontStyle=1;fontSize=14;align=center;" parent="1" vertex="1">
+          <mxGeometry x="230" width="820" height="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="player" value="Игрок" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="70" y="480" width="40" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="supa" value="Supabase" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;" parent="1" vertex="1">
+          <mxGeometry x="1130" y="60" width="40" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u1" value="Войти / зарегистрироваться" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="230" y="40" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u3" value="Выбрать и начать дело" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="280" y="140" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u4" value="Просмотреть блокнот" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="300" y="240" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u6" value="Допросить NPC" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="290" y="340" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u7" value="Предъявить улику NPC" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="560" y="210" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u5" value="Выдвинуть обвинение" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="370" y="430" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u8" value="Открыть инвентарь" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="350" y="522" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u12" value="Расшифровка Морзе (вибрация)" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="300" y="610" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u13" value="Поиск улик камерой (360°)" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="300" y="690" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u15" value="Осмотр места происшествия" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="380" y="800" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u16" value="Сопоставление отпечатков" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="330" y="860" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u17" value="Головоломка (код / шифр)" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="270" y="945" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u2" value="Синхронизировать прогресс" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="620" y="40" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u9" value="Просмотреть предметы" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="620" y="500" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u10" value="Просмотреть улики" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="620" y="580" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u11" value="Осмотреть предмет" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="650" y="380" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u14" value="Подойти и сфотографировать" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="510" y="730" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="u18" value="Добавить находку в инвентарь" style="ellipse;whiteSpace=wrap;html=1;fontSize=12;" parent="1" vertex="1">
+          <mxGeometry x="790" y="760" width="200" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u4" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u8" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u12" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u13" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="html=1;rounded=0;endArrow=none;entryX=0.025;entryY=0.321;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="player" target="u15" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="player" target="u17" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="supa" target="u1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="supa" target="u2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="html=1;rounded=0;endArrow=none;" parent="1" source="supa" target="u5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="«extend»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u7" target="u6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u8" target="u9" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u8" target="u10" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" value="«extend»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u11" target="u8" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u13" target="u14" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u12" target="u18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u14" target="u18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u15" target="u18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u16" target="u18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" value="«include»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;" parent="1" source="u17" target="u18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1AwUbsCAN8GlUGLnOgD7-1" value="«extend»" style="html=1;rounded=0;endArrow=open;endSize=10;dashed=1;fontSize=11;entryX=0.64;entryY=0.036;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="u7" target="u5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="760" y="320" as="sourcePoint" />
+            <mxPoint x="590" y="402" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
