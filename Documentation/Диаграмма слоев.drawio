@@ -1,0 +1,37 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
+  <diagram name="Страница-1" id="rYAjcQvwN4K7qnCVflwb">
+    <mxGraphModel dx="1406" dy="1732" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-1" value="&lt;b style=&quot;font-size:15px&quot;&gt;Presentation (интерфейс)&lt;/b&gt;&lt;br&gt;&lt;br&gt;Экраны&lt;br&gt;ViewModel&lt;div&gt;UiState&lt;br&gt;Навигация&lt;br&gt;Тема и общие компоненты&lt;br&gt;Работа с камерой на экране&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=10;fontSize=13;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="90" y="380" width="380" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-2" value="&lt;b style=&quot;font-size:15px&quot;&gt;Domain (игровая логика)&lt;/b&gt;&lt;br&gt;&lt;br&gt;Сущности&lt;br&gt;Use Cases&lt;br&gt;Интерфейсы репозиториев&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=10;fontSize=13;arcSize=4;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="610" y="380" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-3" value="&lt;b style=&quot;font-size:15px&quot;&gt;Data (данные)&lt;/b&gt;&lt;br&gt;&lt;br&gt;Реализации репозиториев&lt;br&gt;Remote&lt;div&gt;Мапперы&lt;br&gt;Local: Room, DAO, Entity, DataStore&lt;br&gt;Сенсоры: компас, шагомер, вибромотор&lt;br&gt;Фоновая синхронизация&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=10;fontSize=13;arcSize=4;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="380" width="380" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-4" value="зависит от:&lt;br&gt;вызывает Use Cases" style="endArrow=block;endFill=1;endSize=10;html=1;rounded=0;strokeWidth=2;fontSize=11;" edge="1" parent="1" source="uPBC6J-Y-GVa6rFkR6R2-1" target="uPBC6J-Y-GVa6rFkR6R2-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-5" value="зависит от:&lt;br&gt;реализует интерфейсы" style="endArrow=block;endFill=1;endSize=10;html=1;rounded=0;strokeWidth=2;fontSize=11;" edge="1" parent="1" source="uPBC6J-Y-GVa6rFkR6R2-3" target="uPBC6J-Y-GVa6rFkR6R2-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-6" value="&lt;b&gt;Supabase&lt;/b&gt;&lt;br&gt;Auth, PostgreSQL, Storage,&amp;nbsp;&lt;div&gt;Edge Functions&lt;/div&gt;" style="rounded=1;align=center;verticalAlign=middle;fontSize=12;;html=1" vertex="1" parent="1">
+          <mxGeometry x="1220" y="650" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-7" value="&lt;b&gt;Groq / Gemini&lt;/b&gt;" style="rounded=1;align=center;verticalAlign=middle;fontSize=12;;html=1" vertex="1" parent="1">
+          <mxGeometry x="1230" y="790" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-8" value="HTTPS (REST API)" style="endArrow=open;endSize=10;dashed=1;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="uPBC6J-Y-GVa6rFkR6R2-3" target="uPBC6J-Y-GVa6rFkR6R2-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uPBC6J-Y-GVa6rFkR6R2-9" value="Edge Function" style="endArrow=open;endSize=10;dashed=1;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="uPBC6J-Y-GVa6rFkR6R2-6" target="uPBC6J-Y-GVa6rFkR6R2-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
