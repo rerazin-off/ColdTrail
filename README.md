@@ -42,5 +42,5 @@
 *   Документ `01-idea.md` с концепцией проекта, анализом проблематики, целевой аудиторией и сравнением с конкурентами (Criminal Case, Duskwood, Detective Protocol).
 *   Документ `02-tz.md` с полным техническим заданием: цели, функциональные и нефункциональные требования, пользовательские истории (User Stories), диаграмма вариантов использования (Use-Case) и приоритизация MoSCoW.
 *   Документ `03-stack.md` с обоснованием выбора архитектуры Clean Architecture + MVVM, описанием требований к клиенту и серверу, сравнением Supabase и Firebase, а также таблицей рисков и выбором ИИ-моделей (Groq и Gemini).
-*   Дизайн элементов системы с помощью инструмента Figma: `https://www.figma.com/design/G4p5PalgXFhdN4fEIbo5ie/ColdTrail?node-id=0-1&p=f&t=764HDufG8wXUSKtE-0`
+*   Дизайн элементов системы с помощью инструмента Figma: [https://www.figma.com/design/G4p5PalgXFhdN4fEIbo5ie/ColdTrail?node-id=0-1&p=f&t=Ttel2qHuGJpJ0A3S-0]
 
