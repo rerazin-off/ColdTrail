@@ -1,0 +1,286 @@
+openapi: 3.0.3
+info:
+  title: Холодный след — API
+  version: 1.0.0
+  description: |
+    Серверная часть целиком на Supabase (Auth, REST с защитой строк RLS, Edge Functions).
+    Версионирование: версия в пути (/auth/v1, /rest/v1, /functions/v1); версия документа — info.version.
+    Пагинация: ?limit=20&offset=0 (максимум 100); с заголовком Prefer: count=exact ответ содержит Content-Range: 0-19/42.
+servers:
+  - url: https://jrdytmakgiltizwqcebi.supabase.co
+    variables:
+      project: { default: https://jrdytmakgiltizwqcebi.supabase.co }
+security:
+  - apikey: []
+    bearerAuth: []
+
+paths:
+  /auth/v1/signup:
+    post:
+      summary: Регистрация игрока
+      security: [{ apikey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+            example: { email: anna@example.com, password: S3cretPass }
+      responses:
+        '200': { $ref: '#/components/responses/Session' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /auth/v1/token:
+    post:
+      summary: Вход (grant_type=password) или обновление токена (grant_type=refresh_token)
+      security: [{ apikey: [] }]
+      parameters:
+        - { name: grant_type, in: query, required: true, schema: { type: string, enum: [password, refresh_token] } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Credentials' }
+            example: { email: anna@example.com, password: S3cretPass }
+      responses:
+        '200': { $ref: '#/components/responses/Session' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /rest/v1/cases:
+    get:
+      summary: Список дел (постранично)
+      parameters:
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+        - { name: Prefer, in: header, schema: { type: string, example: count=exact } }
+      responses:
+        '200':
+          description: Страница дел. Заголовок Content-Range показывает диапазон и общее число (0-9/42).
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Case' } }
+              example:
+                - { id: 1, title: 'Дело №01: Пропажа', difficulty: 2 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rest/v1/investigations:
+    post:
+      summary: Начать расследование по делу
+      parameters:
+        - { name: Prefer, in: header, schema: { type: string, example: return=representation } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [case_id]
+              properties: { case_id: { type: integer, format: int32 } }
+            example: { case_id: 1 }
+      responses:
+        '201':
+          description: Расследование создано (user_id берётся из токена)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Investigation' } }
+              example:
+                - { id: 1, case_id: 1, status: in_progress }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /functions/v1/npc-chat:
+    post:
+      summary: Вопрос подозреваемому (ответ генерирует ИИ)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [investigation_id, suspect_id, text]
+              properties:
+                investigation_id: { type: integer, format: int32 }
+                suspect_id: { type: integer, format: int32 }
+                text: { type: string, minLength: 1, maxLength: 300 }
+                clue_id: { type: integer, format: int32, description: 'Улика из инвентаря, которую предъявляют' }
+            example:
+              investigation_id: 1
+              suspect_id: 3
+              text: Почему камера не работала в 22:14?
+      responses:
+        '200':
+          description: Ответ подозреваемого
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { reply: { type: string }, message_id: { type: integer } }
+              example: { reply: 'Я... не знаю. Её давно собирались чинить.', message_id: 102 }
+        '400': { $ref: '#/components/responses/FnError' }
+        '401': { $ref: '#/components/responses/FnError' }
+        '404': { $ref: '#/components/responses/FnError' }
+        '429': { $ref: '#/components/responses/FnError' }
+        '502': { $ref: '#/components/responses/FnError' }
+
+  /rest/v1/rpc/check_puzzle:
+    post:
+      summary: Проверить ответ головоломки (ответ хранится только на сервере)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [p_investigation, p_puzzle, p_answer]
+              properties:
+                p_investigation: { type: integer, format: int32 }
+                p_puzzle: { type: integer, format: int32 }
+                p_answer: { type: string }
+            example:
+              p_investigation: 1
+              p_puzzle: 1
+              p_answer: '2214'
+      responses:
+        '200':
+          description: true — ответ верный (награда-улика добавлена в инвентарь), false — неверный
+          content:
+            application/json:
+              schema: { type: boolean }
+              example: true
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /rest/v1/notes:
+    get:
+      summary: Заметки блокнота
+      parameters:
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses:
+        '200':
+          description: Заметки
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Note' } }
+    post:
+      summary: Создать заметку
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [investigation_id, text]
+              properties:
+                investigation_id: { type: integer, format: int32 }
+                text: { type: string, minLength: 1, maxLength: 1000 }
+            example: { investigation_id: 1, text: Алиби Петрова проверить }
+      responses:
+        '201': { description: Создано }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    patch:
+      summary: Изменить заметку (фильтр ?id=eq.<id> обязателен)
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string, example: 'eq.1' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { text: { type: string } } }
+            example: { text: Алиби Петрова — ложь }
+      responses:
+        '200': { description: Изменено }
+    delete:
+      summary: Удалить заметку (фильтр ?id=eq.<id> обязателен)
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Удалено }
+
+  /functions/v1/submit-accusation:
+    post:
+      summary: Выдвинуть обвинение
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [investigation_id, suspect_id]
+              properties:
+                investigation_id: { type: integer, format: int32 }
+                suspect_id: { type: integer, format: int32 }
+            example:
+              investigation_id: 1
+              suspect_id: 3
+      responses:
+        '200':
+          description: Результат
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { is_correct: { type: boolean }, explanation: { type: string } }
+              example: { is_correct: true, explanation: 'Верно! Марк Волков — преступник.' }
+        '409': { $ref: '#/components/responses/FnError' }
+
+components:
+  securitySchemes:
+    apikey: { type: apiKey, in: header, name: apikey, description: Публичный ключ проекта }
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: Токен игрока из /auth/v1/token }
+  parameters:
+    limit: { name: limit, in: query, description: 'Размер страницы (по умолчанию 20, максимум 100)', schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    offset: { name: offset, in: query, description: Сколько записей пропустить, schema: { type: integer, minimum: 0, default: 0 } }
+  schemas:
+    Credentials:
+      type: object
+      required: [email, password]
+      properties: { email: { type: string, format: email }, password: { type: string, minLength: 6 } }
+    Case:
+      type: object
+      properties: { id: { type: integer, format: int32 }, title: { type: string }, introduction: { type: string }, difficulty: { type: integer } }
+    Investigation:
+      type: object
+      properties:
+        id: { type: integer, format: int32 }
+        case_id: { type: integer, format: int32 }
+        status: { type: string, enum: [in_progress, solved, failed] }
+    Note:
+      type: object
+      properties: { id: { type: integer, format: int32 }, investigation_id: { type: integer, format: int32 }, text: { type: string } }
+    Error:
+      type: object
+      description: Ошибка REST (формат PostgREST)
+      properties: { code: { type: string }, message: { type: string } }
+    FnErrorBody:
+      type: object
+      description: Ошибка Edge Function
+      properties: { error: { type: object, properties: { code: { type: string }, message: { type: string } } } }
+  responses:
+    Session:
+      description: Сессия. access_token живёт 1 час, затем обновляется по refresh_token.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties: { access_token: { type: string }, refresh_token: { type: string }, expires_in: { type: integer, example: 3600 } }
+    BadRequest:
+      description: 400 — неверные данные (нарушено ограничение, неверный пароль)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: '23514', message: 'violates check constraint' } } }
+    Unauthorized:
+      description: 401 — нет токена или он истёк
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: PGRST301, message: JWT expired } } }
+    Forbidden:
+      description: 403 — запрещено правилами доступа (RLS)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: '42501', message: 'violates row-level security policy' } } }
+    Conflict:
+      description: 409 — запись уже существует
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: '23505', message: duplicate key value } } }
+    Unprocessable:
+      description: 422 — слабый пароль или неверный email
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    FnError:
+      description: Ошибка Edge Function (400 validation_error, 401 unauthorized, 404 not_found, 409 already_accused, 429 daily_limit, 502 llm_unavailable)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/FnErrorBody' }
+          example: { error: { code: daily_limit, message: 'Лимит 30 ответов в сутки исчерпан' } }
