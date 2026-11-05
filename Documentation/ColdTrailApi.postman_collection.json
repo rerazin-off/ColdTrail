@@ -1,0 +1,1292 @@
+{
+  "info": {
+    "_postman_id": "4cf860e8-d411-4bb7-bacb-c63dcb7f47cb",
+    "name": "ColdTrailApi",
+    "description": "Проверка серверной части (Supabase): авторизация, дела, игровые данные, заметки, ИИ и обвинение. Нужны переменные окружения base_url и anon_key; остальные (access_token, case_id и т. д.) заполняются скриптами автоматически. Запросы выполняйте по порядку сверху вниз.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59514387",
+    "_collection_link": "https://go.postman.co/collection/59514387-4cf860e8-d411-4bb7-bacb-c63dcb7f47cb?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01. Авторизация",
+      "item": [
+        {
+          "name": "Sing up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\",\n  \"data\": {\n    \"nickname\": \"Detective\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "signup"
+              ]
+            },
+            "description": "Регистрация игрока. Поле data.nickname попадает в профиль. Если в Supabase включено подтверждение почты, сначала подтвердите адрес."
+          },
+          "response": []
+        },
+        {
+          "name": "Log in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// pm.test(\"Successful POST request\", function () {\n//     pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n// });\nconst data = pm.response.json();\n\nif (pm.response.code === 200 && data.access_token) {\n    pm.environment.set(\"access_token\", data.access_token);\n    pm.environment.set(\"refresh_token\", data.refresh_token);\n    pm.environment.set(\"user_id\", data.user.id);\n\n    console.log(\"Access token сохранён\");\n} else {\n    console.log(\"Не удалось сохранить токен\");\n}\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Вход по email и паролю. Скрипт сохраняет access_token, refresh_token и user_id в переменные окружения."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.test(\"Статус 200\", function () { pm.response.to.have.status(200); });",
+                  "if (data.access_token) {",
+                  "    pm.environment.set(\"access_token\", data.access_token);",
+                  "    pm.environment.set(\"refresh_token\", data.refresh_token);",
+                  "    if (data.user && data.user.id) pm.environment.set(\"user_id\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"refresh_token\": \"{{refresh_token}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=refresh_token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token"
+                }
+              ]
+            },
+            "description": "Обновление токена по refresh_token. Новые токены сохраняются в переменные окружения."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02. Дела и расследования",
+      "item": [
+        {
+          "name": "Get Cases",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Есть заголовок Content-Range\", function () { pm.expect(pm.response.headers.has(\"Content-Range\")).to.be.true; });",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"case_id\", d[0].id); console.log(\"case_id =\", d[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "count=exact"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/cases?select=*&limit=20&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "cases"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Список дел, постранично (limit/offset). Заголовок Prefer: count=exact добавляет в ответ Content-Range. Скрипт сохраняет id первого дела в case_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "pm.test(\"Вернулся один профиль\", function () { pm.expect(d.length).to.eql(1); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/profiles?select=*&id=eq.{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "profiles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "id",
+                  "value": "eq.{{user_id}}"
+                }
+              ]
+            },
+            "description": "Профиль текущего игрока (RLS: чужие профили не видны)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get investigations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"investigation_id\", d[0].id); console.log(\"investigation_id =\", d[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations?select=*&order=id.desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "order",
+                  "value": "id.desc"
+                }
+              ]
+            },
+            "description": "Расследования текущего игрока. Если расследование уже есть, его id сохраняется в investigation_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Init investigation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201,409\", function () { pm.expect(pm.response.code).to.be.oneOf([201,409]); });",
+                  "if (pm.response.code === 201) {",
+                  "    const d = pm.response.json();",
+                  "    pm.environment.set(\"investigation_id\", d[0].id);",
+                  "    console.log(\"investigation_id =\", d[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"case_id\": {{case_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ]
+            },
+            "description": "Начать расследование по делу case_id. user_id подставляется из токена. 409 — расследование по этому делу уже начато (это нормально)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. Игровые данные",
+      "item": [
+        {
+          "name": "Get suspects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"suspect_id\", d[0].id); console.log(\"suspect_id =\", d[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/suspects?select=id,case_id,name,profile,photo&case_id=eq.{{case_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "suspects"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "id,case_id,name,profile,photo"
+                },
+                {
+                  "key": "case_id",
+                  "value": "eq.{{case_id}}"
+                }
+              ]
+            },
+            "description": "Подозреваемые дела. Поля перечисляются явно: persona_prompt закрыт, запрос с select=* вернёт 403. Сохраняет id первого подозреваемого в suspect_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Get clues",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/clues?select=*&case_id=eq.{{case_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "clues"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "case_id",
+                  "value": "eq.{{case_id}}"
+                }
+              ]
+            },
+            "description": "Улики дела."
+          },
+          "response": []
+        },
+        {
+          "name": "Get puzzles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"puzzle_id\", d[0].id); console.log(\"puzzle_id =\", d[0].id); }",
+                  "pm.test(\"Ответов в выдаче нет\", function () { pm.expect(JSON.stringify(d)).to.not.include(\"answer\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/puzzles?select=id,case_id,kind,title,hint,reward_clue&case_id=eq.{{case_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "puzzles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "id,case_id,kind,title,hint,reward_clue"
+                },
+                {
+                  "key": "case_id",
+                  "value": "eq.{{case_id}}"
+                }
+              ]
+            },
+            "description": "Головоломки дела без правильных ответов (поле answer закрыто). Сохраняет id первой в puzzle_id."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04. Игровой процесс",
+      "item": [
+        {
+          "name": "Check puzzle (correct)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Ответ верный: true\", function () { pm.expect(pm.response.json()).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_investigation\": {{investigation_id}},\n  \"p_puzzle\": {{puzzle_id}},\n  \"p_answer\": \"2214\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/check_puzzle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "check_puzzle"
+              ]
+            },
+            "description": "Проверка ответа головоломки на сервере. 2214 — ответ демо-дела. При верном ответе награда-улика попадает в инвентарь."
+          },
+          "response": []
+        },
+        {
+          "name": "Check puzzle (wrong)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Ответ неверный: false\", function () { pm.expect(pm.response.json()).to.eql(false); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_investigation\": {{investigation_id}},\n  \"p_puzzle\": {{puzzle_id}},\n  \"p_answer\": \"0000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/check_puzzle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "check_puzzle"
+              ]
+            },
+            "description": "Неверный ответ: сервер возвращает false."
+          },
+          "response": []
+        },
+        {
+          "name": "Get inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "pm.test(\"В инвентаре есть улика-награда\", function () { pm.expect(d.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/collected_clues?select=*&investigation_id=eq.{{investigation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "collected_clues"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.{{investigation_id}}"
+                }
+              ]
+            },
+            "description": "Инвентарь игрока. После верного кода здесь появляется улика-награда."
+          },
+          "response": []
+        },
+        {
+          "name": "Get solved puzzles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/solved_puzzles?select=*&investigation_id=eq.{{investigation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "solved_puzzles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.{{investigation_id}}"
+                }
+              ]
+            },
+            "description": "Решённые головоломки расследования."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05. Заметки",
+      "item": [
+        {
+          "name": "Create note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", function () { pm.expect(pm.response.code).to.be.oneOf([201]); });",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"note_id\", d[0].id); console.log(\"note_id =\", d[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"text\": \"Необходимо проверить алиби подозреваемого.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ]
+            },
+            "description": "Создать заметку. id сохраняется в note_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Get notes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?select=*&investigation_id=eq.{{investigation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.{{investigation_id}}"
+                }
+              ]
+            },
+            "description": "Заметки расследования."
+          },
+          "response": []
+        },
+        {
+          "name": "Update note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "pm.test(\"Текст изменён\", function () { pm.expect(d[0].text).to.include(\"повторной\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Алиби подозреваемого требует повторной проверки.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?id=eq.{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{note_id}}"
+                }
+              ]
+            },
+            "description": "Изменить заметку (фильтр id обязателен)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 204\", function () { pm.expect(pm.response.code).to.be.oneOf([204]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?id=eq.{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{note_id}}"
+                }
+              ]
+            },
+            "description": "Удалить заметку (фильтр id обязателен)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get notes (after delete)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "pm.test(\"Заметки больше нет\", function () { pm.expect(d.length).to.eql(0); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?select=*&id=eq.{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "id",
+                  "value": "eq.{{note_id}}"
+                }
+              ]
+            },
+            "description": "Проверка: после удаления заметка не находится."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06. ИИ и обвинение",
+      "item": [
+        {
+          "name": "Chat NPC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "if (pm.response.code === 200) pm.test(\"Есть ответ подозреваемого\", function () { pm.expect(d.reply).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"Почему камера не работала в 22:14?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            },
+            "description": "Вопрос подозреваемому, ответ генерирует ИИ. Чтобы предъявить улику, добавьте в тело clue_id (улика должна быть в инвентаре)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get dialogue history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "const d = pm.response.json();",
+                  "pm.test(\"В истории есть вопрос и ответ\", function () { pm.expect(d.length).to.be.at.least(2); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/dialogue_messages?select=*&investigation_id=eq.{{investigation_id}}&suspect_id=eq.{{suspect_id}}&order=id.asc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "dialogue_messages"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.{{investigation_id}}"
+                },
+                {
+                  "key": "suspect_id",
+                  "value": "eq.{{suspect_id}}"
+                },
+                {
+                  "key": "order",
+                  "value": "id.asc"
+                }
+              ]
+            },
+            "description": "История диалога с подозреваемым: вопрос игрока и ответ подозреваемого."
+          },
+          "response": []
+        },
+        {
+          "name": "Accusation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200,409\", function () { pm.expect(pm.response.code).to.be.oneOf([200,409]); });",
+                  "if (pm.response.code === 200) pm.test(\"Есть результат\", function () { pm.expect(pm.response.json()).to.have.property(\"is_correct\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            },
+            "description": "Выдвинуть обвинение. Выполняется один раз на расследование; повторный запрос вернёт 409."
+          },
+          "response": []
+        },
+        {
+          "name": "Get accusation result",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/accusations?select=*&investigation_id=eq.{{investigation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "accusations"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.{{investigation_id}}"
+                }
+              ]
+            },
+            "description": "Сохранённый результат обвинения (читается владельцем расследования)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
