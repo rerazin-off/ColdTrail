@@ -1,36 +1,42 @@
 openapi: 3.0.3
 info:
   title: Холодный след — API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Серверная часть целиком на Supabase (Auth, REST с защитой строк RLS, Edge Functions).
     Версионирование: версия в пути (/auth/v1, /rest/v1, /functions/v1); версия документа — info.version.
-    Пагинация: ?limit=20&offset=0 (максимум 100); с заголовком Prefer: count=exact ответ содержит Content-Range: 0-19/42.
+    Пагинация: ?limit=20&offset=0 (приложение запрашивает не более 100 записей); с заголовком Prefer: count=exact ответ содержит Content-Range: 0-19/42.
+    Выбор полей: в запросах к suspects и puzzles поля перечисляются явно (select=id,name,profile), потому что persona_prompt и answer закрыты от клиента.
 servers:
   - url: https://jrdytmakgiltizwqcebi.supabase.co
-    variables:
-      project: { default: https://jrdytmakgiltizwqcebi.supabase.co }
 security:
   - apikey: []
     bearerAuth: []
+tags:
+  - { name: Авторизация }
+  - { name: Игровые данные }
+  - { name: Расследование }
+  - { name: Заметки }
 
 paths:
   /auth/v1/signup:
     post:
+      tags: [Авторизация]
       summary: Регистрация игрока
       security: [{ apikey: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Credentials' }
-            example: { email: anna@example.com, password: S3cretPass }
+            schema: { $ref: '#/components/schemas/SignupBody' }
+            example: { email: anna@example.com, password: S3cretPass, data: { nickname: Detective } }
       responses:
         '200': { $ref: '#/components/responses/Session' }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /auth/v1/token:
     post:
+      tags: [Авторизация]
       summary: Вход (grant_type=password) или обновление токена (grant_type=refresh_token)
       security: [{ apikey: [] }]
       parameters:
@@ -39,16 +45,38 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Credentials' }
-            example: { email: anna@example.com, password: S3cretPass }
+            schema:
+              oneOf:
+                - { $ref: '#/components/schemas/Credentials' }
+                - { $ref: '#/components/schemas/RefreshBody' }
+            examples:
+              password: { summary: Вход, value: { email: anna@example.com, password: S3cretPass } }
+              refresh: { summary: Обновление токена, value: { refresh_token: v1.MRq } }
       responses:
         '200': { $ref: '#/components/responses/Session' }
         '400': { $ref: '#/components/responses/BadRequest' }
 
+  /rest/v1/profiles:
+    get:
+      tags: [Авторизация]
+      summary: Профиль игрока (виден только свой)
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: id, in: query, description: 'Фильтр, например eq.<user_id>', schema: { type: string } }
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Profile' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /rest/v1/cases:
     get:
+      tags: [Игровые данные]
       summary: Список дел (постранично)
       parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
         - { $ref: '#/components/parameters/limit' }
         - { $ref: '#/components/parameters/offset' }
         - { name: Prefer, in: header, schema: { type: string, example: count=exact } }
@@ -62,8 +90,69 @@ paths:
                 - { id: 1, title: 'Дело №01: Пропажа', difficulty: 2 }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /rest/v1/suspects:
+    get:
+      tags: [Игровые данные]
+      summary: Подозреваемые дела (поля перечисляются явно)
+      parameters:
+        - { name: select, in: query, required: true, schema: { type: string, example: 'id,case_id,name,profile,photo' } }
+        - { name: case_id, in: query, description: 'Фильтр, например eq.1', schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Подозреваемые
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Suspect' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /rest/v1/clues:
+    get:
+      tags: [Игровые данные]
+      summary: Улики дела
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: case_id, in: query, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Улики
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Clue' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rest/v1/puzzles:
+    get:
+      tags: [Игровые данные]
+      summary: Головоломки дела (без правильных ответов)
+      parameters:
+        - { name: select, in: query, required: true, schema: { type: string, example: 'id,case_id,kind,title,hint,reward_clue' } }
+        - { name: case_id, in: query, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Головоломки
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Puzzle' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /rest/v1/investigations:
+    get:
+      tags: [Расследование]
+      summary: Расследования текущего игрока
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: order, in: query, schema: { type: string, example: id.desc } }
+      responses:
+        '200':
+          description: Свои расследования
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Investigation' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
     post:
+      tags: [Расследование]
       summary: Начать расследование по делу
       parameters:
         - { name: Prefer, in: header, schema: { type: string, example: return=representation } }
@@ -78,17 +167,66 @@ paths:
             example: { case_id: 1 }
       responses:
         '201':
-          description: Расследование создано (user_id берётся из токена)
+          description: Расследование создано (user_id берётся из токена). Тело ответа приходит только с Prefer return=representation.
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/Investigation' } }
               example:
                 - { id: 1, case_id: 1, status: in_progress }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /rest/v1/collected_clues:
+    get:
+      tags: [Расследование]
+      summary: Инвентарь игрока
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Собранные улики
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/CollectedClue' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rest/v1/solved_puzzles:
+    get:
+      tags: [Расследование]
+      summary: Решённые головоломки
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Решённые головоломки
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/SolvedPuzzle' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rest/v1/dialogue_messages:
+    get:
+      tags: [Расследование]
+      summary: История диалога с подозреваемым (только чтение, записывает сервер)
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+        - { name: suspect_id, in: query, schema: { type: string, example: 'eq.3' } }
+        - { name: order, in: query, schema: { type: string, example: id.asc } }
+      responses:
+        '200':
+          description: Реплики игрока и подозреваемого
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/DialogueMessage' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /functions/v1/npc-chat:
     post:
+      tags: [Расследование]
       summary: Вопрос подозреваемому (ответ генерирует ИИ)
       requestBody:
         required: true
@@ -118,11 +256,14 @@ paths:
         '400': { $ref: '#/components/responses/FnError' }
         '401': { $ref: '#/components/responses/FnError' }
         '404': { $ref: '#/components/responses/FnError' }
+        '409': { $ref: '#/components/responses/FnError' }
+        '422': { $ref: '#/components/responses/FnError' }
         '429': { $ref: '#/components/responses/FnError' }
         '502': { $ref: '#/components/responses/FnError' }
 
   /rest/v1/rpc/check_puzzle:
     post:
+      tags: [Расследование]
       summary: Проверить ответ головоломки (ответ хранится только на сервере)
       requestBody:
         required: true
@@ -146,58 +287,13 @@ paths:
             application/json:
               schema: { type: boolean }
               example: true
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /rest/v1/notes:
-    get:
-      summary: Заметки блокнота
-      parameters:
-        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
-        - { $ref: '#/components/parameters/limit' }
-        - { $ref: '#/components/parameters/offset' }
-      responses:
-        '200':
-          description: Заметки
-          content:
-            application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/Note' } }
-    post:
-      summary: Создать заметку
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [investigation_id, text]
-              properties:
-                investigation_id: { type: integer, format: int32 }
-                text: { type: string, minLength: 1, maxLength: 1000 }
-            example: { investigation_id: 1, text: Алиби Петрова проверить }
-      responses:
-        '201': { description: Создано }
         '400': { $ref: '#/components/responses/BadRequest' }
-    patch:
-      summary: Изменить заметку (фильтр ?id=eq.<id> обязателен)
-      parameters:
-        - { name: id, in: query, required: true, schema: { type: string, example: 'eq.1' } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, properties: { text: { type: string } } }
-            example: { text: Алиби Петрова — ложь }
-      responses:
-        '200': { description: Изменено }
-    delete:
-      summary: Удалить заметку (фильтр ?id=eq.<id> обязателен)
-      parameters:
-        - { name: id, in: query, required: true, schema: { type: string } }
-      responses:
-        '204': { description: Удалено }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /functions/v1/submit-accusation:
     post:
+      tags: [Расследование]
       summary: Выдвинуть обвинение
       requestBody:
         required: true
@@ -221,32 +317,160 @@ paths:
                 type: object
                 properties: { is_correct: { type: boolean }, explanation: { type: string } }
               example: { is_correct: true, explanation: 'Верно! Марк Волков — преступник.' }
+        '400': { $ref: '#/components/responses/FnError' }
+        '401': { $ref: '#/components/responses/FnError' }
+        '404': { $ref: '#/components/responses/FnError' }
         '409': { $ref: '#/components/responses/FnError' }
+
+  /rest/v1/accusations:
+    get:
+      tags: [Расследование]
+      summary: Результат обвинения (только чтение, записывает сервер)
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '200':
+          description: Результат обвинения (пустой список, пока обвинения нет)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Accusation' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /rest/v1/notes:
+    get:
+      tags: [Заметки]
+      summary: Заметки блокнота
+      parameters:
+        - { name: select, in: query, schema: { type: string, example: '*' } }
+        - { name: investigation_id, in: query, schema: { type: string, example: 'eq.1' } }
+        - { name: id, in: query, schema: { type: string, example: 'eq.1' } }
+        - { $ref: '#/components/parameters/limit' }
+        - { $ref: '#/components/parameters/offset' }
+      responses:
+        '200':
+          description: Заметки
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Note' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Заметки]
+      summary: Создать заметку
+      parameters:
+        - { name: Prefer, in: header, schema: { type: string, example: return=representation } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [investigation_id, text]
+              properties:
+                investigation_id: { type: integer, format: int32 }
+                text: { type: string, minLength: 1, maxLength: 1000 }
+            example: { investigation_id: 1, text: Алиби Петрова проверить }
+      responses:
+        '201':
+          description: Создано. Тело ответа (созданная заметка) приходит только с Prefer return=representation.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Note' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      tags: [Заметки]
+      summary: Изменить заметку (фильтр ?id=eq.<id> обязателен)
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string, example: 'eq.1' } }
+        - { name: Prefer, in: header, schema: { type: string, example: return=representation } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { text: { type: string, minLength: 1, maxLength: 1000 } } }
+            example: { text: Алиби Петрова — ложь }
+      responses:
+        '200':
+          description: Изменено (тело с изменённой заметкой — при Prefer return=representation)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Note' } }
+        '204': { description: Изменено (без тела, если заголовок Prefer не передан) }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Заметки]
+      summary: Удалить заметку (фильтр ?id=eq.<id> обязателен)
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string, example: 'eq.1' } }
+      responses:
+        '204': { description: Удалено }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
 components:
   securitySchemes:
     apikey: { type: apiKey, in: header, name: apikey, description: Публичный ключ проекта }
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: Токен игрока из /auth/v1/token }
   parameters:
-    limit: { name: limit, in: query, description: 'Размер страницы (по умолчанию 20, максимум 100)', schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    limit: { name: limit, in: query, description: 'Размер страницы (рекомендуется 20, не более 100)', schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     offset: { name: offset, in: query, description: Сколько записей пропустить, schema: { type: integer, minimum: 0, default: 0 } }
   schemas:
     Credentials:
       type: object
       required: [email, password]
       properties: { email: { type: string, format: email }, password: { type: string, minLength: 6 } }
+    SignupBody:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        data: { type: object, description: 'Дополнительные данные пользователя', properties: { nickname: { type: string, minLength: 2, maxLength: 30 } } }
+    RefreshBody:
+      type: object
+      required: [refresh_token]
+      properties: { refresh_token: { type: string } }
+    Profile:
+      type: object
+      properties: { id: { type: string, format: uuid }, nickname: { type: string }, birthday: { type: string, format: date, nullable: true }, create_at: { type: string, format: date-time } }
     Case:
       type: object
-      properties: { id: { type: integer, format: int32 }, title: { type: string }, introduction: { type: string }, difficulty: { type: integer } }
+      properties: { id: { type: integer, format: int32 }, title: { type: string }, introduction: { type: string }, difficulty: { type: integer }, create_at: { type: string, format: date-time } }
+    Suspect:
+      type: object
+      properties: { id: { type: integer, format: int32 }, case_id: { type: integer, format: int32 }, name: { type: string }, profile: { type: string }, photo: { type: string, nullable: true }, created_at: { type: string, format: date-time } }
+    Clue:
+      type: object
+      properties: { id: { type: integer, format: int32 }, case_id: { type: integer, format: int32 }, title: { type: string }, description: { type: string }, image: { type: string, nullable: true }, create_at: { type: string, format: date-time } }
+    Puzzle:
+      type: object
+      properties: { id: { type: integer, format: int32 }, case_id: { type: integer, format: int32 }, kind: { type: string, enum: [morse, code, camera] }, title: { type: string }, hint: { type: string, nullable: true }, reward_clue: { type: integer, format: int32, nullable: true } }
     Investigation:
       type: object
       properties:
         id: { type: integer, format: int32 }
+        user_id: { type: string, format: uuid }
         case_id: { type: integer, format: int32 }
         status: { type: string, enum: [in_progress, solved, failed] }
+        start_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+    CollectedClue:
+      type: object
+      properties: { investigation_id: { type: integer, format: int32 }, clue_id: { type: integer, format: int32 }, collected_at: { type: string, format: date-time } }
+    SolvedPuzzle:
+      type: object
+      properties: { investigation_id: { type: integer, format: int32 }, puzzle_id: { type: integer, format: int32 }, solved_at: { type: string, format: date-time } }
+    DialogueMessage:
+      type: object
+      properties: { id: { type: integer, format: int32 }, investigation_id: { type: integer, format: int32 }, suspect_id: { type: integer, format: int32 }, author: { type: string, enum: [player, suspect] }, text: { type: string }, create_at: { type: string, format: date-time } }
     Note:
       type: object
-      properties: { id: { type: integer, format: int32 }, investigation_id: { type: integer, format: int32 }, text: { type: string } }
+      properties: { id: { type: integer, format: int32 }, investigation_id: { type: integer, format: int32 }, text: { type: string }, create_at: { type: string, format: date-time }, update_at: { type: string, format: date-time } }
+    Accusation:
+      type: object
+      properties: { id: { type: integer, format: int32 }, investigation_id: { type: integer, format: int32 }, suspect_id: { type: integer, format: int32 }, is_correct: { type: boolean }, explanation: { type: string }, created_at: { type: string, format: date-time } }
     Error:
       type: object
       description: Ошибка REST (формат PostgREST)
@@ -262,15 +486,20 @@ components:
         application/json:
           schema:
             type: object
-            properties: { access_token: { type: string }, refresh_token: { type: string }, expires_in: { type: integer, example: 3600 } }
+            properties:
+              access_token: { type: string }
+              token_type: { type: string, example: bearer }
+              refresh_token: { type: string }
+              expires_in: { type: integer, example: 3600 }
+              user: { type: object, properties: { id: { type: string, format: uuid }, email: { type: string } } }
     BadRequest:
-      description: 400 — неверные данные (нарушено ограничение, неверный пароль)
+      description: 400 — неверные данные (нарушено ограничение, неверный пароль, головоломка не найдена)
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: '23514', message: 'violates check constraint' } } }
     Unauthorized:
       description: 401 — нет токена или он истёк
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: PGRST301, message: JWT expired } } }
     Forbidden:
-      description: 403 — запрещено правилами доступа (RLS)
+      description: 403 — запрещено правилами доступа (RLS, права на столбцы)
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' }, example: { code: '42501', message: 'violates row-level security policy' } } }
     Conflict:
       description: 409 — запись уже существует
@@ -279,7 +508,7 @@ components:
       description: 422 — слабый пароль или неверный email
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
     FnError:
-      description: Ошибка Edge Function (400 validation_error, 401 unauthorized, 404 not_found, 409 already_accused, 429 daily_limit, 502 llm_unavailable)
+      description: Ошибка Edge Function (400 validation_error, 401 unauthorized, 404 not_found, 409 investigation_closed или already_accused, 422 clue_not_collected, 429 daily_limit, 500 internal_error, 502 llm_unavailable)
       content:
         application/json:
           schema: { $ref: '#/components/schemas/FnErrorBody' }

@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "4cf860e8-d411-4bb7-bacb-c63dcb7f47cb",
+    "_postman_id": "97b20610-8f3a-460c-a78b-0f82e40c25b8",
     "name": "ColdTrailApi",
-    "description": "Проверка серверной части (Supabase): авторизация, дела, игровые данные, заметки, ИИ и обвинение. Нужны переменные окружения base_url и anon_key; остальные (access_token, case_id и т. д.) заполняются скриптами автоматически. Запросы выполняйте по порядку сверху вниз.",
+    "description": "Проверка серверной части (Supabase): авторизация, дела, игровые данные, заметки, ИИ и обвинение. Нужны переменные окружения base_url и anon_key; остальные (access_token, case_id и т. д.) заполняются скриптами автоматически. Запросы выполняйте по порядку сверху вниз. Негативные тесты имеют префикс NEG: — они проверяют, что сервер отклоняет неверные и запрещённые запросы. Папка 07 удаляет созданное расследование, чтобы прогон можно было повторить.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "59514387",
-    "_collection_link": "https://go.postman.co/collection/59514387-4cf860e8-d411-4bb7-bacb-c63dcb7f47cb?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/59514387-97b20610-8f3a-460c-a78b-0f82e40c25b8?source=collection_link"
   },
   "item": [
     {
@@ -17,10 +17,10 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.response.to.have.status(200); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -38,7 +38,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\",\n  \"data\": {\n    \"nickname\": \"Detective\"\n  }\n}",
+              "raw": "{\n  \"email\": \"testmu@example.com\",\n  \"password\": \"TestPass123!\",\n  \"data\": {\n    \"nickname\": \"Detective\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -66,10 +66,52 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "// pm.test(\"Successful POST request\", function () {\n//     pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n// });\nconst data = pm.response.json();\n\nif (pm.response.code === 200 && data.access_token) {\n    pm.environment.set(\"access_token\", data.access_token);\n    pm.environment.set(\"refresh_token\", data.refresh_token);\n    pm.environment.set(\"user_id\", data.user.id);\n\n    console.log(\"Access token сохранён\");\n} else {\n    console.log(\"Не удалось сохранить токен\");\n}\n"
-                ]
+                  "(() => {",
+                  "    let responseData;",
+                  "",
+                  "    pm.test(\"Авторизация: статус 200\", () => {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "",
+                  "    try {",
+                  "        responseData = pm.response.json();",
+                  "    } catch (error) {",
+                  "        pm.test(\"Ответ содержит корректный JSON\", () => {",
+                  "            pm.expect.fail(\"Не удалось разобрать JSON\");",
+                  "        });",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    pm.test(\"Получен access_token\", () => {",
+                  "        pm.expect(responseData.access_token).to.be.a(\"string\").and.not.empty;",
+                  "    });",
+                  "",
+                  "    pm.test(\"Получен refresh_token\", () => {",
+                  "        pm.expect(responseData.refresh_token).to.be.a(\"string\").and.not.empty;",
+                  "    });",
+                  "",
+                  "    pm.test(\"Получен ID пользователя\", () => {",
+                  "        pm.expect(responseData.user.id).to.be.a(\"string\").and.not.empty;",
+                  "    });",
+                  "",
+                  "    if (",
+                  "        pm.response.code === 200 &&",
+                  "        responseData.access_token &&",
+                  "        responseData.refresh_token &&",
+                  "        responseData.user?.id",
+                  "    ) {",
+                  "        pm.environment.set(\"access_token\", responseData.access_token);",
+                  "        pm.environment.set(\"refresh_token\", responseData.refresh_token);",
+                  "        pm.environment.set(\"user_id\", responseData.user.id);",
+                  "",
+                  "        console.log(\"Авторизация успешна. Токены сохранены.\");",
+                  "    }",
+                  "})();"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -87,7 +129,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}",
+              "raw": "{\n  \"email\": \"testmu@example.com\",\n  \"password\": \"TestPass123!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -121,16 +163,41 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "const data = pm.response.json();",
-                  "pm.test(\"Статус 200\", function () { pm.response.to.have.status(200); });",
-                  "if (data.access_token) {",
-                  "    pm.environment.set(\"access_token\", data.access_token);",
-                  "    pm.environment.set(\"refresh_token\", data.refresh_token);",
-                  "    if (data.user && data.user.id) pm.environment.set(\"user_id\", data.user.id);",
-                  "}"
-                ]
+                  "(() => {",
+                  "    let responseData;",
+                  "",
+                  "    pm.test(\"Обновление токена: статус 200\", () => {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "",
+                  "    try {",
+                  "        responseData = pm.response.json();",
+                  "    } catch (error) {",
+                  "        pm.test(\"Ответ содержит JSON\", () => {",
+                  "            pm.expect.fail(\"Некорректный JSON\");",
+                  "        });",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    pm.test(\"Получен новый access_token\", () => {",
+                  "        pm.expect(responseData.access_token).to.be.a(\"string\").and.not.empty;",
+                  "    });",
+                  "",
+                  "    if (pm.response.code === 200 && responseData.access_token) {",
+                  "        pm.environment.set(\"access_token\", responseData.access_token);",
+                  "",
+                  "        if (responseData.refresh_token) {",
+                  "            pm.environment.set(\"refresh_token\", responseData.refresh_token);",
+                  "        }",
+                  "",
+                  "        console.log(\"Токен успешно обновлён.\");",
+                  "    }",
+                  "})();"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -175,6 +242,316 @@
             "description": "Обновление токена по refresh_token. Новые токены сохраняются в переменные окружения."
           },
           "response": []
+        },
+        {
+          "name": "NEG: Sign up: неверный email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Неверный email: статус 400,422\", function () { pm.expect(pm.response.code).to.be.oneOf([400,422]); });",
+                  "",
+                  "pm.test(\"Есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d.msg || d.message || d.error_description).to.be.a(\"string\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"TestPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "signup"
+              ]
+            },
+            "description": "Регистрация с некорректным email отклоняется."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Sign up: слишком короткий пароль",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Короткий пароль: статус 400,422\", function () { pm.expect(pm.response.code).to.be.oneOf([400,422]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"short.pass@example.com\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "signup"
+              ]
+            },
+            "description": "Слабый пароль отклоняется (Supabase требует не менее 6 символов)."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Sign up: без пароля",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет пароля: статус 400,422\", function () { pm.expect(pm.response.code).to.be.oneOf([400,422]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nopass@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "signup"
+              ]
+            },
+            "description": "Обязательное поле password не передано."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Log in: неверный пароль",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Неверный пароль: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testmu@example.com\",\n  \"password\": \"WrongPass999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Вход с неверным паролем возвращает 400 (invalid_credentials)."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Log in: без ключа apikey",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет apikey: статус 401\", function () { pm.expect(pm.response.code).to.be.oneOf([401]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testmu@example.com\",\n  \"password\": \"TestPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Без публичного ключа проекта шлюз отклоняет запрос."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Refresh token: неверный токен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Неверный refresh_token: статус 400,401\", function () { pm.expect(pm.response.code).to.be.oneOf([400,401]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"not-a-real-token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/v1/token?grant_type=refresh_token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token"
+                }
+              ]
+            },
+            "description": "Обновление по несуществующему refresh_token."
+          },
+          "response": []
         }
       ]
     },
@@ -187,13 +564,50 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
-                  "pm.test(\"Есть заголовок Content-Range\", function () { pm.expect(pm.response.headers.has(\"Content-Range\")).to.be.true; });",
-                  "const d = pm.response.json();",
-                  "if (Array.isArray(d) && d.length) { pm.environment.set(\"case_id\", d[0].id); console.log(\"case_id =\", d[0].id); }"
-                ]
+                  "(() => {",
+                  "    pm.test(\"Статус 200\", () => {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "",
+                  "    pm.test(\"Есть заголовок Content-Range\", () => {",
+                  "        pm.expect(pm.response.headers.has(\"Content-Range\")).to.be.true;",
+                  "    });",
+                  "",
+                  "    let cases;",
+                  "",
+                  "    try {",
+                  "        cases = pm.response.json();",
+                  "    } catch (error) {",
+                  "        pm.test(\"Ответ является JSON\", () => {",
+                  "            pm.expect.fail(\"Некорректный JSON\");",
+                  "        });",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    pm.test(\"Ответ является массивом\", () => {",
+                  "        pm.expect(cases).to.be.an(\"array\");",
+                  "    });",
+                  "",
+                  "    if (!Array.isArray(cases)) return;",
+                  "",
+                  "    pm.test(\"Есть хотя бы одно дело\", () => {",
+                  "        pm.expect(cases.length).to.be.at.least(1);",
+                  "    });",
+                  "",
+                  "    if (cases.length > 0) {",
+                  "        pm.test(\"У дела есть ID и название\", () => {",
+                  "            pm.expect(cases[0]).to.have.property(\"id\");",
+                  "            pm.expect(cases[0]).to.have.property(\"title\");",
+                  "        });",
+                  "",
+                  "        pm.environment.set(\"case_id\", cases[0].id);",
+                  "    }",
+                  "})();"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -243,17 +657,161 @@
           "response": []
         },
         {
+          "name": "NEG: Get Cases без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/cases?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "cases"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": "Роль anon не имеет доступа к таблицам."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get Cases с неверным токеном",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Недействительный токен: статус 401\", function () { pm.expect(pm.response.code).to.be.oneOf([401]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token_1bsn}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/cases?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "cases"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": "Подделанный JWT отклоняется."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create case (запрещено)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Игрок не создаёт дела: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Взломанное дело\",\n  \"introduction\": \"Игрок не может создавать дела\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/cases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "cases"
+              ]
+            },
+            "description": "Контент игры меняет только администратор."
+          },
+          "response": []
+        },
+        {
           "name": "Get Profile",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "pm.test(\"Вернулся один профиль\", function () { pm.expect(d.length).to.eql(1); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -295,17 +853,68 @@
           "response": []
         },
         {
+          "name": "NEG: Get Profile: чужой профиль",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"RLS скрывает чужие профили: статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Чужих данных нет: пустой список\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/profiles?select=*&id=eq.00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "profiles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "id",
+                  "value": "eq.00000000-0000-0000-0000-000000000000"
+                }
+              ]
+            },
+            "description": "Запрос чужого/несуществующего профиля возвращает пустой список."
+          },
+          "response": []
+        },
+        {
           "name": "Get investigations",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "if (Array.isArray(d) && d.length) { pm.environment.set(\"investigation_id\", d[0].id); console.log(\"investigation_id =\", d[0].id); }"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -347,12 +956,53 @@
           "response": []
         },
         {
+          "name": "NEG: Get investigations без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Init investigation",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 201,409\", function () { pm.expect(pm.response.code).to.be.oneOf([201,409]); });",
                   "if (pm.response.code === 201) {",
@@ -360,7 +1010,8 @@
                   "    pm.environment.set(\"investigation_id\", d[0].id);",
                   "    console.log(\"investigation_id =\", d[0].id);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -407,6 +1058,269 @@
             "description": "Начать расследование по делу case_id. user_id подставляется из токена. 409 — расследование по этому делу уже начато (это нормально)."
           },
           "response": []
+        },
+        {
+          "name": "NEG: Init investigation: без case_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет обязательного поля: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ]
+            },
+            "description": "Поле case_id обязательно."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Init investigation: несуществующее дело",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Дела 999999 нет: статус 409\", function () { pm.expect(pm.response.code).to.be.oneOf([409]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"case_id\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ]
+            },
+            "description": "Нарушение внешнего ключа: такого дела нет."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Init investigation: повторное начало",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Расследование по делу уже есть: статус 409\", function () { pm.expect(pm.response.code).to.be.oneOf([409]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"case_id\": {{case_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ]
+            },
+            "description": "Пара user_id + case_id уникальна."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Update investigation: смена статуса",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Игрок не меняет статус: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"solved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/investigations?id=eq.{{investigation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "investigations"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{investigation_id}}"
+                }
+              ]
+            },
+            "description": "Статус меняет только сервер (функция submit-accusation)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile Without Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Запрос без токена отклонён\", function () {\r\n    pm.expect(pm.response.code).to.be.oneOf([401, 403]);\r\n});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/profiles?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "profiles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -419,12 +1333,12 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "if (Array.isArray(d) && d.length) { pm.environment.set(\"suspect_id\", d[0].id); console.log(\"suspect_id =\", d[0].id); }"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -466,15 +1380,202 @@
           "response": []
         },
         {
+          "name": "NEG: Get suspects: select=*",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"select=* закрыт: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/suspects?select=*&case_id=eq.{{case_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "suspects"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "case_id",
+                  "value": "eq.{{case_id}}"
+                }
+              ]
+            },
+            "description": "Секретный столбец persona_prompt закрыт правами, поэтому «*» не работает."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get suspects: persona_prompt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"persona_prompt недоступен: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/suspects?select=persona_prompt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "suspects"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "persona_prompt"
+                }
+              ]
+            },
+            "description": "Образ подозреваемого для ИИ клиент прочитать не может."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get suspects_secret",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Таблица секретов закрыта: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/suspects_secret?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "suspects_secret"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": "Правда о подозреваемом и признак виновного недоступны клиенту."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get suspects без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/suspects?select=id,name",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "suspects"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "id,name"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get clues",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -516,18 +1617,60 @@
           "response": []
         },
         {
+          "name": "NEG: Get clues без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/clues?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "clues"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get puzzles",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "if (Array.isArray(d) && d.length) { pm.environment.set(\"puzzle_id\", d[0].id); console.log(\"puzzle_id =\", d[0].id); }",
                   "pm.test(\"Ответов в выдаче нет\", function () { pm.expect(JSON.stringify(d)).to.not.include(\"answer\"); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -567,6 +1710,100 @@
             "description": "Головоломки дела без правильных ответов (поле answer закрыто). Сохраняет id первой в puzzle_id."
           },
           "response": []
+        },
+        {
+          "name": "NEG: Get puzzles: select=*",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"select=* закрыт: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/puzzles?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "puzzles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": "Столбец answer закрыт правами."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get puzzles: answer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"answer недоступен: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/puzzles?select=answer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "puzzles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "answer"
+                }
+              ]
+            },
+            "description": "Правильный ответ головоломки клиент прочитать не может."
+          },
+          "response": []
         }
       ]
     },
@@ -579,11 +1816,11 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "pm.test(\"Ответ верный: true\", function () { pm.expect(pm.response.json()).to.eql(true); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -634,11 +1871,11 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "pm.test(\"Ответ неверный: false\", function () { pm.expect(pm.response.json()).to.eql(false); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -684,17 +1921,123 @@
           "response": []
         },
         {
+          "name": "NEG: Check puzzle: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет доступа к чужому расследованию: статус 403\", function () { pm.expect(pm.response.code).to.be.oneOf([403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_investigation\": 999999,\n  \"p_puzzle\": {{puzzle_id}},\n  \"p_answer\": \"2214\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/check_puzzle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "check_puzzle"
+              ]
+            },
+            "description": "Функция проверяет, что расследование принадлежит игроку."
+          },
+          "response": []
+        },
+        
+        {
+          "name": "NEG: Check puzzle без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_investigation\": 1,\n  \"p_puzzle\": 1,\n  \"p_answer\": \"2214\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/rpc/check_puzzle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "check_puzzle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get inventory",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "pm.test(\"В инвентаре есть улика-награда\", function () { pm.expect(d.length).to.be.above(0); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -736,15 +2079,161 @@
           "response": []
         },
         {
+          "name": "NEG: Get inventory: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"RLS скрывает чужой инвентарь: статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Чужих данных нет: пустой список\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/collected_clues?select=*&investigation_id=eq.999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "collected_clues"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get inventory без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/collected_clues?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "collected_clues"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Add clue to foreign inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нельзя писать в чужой инвентарь: статус 403\", function () { pm.expect(pm.response.code).to.be.oneOf([403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 999999,\n  \"clue_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/collected_clues",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "collected_clues"
+              ]
+            },
+            "description": "Политика RLS проверяет владельца расследования."
+          },
+          "response": []
+        },
+        {
           "name": "Get solved puzzles",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -784,6 +2273,110 @@
             "description": "Решённые головоломки расследования."
           },
           "response": []
+        },
+        {
+          "name": "NEG: Get solved puzzles: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"RLS скрывает чужие данные: статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Чужих данных нет: пустой список\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/solved_puzzles?select=*&investigation_id=eq.999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "solved_puzzles"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.999999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Mark puzzle solved (запрещено)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Игрок не помечает решение сам: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"puzzle_id\": {{puzzle_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/solved_puzzles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "solved_puzzles"
+              ]
+            },
+            "description": "Решённой головоломку делает только функция check_puzzle."
+          },
+          "response": []
         }
       ]
     },
@@ -796,12 +2389,12 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 201\", function () { pm.expect(pm.response.code).to.be.oneOf([201]); });",
                   "const d = pm.response.json();",
                   "if (Array.isArray(d) && d.length) { pm.environment.set(\"note_id\", d[0].id); console.log(\"note_id =\", d[0].id); }"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -850,15 +2443,224 @@
           "response": []
         },
         {
+          "name": "NEG: Create note: пустой текст",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Пустая заметка: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"text\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ]
+            },
+            "description": "Нарушено ограничение длины текста."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create note: без текста",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет поля text: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create note: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нельзя писать в чужое расследование: статус 403\", function () { pm.expect(pm.response.code).to.be.oneOf([403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 999999,\n  \"text\": \"Чужая заметка\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create note без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 1,\n  \"text\": \"Без токена\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get notes",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -900,17 +2702,59 @@
           "response": []
         },
         {
+          "name": "NEG: Get notes без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Update note",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "pm.test(\"Текст изменён\", function () { pm.expect(d[0].text).to.include(\"повторной\"); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -965,15 +2809,138 @@
           "response": []
         },
         {
+          "name": "NEG: Update note: пустой текст",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Пустой текст: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?id=eq.{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{note_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Update note: чужая заметка",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Чужая заметка не меняется: статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Чужих данных нет: пустой список\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Взлом\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/notes?id=eq.999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.999999"
+                }
+              ]
+            },
+            "description": "RLS не даёт увидеть и изменить чужую заметку: изменено 0 строк."
+          },
+          "response": []
+        },
+        {
           "name": "Delete note",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 204\", function () { pm.expect(pm.response.code).to.be.oneOf([204]); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1016,12 +2983,12 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "pm.test(\"Заметки больше нет\", function () { pm.expect(d.length).to.eql(0); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1073,12 +3040,12 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "if (pm.response.code === 200) pm.test(\"Есть ответ подозреваемого\", function () { pm.expect(d.reply).to.be.a(\"string\"); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1128,12 +3095,12 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
                   "const d = pm.response.json();",
                   "pm.test(\"В истории есть вопрос и ответ\", function () { pm.expect(d.length).to.be.at.least(2); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1183,16 +3150,452 @@
           "response": []
         },
         {
+          "name": "NEG: Chat NPC без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC без токена: статус 401\", function () { pm.expect(pm.response.code).to.be.oneOf([401]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 1,\n  \"suspect_id\": 1,\n  \"text\": \"Привет\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            },
+            "description": "Без токена функция не вызывается."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC с неверным токеном",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC с неверным токеном: статус 401\", function () { pm.expect(pm.response.code).to.be.oneOf([401]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token_1bsn}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 1,\n  \"suspect_id\": 1,\n  \"text\": \"Привет\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: пустой текст",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: пустой текст: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки validation_error\", function () { pm.expect(pm.response.json().error.code).to.eql(\"validation_error\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: слишком длинный текст",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set(\"long_text\", \"a\".repeat(301));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: слишком длинный текст: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки validation_error\", function () { pm.expect(pm.response.json().error.code).to.eql(\"validation_error\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"{{long_text}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            },
+            "description": "Длина вопроса не более 300 символов."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: нет suspect_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: нет suspect_id: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки validation_error\", function () { pm.expect(pm.response.json().error.code).to.eql(\"validation_error\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"text\": \"Привет\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: id не число",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: id не число: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки validation_error\", function () { pm.expect(pm.response.json().error.code).to.eql(\"validation_error\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": \"abc\",\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"Привет\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: чужое расследование: статус 404\", function () { pm.expect(pm.response.code).to.be.oneOf([404]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки not_found\", function () { pm.expect(pm.response.json().error.code).to.eql(\"not_found\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 999999,\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"Привет\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Chat NPC: улика не найдена игроком",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Chat NPC: улика не найдена игроком: статус 422\", function () { pm.expect(pm.response.code).to.be.oneOf([422]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки clue_not_collected\", function () { pm.expect(pm.response.json().error.code).to.eql(\"clue_not_collected\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"text\": \"Это ваше?\",\n  \"clue_id\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/npc-chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "npc-chat"
+              ]
+            },
+            "description": "Предъявить можно только улику из своего инвентаря."
+          },
+          "response": []
+        },
+        {
           "name": "Accusation",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200,409\", function () { pm.expect(pm.response.code).to.be.oneOf([200,409]); });",
                   "if (pm.response.code === 200) pm.test(\"Есть результат\", function () { pm.expect(pm.response.json()).to.have.property(\"is_correct\"); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1237,15 +3640,266 @@
           "response": []
         },
         {
+          "name": "NEG: Accusation без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401\", function () { pm.expect(pm.response.code).to.be.oneOf([401]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 1,\n  \"suspect_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Accusation: нет suspect_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Нет обязательного поля: статус 400\", function () { pm.expect(pm.response.code).to.be.oneOf([400]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки validation_error\", function () { pm.expect(pm.response.json().error.code).to.eql(\"validation_error\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Accusation: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Расследование не найдено: статус 404\", function () { pm.expect(pm.response.code).to.be.oneOf([404]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки not_found\", function () { pm.expect(pm.response.json().error.code).to.eql(\"not_found\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": 999999,\n  \"suspect_id\": {{suspect_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Accusation: метод GET",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Функция принимает только POST: статус 405\", function () { pm.expect(pm.response.code).to.be.oneOf([405]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Accusation: повторное обвинение",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Обвинение уже выдвинуто: статус 409\", function () { pm.expect(pm.response.code).to.be.oneOf([409]); });",
+                  "pm.test(\"В ответе есть error.code\", function () { const d = pm.response.json(); pm.expect(d.error).to.have.property(\"code\"); });",
+                  "pm.test(\"Код ошибки already_accused\", function () { pm.expect(pm.response.json().error.code).to.eql(\"already_accused\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/submit-accusation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "functions",
+                "v1",
+                "submit-accusation"
+              ]
+            },
+            "description": "Выполняется после основного запроса Accusation: второе обвинение запрещено."
+          },
+          "response": []
+        },
+        {
           "name": "Get accusation result",
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });"
-                ]
+                ],
+                "type": "text/javascript"
               }
             }
           ],
@@ -1285,8 +3939,214 @@
             "description": "Сохранённый результат обвинения (читается владельцем расследования)."
           },
           "response": []
+        },
+        {
+          "name": "NEG: Get accusations без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Без токена игрока: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/accusations?select=*",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "accusations"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create accusation (запрещено)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Игрок не записывает обвинение сам: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"is_correct\": true,\n  \"explanation\": \"Подмена результата\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/accusations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "accusations"
+              ]
+            },
+            "description": "Обвинения записывает только сервер."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Create dialogue message (запрещено)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Игрок не пишет реплики сам: статус 401,403\", function () { pm.expect(pm.response.code).to.be.oneOf([401,403]); });",
+                  "pm.test(\"В ответе есть описание ошибки\", function () { const d = pm.response.json(); pm.expect(d).to.have.property(\"message\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"investigation_id\": {{investigation_id}},\n  \"suspect_id\": {{suspect_id}},\n  \"author\": \"suspect\",\n  \"text\": \"Подставная реплика\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/rest/v1/dialogue_messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "dialogue_messages"
+              ]
+            },
+            "description": "Реплики подозреваемых создаёт только npc-chat."
+          },
+          "response": []
+        },
+        {
+          "name": "NEG: Get dialogue history: чужое расследование",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"RLS скрывает чужие диалоги: статус 200\", function () { pm.expect(pm.response.code).to.be.oneOf([200]); });",
+                  "pm.test(\"Чужих данных нет: пустой список\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rest/v1/dialogue_messages?select=*&investigation_id=eq.999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "dialogue_messages"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*"
+                },
+                {
+                  "key": "investigation_id",
+                  "value": "eq.999999"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "bearer_token_1bsn",
+      "secret": true
     }
   ]
 }
