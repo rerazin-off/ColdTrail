@@ -22,8 +22,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Check tests
-        run: deno check Backend/supabase/functions/tests/
+      - name: Check Deno tests
+        run: deno check --config Backend/supabase/functions/deno.json Backend/supabase/functions/tests/
 
-      - name: Run unit tests
-        run: deno test Backend/supabase/functions/tests/
+      - name: Run Deno tests
+        run: deno test --config Backend/supabase/functions/deno.json Backend/supabase/functions/tests/
