@@ -1,0 +1,24 @@
+{
+  "name": "detectivegame",
+  "version": "1.0.0",
+  "description": "Мобильная детективная игра для Android, в которой подозреваемые управляются искусственным интеллектом, а улики нужно искать в реальном пространстве.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rerazin-off/ColdTrail.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rerazin-off/ColdTrail/issues"
+  },
+  "homepage": "https://github.com/rerazin-off/ColdTrail#readme",
+  "devDependencies": {
+    "newman": "^6.2.3"
+  }
+}

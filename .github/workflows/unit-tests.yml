@@ -1,0 +1,29 @@
+
+name: Unit Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    name: Deno Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check tests
+        run: deno check Backend/supabase/functions/tests/
+
+      - name: Run unit tests
+        run: deno test Backend/supabase/functions/tests/
