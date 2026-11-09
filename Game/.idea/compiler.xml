@@ -3,6 +3,7 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel target="11">
       <module name="mrDetective.core.network" target="25" />
+      <module name="mrDetective.di" target="25" />
     </bytecodeTargetLevel>
   </component>
 </project>
