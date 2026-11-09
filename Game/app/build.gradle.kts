@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -53,4 +55,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(project(":feature:presentation"))
     implementation(project(":core:di"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }
