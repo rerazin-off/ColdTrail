@@ -24,4 +24,10 @@ dependencyResolutionManagement {
 
 rootProject.name = "mrDetective"
 include(":app")
- 
+
+include(":core:domain")
+
+include(":core:data")
+include(":feature:presentation")
+include(":di")
+include(":core:di")
