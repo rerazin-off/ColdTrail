@@ -1,9 +1,8 @@
 package com.example.mrdetective.domain.usecases.notebook
 
-import com.example.mrdetective.domain.fakes.*
-import com.example.mrdetective.domain.usecases.notebook.DeleteNoteUseCase
-import com.example.mrdetective.domain.usecases.notebook.LoadNotebookUseCase
-import com.example.mrdetective.domain.usecases.notebook.SaveNoteUseCase
+import com.example.mrdetective.domain.fakes.FakeNotebookRepository
+import com.example.mrdetective.domain.fakes.TestData
+import com.example.mrdetective.domain.fakes.assertValidationError
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -21,19 +20,21 @@ class LoadNotebookUseCaseTest {
     }
 
     @Test
-    fun `загрузка записки возвращает заметку`() = runTest {
-        val result = useCase(1)
+    fun `загрузка записки возвращает заметку`() =
+        runTest {
+            val result = useCase(1)
 
-        assertTrue(result.isSuccess)
-        assertEquals(TestData.note, result.getOrNull())
-        assertEquals(listOf(1), repository.getCalls)
-    }
+            assertTrue(result.isSuccess)
+            assertEquals(TestData.note, result.getOrNull())
+            assertEquals(listOf(1), repository.getCalls)
+        }
 
     @Test
-    fun `некорректный ID возвращает ошибку`() = runTest {
-        assertValidationError(useCase(0))
-        assertTrue(repository.getCalls.isEmpty())
-    }
+    fun `некорректный ID возвращает ошибку`() =
+        runTest {
+            assertValidationError(useCase(0))
+            assertTrue(repository.getCalls.isEmpty())
+        }
 }
 
 class SaveNoteUseCaseTest {
@@ -41,19 +42,21 @@ class SaveNoteUseCaseTest {
     private val useCase = SaveNoteUseCase(repository)
 
     @Test
-    fun `сохраняет заметку`() = runTest {
-        val result = useCase(10, "Текст")
+    fun `сохраняет заметку`() =
+        runTest {
+            val result = useCase(10, "Текст")
 
-        assertEquals(TestData.note, result.getOrNull())
-        assertEquals(listOf<Any?>(10, "Текст"), repository.saveCalls.single())
-    }
+            assertEquals(TestData.note, result.getOrNull())
+            assertEquals(listOf<Any?>(10, "Текст"), repository.saveCalls.single())
+        }
 
     @Test
-    fun `некорректные данные возвращают ошибку валидации`() = runTest {
-        assertValidationError(useCase(0, "Текст"))
-        assertValidationError(useCase(10, "  "))
-        assertTrue(repository.saveCalls.isEmpty())
-    }
+    fun `некорректные данные возвращают ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0, "Текст"))
+            assertValidationError(useCase(10, "  "))
+            assertTrue(repository.saveCalls.isEmpty())
+        }
 }
 
 class DeleteNoteUseCaseTest {
@@ -61,14 +64,16 @@ class DeleteNoteUseCaseTest {
     private val useCase = DeleteNoteUseCase(repository)
 
     @Test
-    fun `удаляет заметку`() = runTest {
-        assertTrue(useCase(3).isSuccess)
-        assertEquals(listOf(3), repository.deleteCalls)
-    }
+    fun `удаляет заметку`() =
+        runTest {
+            assertTrue(useCase(3).isSuccess)
+            assertEquals(listOf(3), repository.deleteCalls)
+        }
 
     @Test
-    fun `некорректный id возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(0))
-        assertTrue(repository.deleteCalls.isEmpty())
-    }
+    fun `некорректный id возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0))
+            assertTrue(repository.deleteCalls.isEmpty())
+        }
 }

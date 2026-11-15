@@ -2,7 +2,7 @@ package com.example.mrdetective.domain.models
 
 enum class MessageAuthor {
     PLAYER,
-    SUSPECT
+    SUSPECT,
 }
 
 data class DialogueMessage(
@@ -11,5 +11,5 @@ data class DialogueMessage(
     val suspectId: Int,
     val author: MessageAuthor,
     val text: String,
-    val createdAt: String
+    val createdAt: String,
 )

@@ -5,5 +5,5 @@ data class Accusation(
     val caseId: Int,
     val suspectId: Int,
     val isCorrect: Boolean? = null,
-    val explanation: String = ""
+    val explanation: String = "",
 )

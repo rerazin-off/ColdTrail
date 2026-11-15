@@ -27,17 +27,18 @@ val checkNoAndroidImports by tasks.registering {
     description = "Падает, если в domain есть import android.* или androidx.*"
     val sources = layout.projectDirectory.dir("src").asFile
     doLast {
-        val violations = sources.walkTopDown()
-            .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
-            .flatMap { file ->
-                file.readLines().withIndex()
-                    .filter { (_, line) ->
-                        val l = line.trim()
-                        l.startsWith("import android.") || l.startsWith("import androidx.")
-                    }
-                    .map { (i, line) -> "${file.relativeTo(sources)}:${i + 1}: ${line.trim()}" }
-            }
-            .toList()
+        val violations =
+            sources.walkTopDown()
+                .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
+                .flatMap { file ->
+                    file.readLines().withIndex()
+                        .filter { (_, line) ->
+                            val l = line.trim()
+                            l.startsWith("import android.") || l.startsWith("import androidx.")
+                        }
+                        .map { (i, line) -> "${file.relativeTo(sources)}:${i + 1}: ${line.trim()}" }
+                }
+                .toList()
         if (violations.isNotEmpty()) {
             throw GradleException("domain не должен импортировать android.*:\n" + violations.joinToString("\n"))
         }

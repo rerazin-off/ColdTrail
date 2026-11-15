@@ -10,7 +10,10 @@ fun assertValidationError(result: Result<*>) {
     assertTrue("Ожидался DomainError.Validation, а пришло $error", error is DomainError.Validation)
 }
 
-fun assertFailureWith(expected: Throwable, result: Result<*>) {
+fun assertFailureWith(
+    expected: Throwable,
+    result: Result<*>,
+) {
     assertTrue(result.isFailure)
     assertEquals(expected, result.exceptionOrNull())
 }

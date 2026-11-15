@@ -4,5 +4,5 @@ data class Suspect(
     val id: Int,
     val caseId: Int,
     val name: String,
-    val profile: String
+    val profile: String,
 )

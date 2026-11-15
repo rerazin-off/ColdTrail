@@ -1,13 +1,12 @@
 package com.example.mrdetective.domain.usecases.puzzles
 
-import com.example.mrdetective.domain.fakes.*
-import com.example.mrdetective.domain.usecases.puzzles.InspectSceneUseCase
-import com.example.mrdetective.domain.usecases.puzzles.MatchFingerprintUseCase
-import com.example.mrdetective.domain.usecases.puzzles.PlayMorseSignalUseCase
-import com.example.mrdetective.domain.usecases.puzzles.PlayPuzzleUseCase
-import org.junit.Assert.assertFalse
+import com.example.mrdetective.domain.fakes.FakeMorseSignalPlayer
+import com.example.mrdetective.domain.fakes.FakePuzzleRepository
+import com.example.mrdetective.domain.fakes.FakeSceneRepository
+import com.example.mrdetective.domain.fakes.assertValidationError
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,19 +15,21 @@ class InspectSceneUseCaseTest {
     private val useCase = InspectSceneUseCase(repository)
 
     @Test
-    fun `возвращает описание сцены`() = runTest {
-        val result = useCase(1, 2)
+    fun `возвращает описание сцены`() =
+        runTest {
+            val result = useCase(1, 2)
 
-        assertEquals("Описание сцены", result.getOrNull())
-        assertEquals(listOf<Any?>(1, 2), repository.calls.single())
-    }
+            assertEquals("Описание сцены", result.getOrNull())
+            assertEquals(listOf<Any?>(1, 2), repository.calls.single())
+        }
 
     @Test
-    fun `некорректные идентификаторы возвращают ошибку валидации`() = runTest {
-        assertValidationError(useCase(0, 2))
-        assertValidationError(useCase(1, 0))
-        assertTrue(repository.calls.isEmpty())
-    }
+    fun `некорректные идентификаторы возвращают ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0, 2))
+            assertValidationError(useCase(1, 0))
+            assertTrue(repository.calls.isEmpty())
+        }
 }
 
 class MatchFingerprintUseCaseTest {
@@ -50,16 +51,18 @@ class PlayMorseSignalUseCaseTest {
     private val useCase = PlayMorseSignalUseCase(player)
 
     @Test
-    fun `проигрывает сигнал`() = runTest {
-        assertTrue(useCase("... --- ...").isSuccess)
-        assertEquals(listOf("... --- ..."), player.played)
-    }
+    fun `проигрывает сигнал`() =
+        runTest {
+            assertTrue(useCase("... --- ...").isSuccess)
+            assertEquals(listOf("... --- ..."), player.played)
+        }
 
     @Test
-    fun `пустой сигнал возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(" "))
-        assertTrue(player.played.isEmpty())
-    }
+    fun `пустой сигнал возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(" "))
+            assertTrue(player.played.isEmpty())
+        }
 }
 
 class PlayPuzzleUseCaseTest {
@@ -67,18 +70,20 @@ class PlayPuzzleUseCaseTest {
     private val useCase = PlayPuzzleUseCase(repository)
 
     @Test
-    fun `проверяет ответ через репозиторий`() = runTest {
-        val result = useCase(1, 2, "SOS")
+    fun `проверяет ответ через репозиторий`() =
+        runTest {
+            val result = useCase(1, 2, "SOS")
 
-        assertEquals(true, result.getOrNull())
-        assertEquals(listOf<Any?>(1, 2, "SOS"), repository.answerCalls.single())
-    }
+            assertEquals(true, result.getOrNull())
+            assertEquals(listOf<Any?>(1, 2, "SOS"), repository.answerCalls.single())
+        }
 
     @Test
-    fun `некорректные данные возвращают ошибку валидации`() = runTest {
-        assertValidationError(useCase(0, 2, "SOS"))
-        assertValidationError(useCase(1, 0, "SOS"))
-        assertValidationError(useCase(1, 2, " "))
-        assertTrue(repository.answerCalls.isEmpty())
-    }
+    fun `некорректные данные возвращают ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0, 2, "SOS"))
+            assertValidationError(useCase(1, 0, "SOS"))
+            assertValidationError(useCase(1, 2, " "))
+            assertTrue(repository.answerCalls.isEmpty())
+        }
 }

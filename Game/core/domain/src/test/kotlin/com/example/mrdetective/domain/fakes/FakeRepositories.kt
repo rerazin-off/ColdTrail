@@ -23,25 +23,30 @@ import com.example.mrdetective.domain.repositories.SceneRepository
 import com.example.mrdetective.domain.repositories.SuspectRepository
 import com.example.mrdetective.domain.usecases.puzzles.MorseSignalPlayer
 
-
-
 class FakeAuthRepository : AuthRepository {
     var signInResult: Result<String> = Result.success("user-1")
     var signUpResult: Result<String> = Result.success("user-1")
     val signInCalls = mutableListOf<List<Any?>>()
     val signUpCalls = mutableListOf<List<Any?>>()
 
-    override suspend fun signIn(email: String, password: String): Result<String> {
+    override suspend fun signIn(
+        email: String,
+        password: String,
+    ): Result<String> {
         signInCalls += listOf(email, password)
         return signInResult
     }
 
-    override suspend fun signUp(email: String, password: String): Result<String> {
+    override suspend fun signUp(
+        email: String,
+        password: String,
+    ): Result<String> {
         signUpCalls += listOf(email, password)
         return signUpResult
     }
 
     override suspend fun signOut() = Unit
+
     override suspend fun currentUser(): String? = null
 }
 
@@ -52,7 +57,7 @@ class FakeAccusationRepository : AccusationRepository {
     override suspend fun submitAccusation(
         caseId: Int,
         suspectId: Int,
-        clueIds: List<Int>
+        clueIds: List<Int>,
     ): Result<Accusation> {
         calls += listOf(caseId, suspectId, clueIds)
         return result
@@ -89,8 +94,7 @@ class FakeClueRepository : ClueRepository {
         return clueResult
     }
 
-    override suspend fun getCollectedClues(caseId: Int): Result<List<Clue>> =
-        Result.success(emptyList())
+    override suspend fun getCollectedClues(caseId: Int): Result<List<Clue>> = Result.success(emptyList())
 
     override suspend fun collectClue(clueId: Int): Result<Unit> {
         collectCalls += clueId
@@ -106,7 +110,10 @@ class FakeDialogueRepository : DialogueRepository {
     val sendCalls = mutableListOf<List<Any?>>()
     val presentCalls = mutableListOf<List<Any?>>()
 
-    override suspend fun getHistory(caseId: Int, suspectId: Int): Result<List<DialogueMessage>> {
+    override suspend fun getHistory(
+        caseId: Int,
+        suspectId: Int,
+    ): Result<List<DialogueMessage>> {
         historyCalls += listOf(caseId, suspectId)
         return historyResult
     }
@@ -114,7 +121,7 @@ class FakeDialogueRepository : DialogueRepository {
     override suspend fun sendMessage(
         caseId: Int,
         suspectId: Int,
-        message: String
+        message: String,
     ): Result<DialogueMessage> {
         sendCalls += listOf(caseId, suspectId, message)
         return sendResult
@@ -123,7 +130,7 @@ class FakeDialogueRepository : DialogueRepository {
     override suspend fun presentClue(
         caseId: Int,
         suspectId: Int,
-        clueId: Int
+        clueId: Int,
     ): Result<DialogueMessage> {
         presentCalls += listOf(caseId, suspectId, clueId)
         return presentResult
@@ -141,7 +148,10 @@ class FakeInventoryRepository : InventoryRepository {
         return inventoryResult
     }
 
-    override suspend fun addItem(investigationId: Int, clueId: Int): Result<CollectedClue> {
+    override suspend fun addItem(
+        investigationId: Int,
+        clueId: Int,
+    ): Result<CollectedClue> {
         addCalls += listOf(investigationId, clueId)
         return addResult
     }
@@ -160,7 +170,10 @@ class FakeNotebookRepository : NotebookRepository {
         return noteResult
     }
 
-    override suspend fun saveNote(investigationId: Int, text: String): Result<Note> {
+    override suspend fun saveNote(
+        investigationId: Int,
+        text: String,
+    ): Result<Note> {
         saveCalls += listOf(investigationId, text)
         return saveResult
     }
@@ -177,7 +190,10 @@ class FakePhotoRepository : PhotoRepository {
     val saveCalls = mutableListOf<List<Any?>>()
     var uploadCalls = 0
 
-    override suspend fun savePhoto(clueId: Int, filePath: String): Result<Unit> {
+    override suspend fun savePhoto(
+        clueId: Int,
+        filePath: String,
+    ): Result<Unit> {
         saveCalls += listOf(clueId, filePath)
         return saveResult
     }
@@ -199,8 +215,7 @@ class FakeProgressRepository : ProgressRepository {
         return progressResult
     }
 
-    override suspend fun saveProgress(progress: InvestigationProgress): Result<Unit> =
-        Result.success(Unit)
+    override suspend fun saveProgress(progress: InvestigationProgress): Result<Unit> = Result.success(Unit)
 
     override suspend fun completeCase(caseId: Int): Result<Unit> = Result.success(Unit)
 
@@ -214,12 +229,15 @@ class FakePuzzleRepository : PuzzleRepository {
     var answerResult: Result<Boolean> = Result.success(true)
     val answerCalls = mutableListOf<List<Any?>>()
 
-    override suspend fun getPuzzle(id: Int): Result<Puzzle> =
-        Result.success(Puzzle(id, "...", "SOS", null))
+    override suspend fun getPuzzle(id: Int): Result<Puzzle> = Result.success(Puzzle(id, "...", "SOS", null))
 
     override suspend fun markSolved(id: Int): Result<Unit> = Result.success(Unit)
 
-    override fun checkAnswer(investigationId: Int, puzzleId: Int, answer: String): Result<Boolean> {
+    override fun checkAnswer(
+        investigationId: Int,
+        puzzleId: Int,
+        answer: String,
+    ): Result<Boolean> {
         answerCalls += listOf(investigationId, puzzleId, answer)
         return answerResult
     }
@@ -229,7 +247,10 @@ class FakeSceneRepository : SceneRepository {
     var sceneResult: Result<String> = Result.success("Описание сцены")
     val calls = mutableListOf<List<Any?>>()
 
-    override suspend fun getScene(caseId: Int, sceneId: Int): Result<String> {
+    override suspend fun getScene(
+        caseId: Int,
+        sceneId: Int,
+    ): Result<String> {
         calls += listOf(caseId, sceneId)
         return sceneResult
     }

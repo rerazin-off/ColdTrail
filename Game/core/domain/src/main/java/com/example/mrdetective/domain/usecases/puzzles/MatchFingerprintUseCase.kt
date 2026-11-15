@@ -2,21 +2,21 @@ package com.example.mrdetective.domain.usecases.puzzles
 
 import javax.inject.Inject
 
-class MatchFingerprintUseCase @Inject constructor(){
+class MatchFingerprintUseCase
+    @Inject
+    constructor() {
+        operator fun invoke(
+            selectedFingerprint: String,
+            correctFingerprint: String,
+        ): Boolean {
+            if (
+                selectedFingerprint.isBlank() ||
+                correctFingerprint.isBlank()
+            ) {
+                return false
+            }
 
-    operator fun invoke(
-        selectedFingerprint: String,
-        correctFingerprint: String
-    ): Boolean {
-        if (
-            selectedFingerprint.isBlank() ||
-            correctFingerprint.isBlank()
-        ) {
-            return false
-        }
-
-        return selectedFingerprint.trim() ==
+            return selectedFingerprint.trim() ==
                 correctFingerprint.trim()
+        }
     }
-}
-

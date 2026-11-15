@@ -1,8 +1,9 @@
 package com.example.mrdetective.domain.usecases.inventory
 
-import com.example.mrdetective.domain.fakes.*
-import com.example.mrdetective.domain.usecases.inventory.InspectItemUseCase
-import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
+import com.example.mrdetective.domain.fakes.FakeClueRepository
+import com.example.mrdetective.domain.fakes.FakeInventoryRepository
+import com.example.mrdetective.domain.fakes.TestData
+import com.example.mrdetective.domain.fakes.assertValidationError
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -14,18 +15,20 @@ class InspectItemUseCaseTest {
     private val useCase = InspectItemUseCase(clues, inventory)
 
     @Test
-    fun `возвращает улику по id предмета`() = runTest {
-        val result = useCase(1)
+    fun `возвращает улику по id предмета`() =
+        runTest {
+            val result = useCase(1)
 
-        assertEquals(TestData.clue, result.getOrNull())
-        assertEquals(listOf(1), clues.getClueCalls)
-    }
+            assertEquals(TestData.clue, result.getOrNull())
+            assertEquals(listOf(1), clues.getClueCalls)
+        }
 
     @Test
-    fun `некорректный id возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(0))
-        assertTrue(clues.getClueCalls.isEmpty())
-    }
+    fun `некорректный id возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0))
+            assertTrue(clues.getClueCalls.isEmpty())
+        }
 }
 
 class LoadInventoryUseCaseTest {
@@ -33,16 +36,18 @@ class LoadInventoryUseCaseTest {
     private val useCase = LoadInventoryUseCase(repository)
 
     @Test
-    fun `возвращает инвентарь`() = runTest {
-        val result = useCase(4)
+    fun `возвращает инвентарь`() =
+        runTest {
+            val result = useCase(4)
 
-        assertEquals(listOf(TestData.clue), result.getOrNull())
-        assertEquals(listOf(4), repository.inventoryCalls)
-    }
+            assertEquals(listOf(TestData.clue), result.getOrNull())
+            assertEquals(listOf(4), repository.inventoryCalls)
+        }
 
     @Test
-    fun `некорректный id возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(0))
-        assertTrue(repository.inventoryCalls.isEmpty())
-    }
+    fun `некорректный id возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0))
+            assertTrue(repository.inventoryCalls.isEmpty())
+        }
 }

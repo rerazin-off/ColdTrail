@@ -5,5 +5,5 @@ data class InvestigationProgress(
     val userId: String,
     val caseId: Int,
     val collectedClueIds: List<Int>,
-    val status: String
+    val status: String,
 )

@@ -5,5 +5,5 @@ data class Case(
     val title: String,
     val introduction: String,
     val objective: String = "",
-    val status: String = "available"
+    val status: String = "available",
 )

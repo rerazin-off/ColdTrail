@@ -6,6 +6,6 @@ interface AccusationRepository {
     suspend fun submitAccusation(
         caseId: Int,
         suspectId: Int,
-        clueIds: List<Int>
+        clueIds: List<Int>,
     ): Result<Accusation>
 }

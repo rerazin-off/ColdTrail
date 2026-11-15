@@ -1,14 +1,13 @@
 package com.example.mrdetective.domain.usecases.clues
 
-import com.example.mrdetective.domain.fakes.*
-import com.example.mrdetective.domain.usecases.clues.AddToInventoryUseCase
-import com.example.mrdetective.domain.usecases.clues.CollectClueUseCase
-import com.example.mrdetective.domain.usecases.clues.ConfirmClueApproachUseCase
-import com.example.mrdetective.domain.usecases.clues.FindClueByAzimuthUseCase
-import com.example.mrdetective.domain.usecases.clues.SaveCluePhotoUseCase
-import org.junit.Assert.assertFalse
+import com.example.mrdetective.domain.fakes.FakeClueRepository
+import com.example.mrdetective.domain.fakes.FakeInventoryRepository
+import com.example.mrdetective.domain.fakes.FakePhotoRepository
+import com.example.mrdetective.domain.fakes.TestData
+import com.example.mrdetective.domain.fakes.assertValidationError
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,18 +16,20 @@ class AddToInventoryUseCaseTest {
     private val useCase = AddToInventoryUseCase(repository)
 
     @Test
-    fun `добавляет улику в инвентарь расследования`() = runTest {
-        val result = useCase(TestData.clue, TestData.progress)
+    fun `добавляет улику в инвентарь расследования`() =
+        runTest {
+            val result = useCase(TestData.clue, TestData.progress)
 
-        assertEquals(TestData.collectedClue, result.getOrNull())
-        assertEquals(listOf<Any?>(TestData.progress.id, TestData.clue.id), repository.addCalls.single())
-    }
+            assertEquals(TestData.collectedClue, result.getOrNull())
+            assertEquals(listOf<Any?>(TestData.progress.id, TestData.clue.id), repository.addCalls.single())
+        }
 
     @Test
-    fun `улика с некорректным id возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(TestData.clue.copy(id = 0), TestData.progress))
-        assertTrue(repository.addCalls.isEmpty())
-    }
+    fun `улика с некорректным id возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(TestData.clue.copy(id = 0), TestData.progress))
+            assertTrue(repository.addCalls.isEmpty())
+        }
 }
 
 class CollectClueUseCaseTest {
@@ -36,16 +37,18 @@ class CollectClueUseCaseTest {
     private val useCase = CollectClueUseCase(repository)
 
     @Test
-    fun `собирает улику`() = runTest {
-        assertTrue(useCase(7).isSuccess)
-        assertEquals(listOf(7), repository.collectCalls)
-    }
+    fun `собирает улику`() =
+        runTest {
+            assertTrue(useCase(7).isSuccess)
+            assertEquals(listOf(7), repository.collectCalls)
+        }
 
     @Test
-    fun `некорректный id улики возвращает ошибку валидации`() = runTest {
-        assertValidationError(useCase(0))
-        assertTrue(repository.collectCalls.isEmpty())
-    }
+    fun `некорректный id улики возвращает ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0))
+            assertTrue(repository.collectCalls.isEmpty())
+        }
 }
 
 class ConfirmClueApproachUseCaseTest {
@@ -62,22 +65,22 @@ class ConfirmClueApproachUseCaseTest {
     }
 }
 
-
-
 class SaveCluePhotoUseCaseTest {
     private val repository = FakePhotoRepository()
     private val useCase = SaveCluePhotoUseCase(repository)
 
     @Test
-    fun `сохраняет фото улики`() = runTest {
-        assertTrue(useCase(2, "/photos/a.jpg").isSuccess)
-        assertEquals(listOf<Any?>(2, "/photos/a.jpg"), repository.saveCalls.single())
-    }
+    fun `сохраняет фото улики`() =
+        runTest {
+            assertTrue(useCase(2, "/photos/a.jpg").isSuccess)
+            assertEquals(listOf<Any?>(2, "/photos/a.jpg"), repository.saveCalls.single())
+        }
 
     @Test
-    fun `некорректные данные возвращают ошибку валидации`() = runTest {
-        assertValidationError(useCase(0, "/photos/a.jpg"))
-        assertValidationError(useCase(1, " "))
-        assertTrue(repository.saveCalls.isEmpty())
-    }
+    fun `некорректные данные возвращают ошибку валидации`() =
+        runTest {
+            assertValidationError(useCase(0, "/photos/a.jpg"))
+            assertValidationError(useCase(1, " "))
+            assertTrue(repository.saveCalls.isEmpty())
+        }
 }

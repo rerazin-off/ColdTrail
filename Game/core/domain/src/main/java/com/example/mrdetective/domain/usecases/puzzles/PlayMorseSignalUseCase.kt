@@ -8,20 +8,20 @@ interface MorseSignalPlayer {
     suspend fun play(pattern: String)
 }
 
-class PlayMorseSignalUseCase @Inject constructor(
-    private val player: MorseSignalPlayer
-) {
-    suspend operator fun invoke(
-        pattern: String
-    ): Result<Unit> {
-        if (pattern.isBlank()) {
-            return Result.failure(
-                DomainError.Validation("Сигнал не задан")
-            )
-        }
+class PlayMorseSignalUseCase
+    @Inject
+    constructor(
+        private val player: MorseSignalPlayer,
+    ) {
+        suspend operator fun invoke(pattern: String): Result<Unit> {
+            if (pattern.isBlank()) {
+                return Result.failure(
+                    DomainError.Validation("Сигнал не задан"),
+                )
+            }
 
-        return domainCatching {
-            player.play(pattern)
+            return domainCatching {
+                player.play(pattern)
+            }
         }
     }
-}

@@ -6,5 +6,5 @@ data class Clue(
     val title: String,
     val description: String,
     val image: String?,
-    val createdAt: String
+    val createdAt: String,
 )
