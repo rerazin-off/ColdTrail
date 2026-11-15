@@ -56,5 +56,7 @@ dependencies {
     implementation(project(":feature:presentation"))
     implementation(project(":core:di"))
     implementation(libs.hilt.android)
+    testImplementation("io.mockk:mockk:1.14.12")
+    testImplementation(libs.kotlinx.coroutines.test.v190)
     ksp(libs.hilt.compiler)
 }
