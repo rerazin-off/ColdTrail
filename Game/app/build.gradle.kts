@@ -54,7 +54,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(project(":feature:presentation"))
-    implementation(project(":core:di"))
+
     implementation(libs.hilt.android)
     testImplementation("io.mockk:mockk:1.14.12")
     testImplementation(libs.kotlinx.coroutines.test.v190)

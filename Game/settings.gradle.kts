@@ -30,4 +30,3 @@ include(":core:domain")
 
 include(":core:data")
 include(":feature:presentation")
-include(":core:di")
