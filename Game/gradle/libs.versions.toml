@@ -26,6 +26,7 @@ ksp = "2.3.4"
 ktlint = "12.1.1"
 runtime = "1.12.1"
 junitJunit = "4.12"
+room3Common = "3.0.3"
 
 
 
@@ -65,6 +66,7 @@ hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt"
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 junit-junit = { group = "junit", name = "junit", version.ref = "junitJunit" }
+androidx-room3-common = { group = "androidx.room3", name = "room3-common", version.ref = "room3Common" }
 
 
 [plugins]

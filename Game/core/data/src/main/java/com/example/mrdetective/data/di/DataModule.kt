@@ -5,6 +5,7 @@ import com.example.mrdetective.data.network.AuthInterceptor
 import com.example.mrdetective.data.network.NetworkAvailabilityInterceptor
 import com.example.mrdetective.data.network.NetworkClientFactory
 import com.example.mrdetective.data.network.SupabaseTokenAuthenticator
+import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.api.SupabaseAuthApi
 import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import dagger.Module
@@ -44,4 +45,6 @@ object NetworkModule {
     @Provides @Singleton
     fun provideSupabaseAuthApi(retrofit: Retrofit): SupabaseAuthApi =
         retrofit.create(SupabaseAuthApi::class.java)
+    @Provides @Singleton
+    fun provideOfflineApi(retrofit: Retrofit): OfflineApi = retrofit.create(OfflineApi::class.java)
 }

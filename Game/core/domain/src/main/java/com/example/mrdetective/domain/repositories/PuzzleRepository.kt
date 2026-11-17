@@ -7,7 +7,7 @@ interface PuzzleRepository {
 
     suspend fun markSolved(id: Int): Result<Unit>
 
-    fun checkAnswer(
+    suspend fun checkAnswer(
         investigationId: Int,
         puzzleId: Int,
         answer: String,

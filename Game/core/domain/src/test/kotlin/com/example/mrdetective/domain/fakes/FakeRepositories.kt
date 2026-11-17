@@ -233,7 +233,7 @@ class FakePuzzleRepository : PuzzleRepository {
 
     override suspend fun markSolved(id: Int): Result<Unit> = Result.success(Unit)
 
-    override fun checkAnswer(
+    override suspend fun checkAnswer(
         investigationId: Int,
         puzzleId: Int,
         answer: String,
