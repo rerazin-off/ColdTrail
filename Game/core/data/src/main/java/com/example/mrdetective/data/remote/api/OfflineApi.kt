@@ -1,6 +1,14 @@
 package com.example.mrdetective.data.remote.api
 
+import com.example.mrdetective.data.remote.dto.AccusationRequestDto
+import com.example.mrdetective.data.remote.dto.AccusationResponseDto
+import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.ClueDto
+import com.example.mrdetective.data.remote.dto.InvestigationDto
+import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
+import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
+import com.example.mrdetective.data.remote.dto.NpcChatResponseDto
+import com.example.mrdetective.data.remote.dto.PuzzleDto
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.http.Body

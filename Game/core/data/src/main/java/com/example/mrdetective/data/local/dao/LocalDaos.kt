@@ -44,7 +44,7 @@ interface CaseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertAll(items: List<ClueEntity>)
 }
 
-@Dao interface ProgressDao {
+@Dao interface InvestigationDao {
     @Query("SELECT * FROM investigations WHERE id = :id LIMIT 1") suspend fun getInvestigation(id: Int): InvestigationEntity?
     @Query("SELECT * FROM investigations WHERE caseId = :caseId ORDER BY updatedAt DESC LIMIT 1") suspend fun getByCase(caseId: Int): InvestigationEntity?
     @Query("SELECT * FROM investigations ORDER BY updatedAt DESC") suspend fun getAllInvestigations(): List<InvestigationEntity>

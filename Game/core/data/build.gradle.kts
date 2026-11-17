@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.room3.common)
     implementation(libs.androidx.room3.runtime)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.material)
 
     implementation("com.google.dagger:hilt-android:2.58")

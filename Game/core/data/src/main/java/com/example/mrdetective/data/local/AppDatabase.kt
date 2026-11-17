@@ -8,9 +8,9 @@ import androidx.sqlite.execSQL
 import com.example.mrdetective.data.local.dao.CaseDao
 import com.example.mrdetective.data.local.dao.ClueDao
 import com.example.mrdetective.data.local.dao.DialogueDao
+import com.example.mrdetective.data.local.dao.InvestigationDao
 import com.example.mrdetective.data.local.dao.NoteDao
 import com.example.mrdetective.data.local.dao.PendingPhotoDao
-import com.example.mrdetective.data.local.dao.ProgressDao
 import com.example.mrdetective.data.local.dao.PuzzleDao
 import com.example.mrdetective.data.local.dao.SuspectDao
 import com.example.mrdetective.data.local.dao.SyncQueueDao
@@ -40,7 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun caseDao(): CaseDao
     abstract fun suspectDao(): SuspectDao
     abstract fun clueDao(): ClueDao
-    abstract fun progressDao(): ProgressDao
+    abstract fun investigationDao(): InvestigationDao
     abstract fun dialogueDao(): DialogueDao
     abstract fun noteDao(): NoteDao
     abstract fun puzzleDao(): PuzzleDao
