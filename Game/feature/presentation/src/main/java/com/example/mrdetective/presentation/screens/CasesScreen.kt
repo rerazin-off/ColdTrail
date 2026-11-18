@@ -1,4 +1,4 @@
-﻿package com.example.mrdetective.presentation.ui
+package com.example.mrdetective.presentation.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -96,7 +96,7 @@ private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit) {
             }
             CasesUiState.Empty -> CasesMessage("Пока нет доступных дел", onRetry)
             is CasesUiState.Error -> CasesMessage(
-                if (state.unauthorized) "Для просмотра дел требуется вход в аккаунт."
+                if (state.unauthorized) "Откройте профиль и войдите в аккаунт повторно."
                 else "Не удалось загрузить дела.",
                 onRetry,
             )

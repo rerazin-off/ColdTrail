@@ -1,7 +1,7 @@
 package com.example.mrdetective.data.repository
 
 import android.content.Context
-import androidx.room.withTransaction
+import androidx.room3.withWriteTransaction
 import com.example.mrdetective.data.local.AppDatabase
 import com.example.mrdetective.data.local.dao.*
 import com.example.mrdetective.data.local.entity.DialogueMessageEntity
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class DialogueRepositoryImpl @Inject constructor(
     private val api: OfflineApi,
-    private val progress: ProgressDao,
+    private val progress: InvestigationDao,
     private val dialogue: DialogueDao,
     private val outbox: SyncQueueDao,
     private val db: AppDatabase,
@@ -63,7 +63,7 @@ class DialogueRepositoryImpl @Inject constructor(
                 val now = System.currentTimeMillis().toString()
                 val player = DialogueMessageEntity(-reply.messageId.toLong(), investigation.id, caseId, suspectId, "player", text, now, true)
                 val suspect = DialogueMessageEntity(reply.messageId.toLong(), investigation.id, caseId, suspectId, "suspect", reply.reply, now, true)
-                db.withTransaction { dialogue.insert(player); dialogue.insert(suspect) }
+                db.withWriteTransaction { dialogue.insert(player); dialogue.insert(suspect) }
                 Result.success(suspect.toDomain())
             } catch (networkError: Exception) {
                 savePending(investigation.id, caseId, suspectId, text, request)
@@ -74,7 +74,7 @@ class DialogueRepositoryImpl @Inject constructor(
     private suspend fun savePending(investigationId: Int, caseId: Int, suspectId: Int, text: String, request: NpcChatRequestDto): Result<DialogueMessage> {
         val localId = -System.nanoTime().coerceAtLeast(1L)
         val message = DialogueMessageEntity(localId, investigationId, caseId, suspectId, "player", text, System.currentTimeMillis().toString(), synced = false)
-        db.withTransaction {
+        db.withWriteTransaction {
             dialogue.insert(message)
             outbox.enqueue(SyncQueueEntity(
                 entityType = "dialogue_message", entityId = localId.toString(),

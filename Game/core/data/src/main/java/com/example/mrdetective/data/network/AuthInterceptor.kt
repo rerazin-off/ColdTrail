@@ -19,8 +19,9 @@ class AuthInterceptor @Inject constructor(
                 val path = chain.request().url.encodedPath
                 val isPublicAuthRequest = path.endsWith("/auth/v1/token") || path.endsWith("/auth/v1/signup")
                 if (!isPublicAuthRequest) {
-                    tokenStore.get()?.takeIf(String::isNotBlank)?.let {
-                        header("Authorization", "Bearer $it")
+                    tokenStore.session()?.let {
+                        tag(SessionTokenStore.Session::class.java, it)
+                        header("Authorization", "Bearer ${it.access}")
                     }
                 }
             }

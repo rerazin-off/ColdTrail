@@ -1,7 +1,7 @@
 package com.example.mrdetective.data.repository
 
 import android.content.Context
-import com.example.mrdetective.data.datastore.SettingsDataStore
+import com.example.mrdetective.data.local.datastore.SettingsData
 import com.example.mrdetective.data.local.dao.PendingPhotoDao
 import com.example.mrdetective.data.local.entity.PendingPhotoUploadEntity
 import com.example.mrdetective.data.network.ConnectivityChecker
@@ -20,7 +20,7 @@ import javax.inject.Singleton
 @Singleton
 class PhotoRepositoryImpl @Inject constructor(
     private val pending: PendingPhotoDao,
-    private val settings: SettingsDataStore,
+    private val settings: SettingsData,
     private val api: OfflineApi,
     private val connectivity: ConnectivityChecker,
     @ApplicationContext private val context: Context,

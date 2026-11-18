@@ -1,7 +1,7 @@
 package com.example.mrdetective.data.repository
 
 import android.content.Context
-import androidx.room.withTransaction
+import androidx.room3.withWriteTransaction
 import com.example.mrdetective.data.local.AppDatabase
 import com.example.mrdetective.data.local.dao.*
 import com.example.mrdetective.data.local.entity.*
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 class PuzzleRepositoryImpl @Inject constructor(
     private val api: OfflineApi,
     private val puzzles: PuzzleDao,
-    private val progress: ProgressDao,
+    private val progress: InvestigationDao,
     private val outbox: SyncQueueDao,
     private val db: AppDatabase,
     private val connectivity: ConnectivityChecker,
@@ -42,7 +42,7 @@ class PuzzleRepositoryImpl @Inject constructor(
     override suspend fun markSolved(id: Int): Result<Unit> = try {
         val puzzle = puzzles.getById(id) ?: throw DomainError.NotFound("Головоломка не найдена")
         val investigation = progress.getByCase(puzzle.caseId) ?: throw DomainError.NotFound("Расследование не начато")
-        db.withTransaction {
+        db.withWriteTransaction {
             progress.markPuzzleSolved(SolvedPuzzleEntity(investigation.id, id, System.currentTimeMillis().toString(), synced = false))
         }
         Result.success(Unit)
@@ -55,7 +55,7 @@ class PuzzleRepositoryImpl @Inject constructor(
             val correct = api.checkPuzzle(request)
             if (correct) {
                 val puzzle = puzzles.getById(puzzleId)
-                db.withTransaction {
+                db.withWriteTransaction {
                     progress.markPuzzleSolved(SolvedPuzzleEntity(investigationId, puzzleId, System.currentTimeMillis().toString(), synced = true))
                     puzzle?.rewardClueId?.let { progress.collectClue(CollectedClueEntity(investigationId, it, System.currentTimeMillis().toString(), synced = true)) }
                 }

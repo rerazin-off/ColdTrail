@@ -1,4 +1,4 @@
-﻿package com.example.mrdetective.presentation.ui
+package com.example.mrdetective.presentation.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,8 +29,10 @@ class CasesViewModel @Inject constructor(
 
     private var loadJob: Job? = null
 
-    init {
-        reload()
+    fun reset() {
+        loadJob?.cancel()
+        loadJob = null
+        mutableState.value = CasesUiState.Loading
     }
 
     fun reload() {

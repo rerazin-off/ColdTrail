@@ -24,19 +24,19 @@ class SupabaseTokenAuthenticator @Inject constructor(
         if (responseCount(response) >= 2) return null
         val requestPath = response.request.url.encodedPath
         if (requestPath.endsWith("/auth/v1/token") || requestPath.endsWith("/auth/v1/signup")) return null
-        val refreshToken = tokenStore.getRefreshToken()?.takeIf(String::isNotBlank) ?: return null
+        val requestSession = response.request.tag(SessionTokenStore.Session::class.java) ?: return null
 
         synchronized(this) {
             // Другой запрос мог уже обновить токен, пока этот ожидал блокировку.
-            val currentAccess = tokenStore.get()
-            val failedAccess = response.request.header("Authorization")
-                ?.removePrefix("Bearer ")
-            if (!currentAccess.isNullOrBlank() && currentAccess != failedAccess) {
+            val currentSession = tokenStore.session() ?: return null
+            if (currentSession.generation != requestSession.generation) return null
+            if (currentSession.access != requestSession.access) {
                 return response.request.newBuilder()
-                    .header("Authorization", "Bearer $currentAccess")
+                    .header("Authorization", "Bearer ${currentSession.access}")
                     .build()
             }
 
+            val refreshToken = currentSession.refresh?.takeIf(String::isNotBlank) ?: return null
             val payload = """{"refresh_token":"${escapeJson(refreshToken)}"}"""
             val request = Request.Builder()
                 .url(SupabaseConfig.baseUrl + "auth/v1/token?grant_type=refresh_token")
@@ -48,14 +48,16 @@ class SupabaseTokenAuthenticator @Inject constructor(
             return try {
                 refreshClient.newCall(request).execute().use { refreshResponse ->
                     if (!refreshResponse.isSuccessful) {
-                        if (refreshResponse.code == 400 || refreshResponse.code == 401) tokenStore.clear()
+                        if (refreshResponse.code == 400 || refreshResponse.code == 401) {
+                            tokenStore.updateSession(currentSession, null, null)
+                        }
                         return null
                     }
                     val body = refreshResponse.body?.string() ?: return null
                     val json = JsonParser.parseString(body).asJsonObject
                     val access = json.get("access_token")?.asString ?: return null
                     val refreshed = json.get("refresh_token")?.asString ?: refreshToken
-                    tokenStore.setSession(access, refreshed)
+                    if (!tokenStore.updateSession(currentSession, access, refreshed)) return null
                     response.request.newBuilder()
                         .header("Authorization", "Bearer $access")
                         .build()

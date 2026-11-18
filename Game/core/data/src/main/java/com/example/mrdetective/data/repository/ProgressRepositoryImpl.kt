@@ -1,9 +1,9 @@
 package com.example.mrdetective.data.repository
 
 import android.content.Context
-import androidx.room.withTransaction
+import androidx.room3.withWriteTransaction
 import com.example.mrdetective.data.local.AppDatabase
-import com.example.mrdetective.data.local.dao.ProgressDao
+import com.example.mrdetective.data.local.dao.InvestigationDao
 import com.example.mrdetective.data.local.dao.SyncQueueDao
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.sync.SyncScheduler
@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class ProgressRepositoryImpl @Inject constructor(
     private val db: AppDatabase,
-    private val progress: ProgressDao,
+    private val progress: InvestigationDao,
     private val outbox: SyncQueueDao,
     private val gson: Gson,
     @ApplicationContext private val context: Context,
@@ -35,7 +35,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveProgress(progressModel: InvestigationProgress): Result<Unit> = try {
-        db.withTransaction {
+        db.withWriteTransaction {
             progressModel.collectedClueIds.forEach { clueId ->
                 progress.collectClue(com.example.mrdetective.data.local.entity.CollectedClueEntity(
                     progressModel.id, clueId, System.currentTimeMillis().toString(), synced = false,

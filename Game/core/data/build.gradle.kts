@@ -67,10 +67,12 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.room3.common)
     implementation(libs.androidx.room3.runtime)
+    ksp("androidx.room3:room3-compiler:${libs.versions.room3Runtime.get()}")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.material)
 
-    implementation("com.google.dagger:hilt-android:2.58")
+    implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
     // Retrofit

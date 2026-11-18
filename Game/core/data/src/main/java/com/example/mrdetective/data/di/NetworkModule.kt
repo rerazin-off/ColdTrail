@@ -8,6 +8,7 @@ import com.example.mrdetective.data.network.SupabaseTokenAuthenticator
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.api.SupabaseAuthApi
 import com.example.mrdetective.data.remote.api.SupabaseRestApi
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,6 +22,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    @Provides @Singleton
+    fun provideGson(): Gson = Gson()
+
     @Provides @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
         NetworkClientFactory.logging(BuildConfig.DEBUG)

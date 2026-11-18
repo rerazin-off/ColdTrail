@@ -7,6 +7,8 @@ import com.example.mrdetective.data.remote.api.SupabaseAuthApi
 import com.example.mrdetective.data.remote.dto.AuthRequestDto
 import com.example.mrdetective.data.remote.dto.SignUpRequestDto
 import com.example.mrdetective.domain.repositories.AuthRepository
+import com.example.mrdetective.domain.models.DomainError
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,22 +21,36 @@ class SupabaseAuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
     override suspend fun signIn(email: String, password: String): Result<String> = apiCall {
         val response = api.signIn(body = AuthRequestDto(email, password))
-        tokenStore.setSession(response.accessToken, response.refreshToken)
-        settings.setUserId(response.user.id)
-        response.user.id
+        val userId = response.user?.id?.takeIf(String::isNotBlank) ?: throw DomainError.Unauthorized()
+        val accessToken = response.accessToken?.takeIf(String::isNotBlank) ?: throw DomainError.Unauthorized()
+        settings.setUserId(userId)
+        tokenStore.setSession(accessToken, response.refreshToken)
+        userId
     }
 
     override suspend fun signUp(email: String, password: String): Result<String> = apiCall {
         val response = api.signUp(SignUpRequestDto(email, password))
-        tokenStore.setSession(response.accessToken, response.refreshToken)
-        settings.setUserId(response.user.id)
-        response.user.id
+        val userId = (response.user?.id ?: response.id)?.takeIf(String::isNotBlank)
+            ?: throw DomainError.Validation("Не удалось создать аккаунт.")
+        response.accessToken?.takeIf(String::isNotBlank)?.let {
+            settings.setUserId(userId)
+            tokenStore.setSession(it, response.refreshToken)
+        }
+        userId
     }
 
     override suspend fun signOut() {
-        try { api.signOut() } finally { tokenStore.clear(); settings.setUserId(null) }
+        try {
+            api.signOut()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // Local logout must work offline and after a session expires.
+        }
+        settings.setUserId(null)
+        tokenStore.clear()
     }
 
-    override suspend fun currentUser(): String? = settings.userId.first()
+    override suspend fun currentUser(): String? =
+        if (tokenStore.session() == null) null else settings.userId.first()
 }
-

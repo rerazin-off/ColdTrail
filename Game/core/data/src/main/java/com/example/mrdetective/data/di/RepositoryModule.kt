@@ -1,15 +1,7 @@
 package com.example.mrdetective.data.di
 
-import com.example.mrdetective.data.repository.SupabaseAuthRepositoryImpl
-import com.example.mrdetective.data.repository.SupabaseCaseRepositoryImpl
-import com.example.mrdetective.data.repository.SupabaseClueRepositoryImpl
-import com.example.mrdetective.data.repository.SupabaseNotebookRepositoryImpl
-import com.example.mrdetective.data.repository.SupabaseSuspectRepositoryImpl
-import com.example.mrdetective.domain.repositories.AuthRepository
-import com.example.mrdetective.domain.repositories.CaseRepository
-import com.example.mrdetective.domain.repositories.ClueRepository
-import com.example.mrdetective.domain.repositories.NotebookRepository
-import com.example.mrdetective.domain.repositories.SuspectRepository
+import com.example.mrdetective.data.repository.*
+import com.example.mrdetective.domain.repositories.*
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

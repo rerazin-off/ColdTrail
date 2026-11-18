@@ -11,6 +11,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+private val Context.settingsDataStore by preferencesDataStore(name = "coldtrail_settings")
+
 @Singleton
 class SettingsData @Inject constructor(
     @ApplicationContext private val context: Context,

@@ -1,4 +1,4 @@
-﻿package com.example.mrdetective.presentation.ui
+package com.example.mrdetective.presentation.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,9 +37,11 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
-import kotlinx.coroutines.delay
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.mrdetective.presentation.ui.components.AppButton
+import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 
-private const val SPLASH = "splash"
+
 
 private enum class Tab(val route: String, val label: String, val icon: Int) {
     Cases("cases", "Дела", R.drawable.ic_cases),
@@ -47,7 +49,31 @@ private enum class Tab(val route: String, val label: String, val icon: Int) {
 }
 
 @Composable
-fun ColdTrailNavigation(viewModel: CasesViewModel) {
+fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) {
+    val state by auth.state.collectAsStateWithLifecycle()
+    val colors = AppTheme.colors
+    if (state.signedIn) {
+        val viewModel = cases()
+        DisposableEffect(viewModel) {
+            viewModel.reload()
+            onDispose { viewModel.reset() }
+        }
+        SignedInNavigation(viewModel, state, auth::signOut)
+    } else {
+        Scaffold(containerColor = colors.bg, contentColor = colors.text) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+                if (state.checkingSession) {
+                    SplashScreen()
+                } else {
+                    AuthScreen(state, auth::submit, auth::clearMessage)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route
@@ -85,7 +111,7 @@ fun ColdTrailNavigation(viewModel: CasesViewModel) {
                                     verticalArrangement = Arrangement.Center,
                                 ) {
                                     Icon(painterResource(tab.icon), null, Modifier.size(16.dp),
-                                        tint = if (selected) colors.onAccent else colors.text2)
+                                        tint = if (selected) colors.text else colors.text2)
                                     Text(tab.label, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
@@ -95,20 +121,18 @@ fun ColdTrailNavigation(viewModel: CasesViewModel) {
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = SPLASH, modifier = Modifier.padding(padding)) {
-            composable(SPLASH) {
-                SplashScreen()
-                LaunchedEffect(Unit) {
-                    delay(900)
-                    navController.navigate(Tab.Cases.route) {
-                        popUpTo(SPLASH) { inclusive = true }
-                    }
-                }
-            }
+        NavHost(navController, startDestination = Tab.Cases.route, modifier = Modifier.padding(padding)) {
             composable(Tab.Cases.route) { CasesRoute(viewModel) }
             composable(Tab.Profile.route) {
                 Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 28.dp)) {
-                    Text("Профиль", style = MaterialTheme.typography.displayLarge)
+                    Text("Профиль", style = MaterialTheme.typography.displayLarge, modifier = Modifier.padding(bottom = 16.dp))
+                    auth.message?.let { Text(it, color = colors.error) }
+                    AppButton(
+                        text = if (auth.busy) "Выходим…" else "Выйти из аккаунта",
+                        onClick = onSignOut,
+                        enabled = !auth.busy,
+                        style = AppButtonStyle.Outlined,
+                    )
                 }
             }
         }
@@ -125,11 +149,11 @@ private fun SplashScreen() {
             Spacer(Modifier.height(56.dp))
             LinearProgressIndicator(
                 modifier = Modifier.width(190.dp),
-                color = colors.onAccent,
+                color = colors.accent,
                 trackColor = colors.surface2,
             )
             Spacer(Modifier.height(12.dp))
-            Text("Проверяем материалы дела…", style = MaterialTheme.typography.bodySmall)
+            Text("Проверяем сеанс…", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
