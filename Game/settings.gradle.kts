@@ -19,9 +19,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
     }
 }
 
 rootProject.name = "mrDetective"
 include(":app")
- 
+
+include(":core:domain")
+
+include(":core:data")
+include(":feature:presentation")

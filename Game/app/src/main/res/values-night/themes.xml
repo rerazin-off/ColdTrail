@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MrDetective" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#211B16</item>
+    </style>
+</resources>

@@ -4,44 +4,35 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.mrdetective.ui.theme.MrDetectiveTheme
+import androidx.activity.viewModels
+import androidx.compose.runtime.SideEffect
+import androidx.core.view.WindowCompat
+import com.example.mrdetective.presentation.ui.AuthViewModel
+import com.example.mrdetective.presentation.ui.CasesViewModel
+import com.example.mrdetective.presentation.ui.ColdTrailNavigation
+import com.example.mrdetective.presentation.ui.theme.AppTheme
+import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val authViewModel: AuthViewModel by viewModels()
+    private val casesViewModel: CasesViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MrDetectiveTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            ColdTrailTheme {
+                val lightSystemBars = !AppTheme.colors.isDark
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = lightSystemBars
+                        isAppearanceLightNavigationBars = lightSystemBars
+                    }
                 }
+                ColdTrailNavigation(authViewModel) { casesViewModel }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MrDetectiveTheme {
-        Greeting("Android")
     }
 }
