@@ -75,8 +75,8 @@ class DialogueRepositoryImpl @Inject constructor(
     override suspend fun sendMessage(caseId: Int, suspectId: Int, message: String): Result<DialogueMessage> =
         send(caseId, suspectId, message, null)
 
-    override suspend fun presentClue(caseId: Int, suspectId: Int, clueId: Int): Result<DialogueMessage> =
-        send(caseId, suspectId, "Предъявляю улику №$clueId", clueId)
+    override suspend fun presentClue(caseId: Int, suspectId: Int, clueId: Int, message: String): Result<DialogueMessage> =
+        send(caseId, suspectId, message, clueId)
 
     private suspend fun send(caseId: Int, suspectId: Int, text: String, clueId: Int?): Result<DialogueMessage> = try {
         require(text.isNotBlank() && text.length <= 1000)

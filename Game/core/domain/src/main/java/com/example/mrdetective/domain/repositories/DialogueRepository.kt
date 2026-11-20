@@ -18,5 +18,6 @@ interface DialogueRepository {
         caseId: Int,
         suspectId: Int,
         clueId: Int,
+        message: String = "Предъявляю улику №$clueId",
     ): Result<DialogueMessage>
 }

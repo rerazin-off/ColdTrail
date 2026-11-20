@@ -131,6 +131,7 @@ class FakeDialogueRepository : DialogueRepository {
         caseId: Int,
         suspectId: Int,
         clueId: Int,
+        message: String,
     ): Result<DialogueMessage> {
         presentCalls += listOf(caseId, suspectId, clueId)
         return presentResult
