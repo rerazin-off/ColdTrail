@@ -24,12 +24,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -55,7 +57,6 @@ fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) {
     if (state.signedIn) {
         val viewModel = cases()
         DisposableEffect(viewModel) {
-            viewModel.reload()
             onDispose { viewModel.reset() }
         }
         SignedInNavigation(viewModel, state, auth::signOut)
@@ -77,6 +78,9 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route
+    LaunchedEffect(route, viewModel) {
+        if (route == Tab.Cases.route) viewModel.reload()
+    }
     val colors = AppTheme.colors
     Scaffold(
         containerColor = colors.bg,
@@ -122,7 +126,17 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
         },
     ) { padding ->
         NavHost(navController, startDestination = Tab.Cases.route, modifier = Modifier.padding(padding)) {
-            composable(Tab.Cases.route) { CasesRoute(viewModel) }
+            composable(Tab.Cases.route) {
+                CasesRoute(viewModel) { navController.navigate(InvestigationRoute(it)) }
+            }
+            composable<InvestigationRoute> {
+                InvestigationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus) { caseId, suspectId ->
+                    navController.navigate(InterrogationRoute(caseId, suspectId))
+                }
+            }
+            composable<InterrogationRoute> {
+                InterrogationScreen(hiltViewModel()) { navController.popBackStack() }
+            }
             composable(Tab.Profile.route) {
                 Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 28.dp)) {
                     Text("Профиль", style = MaterialTheme.typography.displayLarge, modifier = Modifier.padding(bottom = 16.dp))

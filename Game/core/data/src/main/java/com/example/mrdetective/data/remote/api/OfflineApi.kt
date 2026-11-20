@@ -24,8 +24,14 @@ import retrofit2.http.Url
 
 interface OfflineApi {
     @POST("rest/v1/investigations?on_conflict=user_id,case_id")
-    @Headers("Prefer: resolution=merge-duplicates,return=representation")
+    @Headers("Prefer: resolution=ignore-duplicates,return=representation")
     suspend fun startInvestigation(@Body body: InvestigationInsertDto): List<InvestigationDto>
+
+    @GET("rest/v1/investigations?select=id,user_id,case_id,status,start_at")
+    suspend fun getInvestigations(
+        @Query("case_id") caseId: String,
+        @Query("user_id") userId: String,
+    ): List<InvestigationDto>
 
     @GET("rest/v1/clues?select=*")
     suspend fun getCluesByCase(@Query("case_id") caseId: String): List<ClueDto>

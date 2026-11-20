@@ -54,7 +54,15 @@ class SupabaseCaseRepositoryImpl @Inject constructor(
         connectivity,
         cached = { local.getAll().map { it.toDomain() }.takeIf { it.isNotEmpty() } },
         remote = { api.getCases().also { local.upsertAll(it.map { dto -> dto.toEntity() }) }.map { it.toDomain() } },
-    )
+    ).fold(onSuccess = { cases ->
+        apiCall {
+            val userId = auth.currentUser() ?: return@apiCall cases
+            val investigations = progress.getForUser(userId).distinctBy { it.caseId }.associateBy { it.caseId }
+            cases.map { case ->
+                investigations[case.id]?.let { case.copy(status = it.status) } ?: case
+            }
+        }
+    }, onFailure = { Result.failure(it) })
 
     override suspend fun getCase(id: Int): Result<Case> = remoteOrCache(
         connectivity,
@@ -85,10 +93,11 @@ class SupabaseCaseRepositoryImpl @Inject constructor(
     override suspend fun startCase(id: Int): Result<Unit> {
         return try {
             val userId = auth.currentUser() ?: return Result.failure(DomainError.Unauthorized())
-            if (progress.getByCase(id) != null) return Result.success(Unit)
+            if (progress.getByCaseForUser(id, userId) != null) return Result.success(Unit)
             if (connectivity.isNetworkAvailable()) {
                 try {
                     val created = offlineApi.startInvestigation(InvestigationInsertDto(id)).firstOrNull()
+                        ?: offlineApi.getInvestigations("eq.$id", "eq.$userId").firstOrNull()
                     if (created != null) {
                         progress.upsertInvestigation(
                             InvestigationEntity(
@@ -105,7 +114,7 @@ class SupabaseCaseRepositoryImpl @Inject constructor(
             }
             val localId = -((System.nanoTime() % Int.MAX_VALUE).toInt().coerceAtLeast(1))
             db.withWriteTransaction {
-                progress.upsertInvestigation(InvestigationEntity(localId, userId, id, "in_investigation", System.currentTimeMillis().toString()))
+                progress.upsertInvestigation(InvestigationEntity(localId, userId, id, "in_progress", System.currentTimeMillis().toString()))
                 outbox.enqueue(com.example.mrdetective.data.local.entity.SyncQueueEntity(
                     entityType = "investigation", entityId = localId.toString(), operation = "insert",
                     payload = gson.toJson(InvestigationInsertDto(id)),

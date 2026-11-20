@@ -45,13 +45,13 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
 
 @Composable
-internal fun CasesRoute(viewModel: CasesViewModel) {
+internal fun CasesRoute(viewModel: CasesViewModel, onOpen: (Int) -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    CasesScreen(state, viewModel::reload)
+    CasesScreen(state, viewModel::reload, onOpen)
 }
 
 @Composable
-private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit) {
+private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit, onOpen: (Int) -> Unit) {
     val colors = AppTheme.colors
     var query by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -121,7 +121,7 @@ private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit) {
                         contentPadding = PaddingValues(bottom = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        items(visibleCases, key = { it.id }) { case -> CaseListCard(case) }
+                        items(visibleCases, key = { it.id }) { case -> CaseListCard(case) { onOpen(case.id) } }
                     }
                 }
             }
@@ -143,7 +143,7 @@ private fun CasesMessage(message: String, onRetry: (() -> Unit)? = null) {
 }
 
 @Composable
-private fun CaseListCard(case: Case) {
+private fun CaseListCard(case: Case, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val status = when (case.status) {
         "available" -> "Новое"
@@ -153,6 +153,7 @@ private fun CaseListCard(case: Case) {
         else -> null
     }
     Surface(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = AppShapes.card,
         color = colors.surface,
@@ -196,7 +197,7 @@ class CasesPreviewStates : PreviewParameterProvider<CasesUiState> {
 private fun CasesPreview(@PreviewParameter(CasesPreviewStates::class) state: CasesUiState) {
     ColdTrailTheme(darkTheme = true) {
         Surface(color = AppTheme.colors.bg, contentColor = AppTheme.colors.text) {
-            CasesScreen(state, onRetry = {})
+            CasesScreen(state, onRetry = {}, onOpen = {})
         }
     }
 }
