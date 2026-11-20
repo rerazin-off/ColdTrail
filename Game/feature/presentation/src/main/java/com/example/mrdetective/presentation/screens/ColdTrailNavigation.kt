@@ -1,5 +1,11 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -125,7 +131,17 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = Tab.Cases.route, modifier = Modifier.padding(padding)) {
+        NavHost(
+            navController,
+            startDestination = Tab.Cases.route,
+            modifier = Modifier.padding(padding),
+            popEnterTransition = {
+                fadeIn(tween(180)) + slideInHorizontally(tween(180)) { -it / 12 }
+            },
+            popExitTransition = {
+                fadeOut(tween(180)) + slideOutHorizontally(tween(180)) { it / 12 }
+            },
+        ) {
             composable(Tab.Cases.route) {
                 CasesRoute(viewModel) { navController.navigate(InvestigationRoute(it)) }
             }

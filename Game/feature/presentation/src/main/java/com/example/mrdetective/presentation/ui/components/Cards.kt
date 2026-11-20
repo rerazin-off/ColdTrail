@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -69,9 +68,14 @@ fun SuspectCard(
     avatar: @Composable () -> Unit = { AvatarPlaceholder(name) },
 ) {
     AppCard(modifier, outlined = true, padding = Spacing.sm) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            avatar()
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.weight(0.34f), contentAlignment = Alignment.Center) {
+                avatar()
+            }
+            Column(Modifier.weight(0.66f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(name, style = MaterialTheme.typography.headlineMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     description,
@@ -110,7 +114,7 @@ fun ClueCard(
 private fun AvatarPlaceholder(name: String) {
     val c = AppTheme.colors
     Box(
-        modifier = Modifier.width(44.dp).height(102.dp).background(c.primary, RoundedCornerShape(8.dp)),
+        modifier = Modifier.fillMaxWidth().height(118.dp).background(c.primary, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center,
     ) {
         Text(name.take(1), style = MaterialTheme.typography.titleMedium, color = c.bg)
