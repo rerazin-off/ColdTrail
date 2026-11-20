@@ -1,8 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 
@@ -135,11 +133,17 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             navController,
             startDestination = Tab.Cases.route,
             modifier = Modifier.padding(padding),
+            enterTransition = {
+                slideInHorizontally(tween(360)) { width -> width }
+            },
+            exitTransition = {
+                slideOutHorizontally(tween(360)) { width -> -width }
+            },
             popEnterTransition = {
-                fadeIn(tween(180)) + slideInHorizontally(tween(180)) { -it / 12 }
+                slideInHorizontally(tween(360)) { width -> -width }
             },
             popExitTransition = {
-                fadeOut(tween(180)) + slideOutHorizontally(tween(180)) { it / 12 }
+                slideOutHorizontally(tween(360)) { width -> width }
             },
         ) {
             composable(Tab.Cases.route) {
