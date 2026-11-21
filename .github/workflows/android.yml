@@ -17,4 +17,10 @@ jobs:
         with:
             build-root-directory: Game
       - run: chmod +x gradlew
+      - name: Create local.properties from Supabase secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          printf 'SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > local.properties
       - run: ./gradlew ktlintCheck assembleDebug
