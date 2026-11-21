@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
@@ -32,9 +34,12 @@ internal fun InvestigationScreen(
     viewModel: InvestigationViewModel,
     onBack: () -> Unit,
     onStatusChanged: (Int, String) -> Unit,
+    onMorse: (Int) -> Unit,
+    onAccusation: (Int) -> Unit,
     onInterrogate: (Int, Int) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshProgress() }
     LaunchedEffect(state.case?.id, state.status) {
         val caseId = state.case?.id ?: return@LaunchedEffect
         val status = state.status ?: return@LaunchedEffect
@@ -108,6 +113,15 @@ internal fun InvestigationScreen(
                                 enabled = !state.starting,
                                 style = AppButtonStyle.Accent,
                             )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AppButton("Мини-игра Морзе", { onMorse(case.id) }, style = AppButtonStyle.Accent)
+                                AppButton(
+                                    if (state.status in setOf("solved", "failed", "closed")) "Итог расследования" else "Выдвинуть обвинение",
+                                    { onAccusation(case.id) },
+                                    style = AppButtonStyle.Outlined,
+                                )
+                            }
                         }
                     }
                 }

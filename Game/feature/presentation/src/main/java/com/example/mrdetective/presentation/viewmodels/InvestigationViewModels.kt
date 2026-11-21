@@ -83,6 +83,18 @@ internal class InvestigationViewModel @Inject constructor(
         }
     }
 
+    fun refreshProgress() {
+        if (state.value.loading || state.value.starting) return
+        viewModelScope.launch {
+            val progress = restoreProgress(caseId).valueOrThrowCancellation() ?: return@launch
+            mutableState.value = state.value.copy(
+                started = true,
+                status = progress.status,
+                collectedClueCount = progress.collectedClueIds.size,
+            )
+        }
+    }
+
     fun start() {
         val current = state.value
         if (current.case == null || current.loading || current.starting || current.started) return

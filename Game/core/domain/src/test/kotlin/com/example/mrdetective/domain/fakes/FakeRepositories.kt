@@ -54,6 +54,8 @@ class FakeAccusationRepository : AccusationRepository {
     var result: Result<Accusation> = Result.success(TestData.accusation)
     val calls = mutableListOf<List<Any?>>()
 
+    override suspend fun getResult(caseId: Int): Result<Accusation> = Result.success(TestData.accusation)
+
     override suspend fun submitAccusation(
         caseId: Int,
         suspectId: Int,

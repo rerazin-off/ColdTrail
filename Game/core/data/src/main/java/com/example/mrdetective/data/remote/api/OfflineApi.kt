@@ -64,6 +64,9 @@ interface OfflineApi {
     @POST("functions/v1/submit-accusation")
     suspend fun submitAccusation(@Body body: AccusationRequestDto): AccusationResponseDto
 
+    @GET("functions/v1/submit-accusation")
+    suspend fun getAccusation(@Query("investigation_id") investigationId: Int): AccusationResponseDto
+
     @POST suspend fun postQueued(@Url url: String, @Header("Prefer") prefer: String?, @Body body: RequestBody): ResponseBody
     @DELETE
     suspend fun deleteQueued(@Url url: String): ResponseBody

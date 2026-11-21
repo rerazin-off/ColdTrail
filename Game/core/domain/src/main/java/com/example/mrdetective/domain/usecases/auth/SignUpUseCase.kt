@@ -13,17 +13,10 @@ class SignUpUseCase
             email: String,
             password: String,
         ): Result<String> {
-            if (email.isBlank() || password.isBlank()) {
-                return Result.failure(
-                    DomainError.Validation("Заполните все поля"),
-                )
-            }
-            if (password.length < 6) {
-                return Result.failure(
-                    DomainError.Validation("Пароль слишком короткий"),
-                )
+            validateAuthCredentials(email, password, register = true)?.let {
+                return Result.failure(DomainError.Validation(it))
             }
 
-            return repository.signUp(email, password)
+            return repository.signUp(email.trim(), password)
         }
     }

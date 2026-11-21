@@ -9,4 +9,10 @@ data class CheckPuzzleDto(@SerializedName("p_investigation") val investigationId
 data class NpcChatRequestDto(@SerializedName("investigation_id") val investigationId: Int, @SerializedName("suspect_id") val suspectId: Int, val text: String, @SerializedName("clue_id") val clueId: Int? = null)
 data class NpcChatResponseDto(val reply: String, @SerializedName("message_id") val messageId: Int)
 data class AccusationRequestDto(@SerializedName("investigation_id") val investigationId: Int, @SerializedName("suspect_id") val suspectId: Int)
-data class AccusationResponseDto(val id: Int, @SerializedName("is_correct") val isCorrect: Boolean, val explanation: String)
+data class AccusationResponseDto(
+    val id: Int,
+    @SerializedName("is_correct") val isCorrect: Boolean,
+    val explanation: String,
+    @SerializedName("suspect_id") val suspectId: Int? = null,
+    @SerializedName("culprit_id") val culpritId: Int? = null,
+)

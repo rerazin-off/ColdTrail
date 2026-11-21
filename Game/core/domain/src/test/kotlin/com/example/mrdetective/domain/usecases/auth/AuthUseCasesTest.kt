@@ -33,6 +33,13 @@ class SignInUseCaseTest {
             assertValidationError(useCase("  ", "123456"))
             assertTrue(repository.signInCalls.isEmpty())
         }
+
+    @Test
+    fun `некорректный адрес не отправляется на сервер`() =
+        runTest {
+            assertValidationError(useCase("user@localhost", "123456"))
+            assertTrue(repository.signInCalls.isEmpty())
+        }
 }
 
 class SignUpUseCaseTest {
@@ -59,6 +66,13 @@ class SignUpUseCaseTest {
         runTest {
             assertValidationError(useCase("", "123456"))
             assertValidationError(useCase("a@b.ru", " "))
+            assertTrue(repository.signUpCalls.isEmpty())
+        }
+
+    @Test
+    fun `короткий пароль не отправляется на сервер`() =
+        runTest {
+            assertValidationError(useCase("a@b.ru", "12345"))
             assertTrue(repository.signUpCalls.isEmpty())
         }
 }
