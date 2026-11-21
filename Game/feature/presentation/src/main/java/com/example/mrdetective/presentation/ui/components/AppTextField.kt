@@ -3,6 +3,7 @@ package com.example.mrdetective.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.mrdetective.presentation.ui.theme.AppShapes
@@ -31,6 +33,8 @@ fun AppTextField(
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val c = AppTheme.colors
     BasicTextField(
@@ -40,28 +44,27 @@ fun AppTextField(
         enabled = enabled,
         keyboardOptions = keyboardOptions,
         visualTransformation = visualTransformation,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.text),
+        textStyle = textStyle.copy(color = c.text),
         cursorBrush = SolidColor(c.accent),
         modifier = modifier.fillMaxWidth(),
         decorationBox = { innerTextField ->
-            Box(
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .heightIn(min = Sizes.controlHeight)
                         .background(c.surface, AppShapes.control)
                         .border(1.dp, c.outline, AppShapes.control)
-                        .padding(horizontal = Spacing.md),
-                contentAlignment = Alignment.CenterStart,
+                        .padding(start = Spacing.md, end = if (trailingContent == null) Spacing.md else Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = c.text2,
-                    )
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    if (value.isEmpty()) {
+                        Text(text = placeholder, style = textStyle, color = c.text2)
+                    }
+                    innerTextField()
                 }
-                innerTextField()
+                trailingContent?.invoke()
             }
         },
     )

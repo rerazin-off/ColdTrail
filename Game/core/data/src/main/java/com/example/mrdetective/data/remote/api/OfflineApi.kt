@@ -7,6 +7,7 @@ import com.example.mrdetective.data.remote.dto.ClueDto
 import com.example.mrdetective.data.remote.dto.InvestigationDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
+import com.example.mrdetective.data.remote.dto.MorseChallengeDto
 import com.example.mrdetective.data.remote.dto.NpcChatResponseDto
 import com.example.mrdetective.data.remote.dto.PuzzleDto
 import okhttp3.RequestBody
@@ -24,8 +25,14 @@ import retrofit2.http.Url
 
 interface OfflineApi {
     @POST("rest/v1/investigations?on_conflict=user_id,case_id")
-    @Headers("Prefer: resolution=merge-duplicates,return=representation")
+    @Headers("Prefer: resolution=ignore-duplicates,return=representation")
     suspend fun startInvestigation(@Body body: InvestigationInsertDto): List<InvestigationDto>
+
+    @GET("rest/v1/investigations?select=id,user_id,case_id,status,start_at")
+    suspend fun getInvestigations(
+        @Query("case_id") caseId: String?,
+        @Query("user_id") userId: String,
+    ): List<InvestigationDto>
 
     @GET("rest/v1/clues?select=*")
     suspend fun getCluesByCase(@Query("case_id") caseId: String): List<ClueDto>
@@ -49,6 +56,9 @@ interface OfflineApi {
     @POST("rest/v1/rpc/check_puzzle")
     suspend fun checkPuzzle(@Body body: CheckPuzzleDto): Boolean
 
+    @POST("rest/v1/rpc/get_morse_challenges")
+    suspend fun getMorseChallenges(@Body body: Map<String, Int>): List<MorseChallengeDto>
+
     @POST("functions/v1/npc-chat")
     suspend fun npcChat(@Body body: NpcChatRequestDto): NpcChatResponseDto
 
@@ -57,6 +67,9 @@ interface OfflineApi {
 
     @POST("functions/v1/submit-accusation")
     suspend fun submitAccusation(@Body body: AccusationRequestDto): AccusationResponseDto
+
+    @GET("functions/v1/submit-accusation")
+    suspend fun getAccusation(@Query("investigation_id") investigationId: Int): AccusationResponseDto
 
     @POST suspend fun postQueued(@Url url: String, @Header("Prefer") prefer: String?, @Body body: RequestBody): ResponseBody
     @DELETE

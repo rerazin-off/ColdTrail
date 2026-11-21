@@ -13,18 +13,10 @@ class SignInUseCase
             email: String,
             password: String,
         ): Result<String> {
-            if (email.isBlank()) {
-                return Result.failure(
-                    DomainError.Validation("Email не может быть пустым"),
-                )
+            validateAuthCredentials(email, password, register = false)?.let {
+                return Result.failure(DomainError.Validation(it))
             }
 
-            if (password.isBlank()) {
-                return Result.failure(
-                    DomainError.Validation("Пароль не может быть пустым"),
-                )
-            }
-
-            return repository.signIn(email, password)
+            return repository.signIn(email.trim(), password)
         }
     }

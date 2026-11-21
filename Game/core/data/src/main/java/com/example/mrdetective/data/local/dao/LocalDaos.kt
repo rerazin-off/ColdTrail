@@ -47,6 +47,12 @@ interface CaseDao {
 @Dao interface InvestigationDao {
     @Query("SELECT * FROM investigations WHERE id = :id LIMIT 1") suspend fun getInvestigation(id: Int): InvestigationEntity?
     @Query("SELECT * FROM investigations WHERE caseId = :caseId ORDER BY updatedAt DESC LIMIT 1") suspend fun getByCase(caseId: Int): InvestigationEntity?
+    @Query("SELECT * FROM investigations WHERE caseId = :caseId AND userId = :userId ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun getByCaseForUser(caseId: Int, userId: String): InvestigationEntity?
+
+    @Query("SELECT * FROM investigations WHERE userId = :userId ORDER BY updatedAt DESC, id DESC")
+    suspend fun getForUser(userId: String): List<InvestigationEntity>
+
     @Query("SELECT * FROM investigations ORDER BY updatedAt DESC") suspend fun getAllInvestigations(): List<InvestigationEntity>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertInvestigation(item: InvestigationEntity)
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun collectClue(item: CollectedClueEntity): Long
@@ -64,9 +70,16 @@ interface CaseDao {
     fun observeHistory(caseId: Int, suspectId: Int): Flow<List<DialogueMessageEntity>>
     @Query("SELECT * FROM dialogue_messages WHERE caseId = :caseId AND suspectId = :suspectId ORDER BY createdAt, id")
     suspend fun getHistory(caseId: Int, suspectId: Int): List<DialogueMessageEntity>
+
+    @Query("SELECT * FROM dialogue_messages WHERE investigationId = :investigationId AND suspectId = :suspectId ORDER BY createdAt, id")
+    suspend fun getInvestigationHistory(investigationId: Int, suspectId: Int): List<DialogueMessageEntity>
+
+    @Query("DELETE FROM dialogue_messages WHERE investigationId = :investigationId AND suspectId = :suspectId AND id IN (:ids) AND synced = 1")
+    suspend fun removeProvisionalMessages(investigationId: Int, suspectId: Int, ids: List<Long>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(item: DialogueMessageEntity)
     @Query("SELECT * FROM dialogue_messages WHERE id = :id LIMIT 1") suspend fun getById(id: Long): DialogueMessageEntity?
-    @Query("UPDATE dialogue_messages SET synced = 1 WHERE id = :id") suspend fun markSynced(id: Long)
+    @Query("DELETE FROM dialogue_messages WHERE id = :id")
+    suspend fun delete(id: Long)
     @Query("UPDATE dialogue_messages SET investigationId = :newId WHERE investigationId = :oldId") suspend fun remapInvestigation(oldId: Int, newId: Int)
 }
 

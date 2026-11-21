@@ -9,6 +9,7 @@ import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.sync.SyncScheduler
 import com.example.mrdetective.domain.models.InvestigationProgress
 import com.example.mrdetective.domain.models.DomainError
+import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,6 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class ProgressRepositoryImpl @Inject constructor(
     private val db: AppDatabase,
+    private val auth: AuthRepository,
     private val progress: InvestigationDao,
     private val outbox: SyncQueueDao,
     private val gson: Gson,
@@ -25,7 +27,8 @@ class ProgressRepositoryImpl @Inject constructor(
 ) : ProgressRepository {
     override suspend fun getProgress(caseId: Int): Result<InvestigationProgress> {
         return try {
-            val investigation = progress.getByCase(caseId)
+            val userId = auth.currentUser() ?: return Result.failure(DomainError.Unauthorized())
+            val investigation = progress.getByCaseForUser(caseId, userId)
                 ?: return Result.failure(DomainError.NotFound("Расследование ещё не начато"))
             Result.success(InvestigationProgress(
                 id = investigation.id, userId = investigation.userId, caseId = caseId,

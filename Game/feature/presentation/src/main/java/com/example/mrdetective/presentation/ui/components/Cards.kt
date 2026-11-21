@@ -1,19 +1,22 @@
 package com.example.mrdetective.presentation.ui.components
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
@@ -22,6 +25,8 @@ import com.example.mrdetective.presentation.ui.theme.Spacing
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
+    outlined: Boolean = false,
+    padding: androidx.compose.ui.unit.Dp = Spacing.md,
     content: @Composable () -> Unit,
 ) {
     val c = AppTheme.colors
@@ -30,8 +35,9 @@ fun AppCard(
         shape = AppShapes.card,
         color = c.surface,
         contentColor = c.text,
+        border = if (outlined) BorderStroke(1.dp, c.outline) else null,
     ) {
-        Box(modifier = Modifier.padding(Spacing.md)) { content() }
+        Box(modifier = Modifier.padding(padding)) { content() }
     }
 }
 
@@ -58,21 +64,28 @@ fun SuspectCard(
     description: String,
     onInterrogate: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     avatar: @Composable () -> Unit = { AvatarPlaceholder(name) },
 ) {
-    AppCard(modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+    AppCard(modifier, outlined = true, padding = Spacing.sm) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.weight(0.34f), contentAlignment = Alignment.Center) {
                 avatar()
-                Column {
-                    Text(name, style = MaterialTheme.typography.titleMedium)
-                    Text(description, style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.text2)
-                }
             }
-            AppButton(text = "Допросить", onClick = onInterrogate, style = AppButtonStyle.Accent)
+            Column(Modifier.weight(0.66f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(name, style = MaterialTheme.typography.headlineMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppTheme.colors.text2,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                AppButton("Открыть диалог", onInterrogate, enabled = enabled, compact = true)
+            }
         }
     }
 }
@@ -101,10 +114,10 @@ fun ClueCard(
 private fun AvatarPlaceholder(name: String) {
     val c = AppTheme.colors
     Box(
-        modifier = Modifier.size(56.dp).background(c.surface2, CircleShape),
+        modifier = Modifier.fillMaxWidth().height(118.dp).background(c.primary, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(name.take(1), style = MaterialTheme.typography.titleMedium, color = c.text)
+        Text(name.take(1), style = MaterialTheme.typography.titleMedium, color = c.bg)
     }
 }
 

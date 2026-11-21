@@ -10,13 +10,13 @@ class LoadInventoryUseCase
     constructor(
         private val repository: InventoryRepository,
     ) {
-        suspend operator fun invoke(caseId: Int): Result<List<Clue>> {
-            if (caseId <= 0) {
+        suspend operator fun invoke(investigationId: Int): Result<List<Clue>> {
+            if (investigationId == 0) {
                 return Result.failure(
-                    DomainError.Validation("Некорректный ID дела"),
+                    DomainError.Validation("Некорректный ID расследования"),
                 )
             }
 
-            return repository.getInventory(caseId)
+            return repository.getInventory(investigationId)
         }
     }

@@ -1,18 +1,16 @@
 package com.example.mrdetective.data.repository
 
-import android.content.Context
 import com.example.mrdetective.data.local.dao.InvestigationDao
-import com.example.mrdetective.data.local.dao.SyncQueueDao
-import com.example.mrdetective.data.local.entity.SyncQueueEntity
+import com.example.mrdetective.data.local.entity.InvestigationEntity
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.apiCall
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.dto.AccusationRequestDto
-import com.example.mrdetective.data.sync.SyncScheduler
+import com.example.mrdetective.data.remote.dto.AccusationResponseDto
 import com.example.mrdetective.domain.models.Accusation
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AccusationRepository
-import com.google.gson.Gson
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,25 +18,48 @@ import javax.inject.Singleton
 class AccusationRepositoryImpl @Inject constructor(
     private val api: OfflineApi,
     private val progress: InvestigationDao,
-    private val outbox: SyncQueueDao,
+    private val auth: AuthRepository,
     private val connectivity: ConnectivityChecker,
-    private val gson: Gson,
-    @ApplicationContext private val context: Context,
 ) : AccusationRepository {
-    override suspend fun submitAccusation(caseId: Int, suspectId: Int, clueIds: List<Int>): Result<Accusation> = try {
-        val investigation = progress.getByCase(caseId) ?: throw DomainError.NotFound("Расследование не начато")
-        // Server contract accepts investigation_id + suspect_id. clueIds are not part of the published Edge Function payload.
-        val request = AccusationRequestDto(investigation.id, suspectId)
-        if (connectivity.isNetworkAvailable()) {
-            val response = api.submitAccusation(request)
-            Result.success(Accusation(response.id, caseId, suspectId, response.isCorrect, response.explanation))
-        } else {
-            outbox.enqueue(SyncQueueEntity(
-                entityType = "accusation", entityId = investigation.id.toString(),
-                operation = "submit", payload = gson.toJson(request),
-            ))
-            SyncScheduler.enqueue(context)
-            Result.failure(DomainError.Network(IllegalStateException("Обвинение сохранено и будет отправлено после восстановления сети. Результат пока неизвестен.")))
+    override suspend fun getResult(caseId: Int): Result<Accusation> = apiCall {
+        val investigation = syncedInvestigation(caseId)
+        val response = api.getAccusation(investigation.id)
+        saveResult(investigation, response, response.suspectId ?: 0)
+    }
+
+    override suspend fun submitAccusation(caseId: Int, suspectId: Int, clueIds: List<Int>): Result<Accusation> = apiCall {
+        val investigation = syncedInvestigation(caseId)
+        val response = api.submitAccusation(AccusationRequestDto(investigation.id, suspectId))
+        saveResult(investigation, response, suspectId)
+    }
+
+    private suspend fun syncedInvestigation(caseId: Int): InvestigationEntity {
+        val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
+        val investigation = progress.getByCaseForUser(caseId, userId)
+            ?: throw DomainError.NotFound("Сначала начните расследование.")
+        if (investigation.id <= 0 || !connectivity.isNetworkAvailable()) {
+            throw DomainError.Network()
         }
-    } catch (error: Throwable) { Result.failure(error) }
+        return investigation
+    }
+
+    private suspend fun saveResult(
+        investigation: InvestigationEntity,
+        response: AccusationResponseDto,
+        selectedSuspectId: Int,
+    ): Accusation {
+        val status = if (response.isCorrect) "solved" else "failed"
+        progress.upsertInvestigation(investigation.copy(status = status, updatedAt = System.currentTimeMillis()))
+        val suspectId = response.suspectId ?: selectedSuspectId
+        return Accusation(
+            id = response.id,
+            caseId = investigation.caseId,
+            suspectId = suspectId,
+            isCorrect = response.isCorrect,
+            explanation = response.explanation,
+            culpritId = response.culpritId ?: suspectId.takeIf { response.isCorrect },
+            selectedTruth = response.selectedTruth,
+            culpritTruth = response.culpritTruth,
+        )
+    }
 }

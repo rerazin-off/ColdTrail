@@ -13,7 +13,9 @@ import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
 import com.example.mrdetective.data.sync.SyncScheduler
 import com.example.mrdetective.domain.models.DialogueMessage
 import com.example.mrdetective.domain.models.DomainError
+import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.DialogueRepository
+import kotlin.coroutines.cancellation.CancellationException
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -22,6 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class DialogueRepositoryImpl @Inject constructor(
     private val api: OfflineApi,
+    private val auth: AuthRepository,
     private val progress: InvestigationDao,
     private val dialogue: DialogueDao,
     private val outbox: SyncQueueDao,
@@ -31,33 +34,56 @@ class DialogueRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : DialogueRepository {
     override suspend fun getHistory(caseId: Int, suspectId: Int): Result<List<DialogueMessage>> = try {
-        val cached = dialogue.getHistory(caseId, suspectId)
-        val investigation = progress.getByCase(caseId)
-        if (connectivity.isNetworkAvailable() && investigation != null) {
-            val remote = api.getDialogue("eq.${investigation.id}", "eq.$suspectId")
-            remote.forEach { row ->
-                val id = (row["id"] as? Number)?.toLong() ?: return@forEach
-                dialogue.insert(DialogueMessageEntity(
-                    id = id, investigationId = investigation.id, caseId = caseId, suspectId = suspectId,
-                    author = row["author"]?.toString() ?: "player", text = row["text"]?.toString() ?: "",
-                    createdAt = row["create_at"]?.toString() ?: "", synced = true,
-                ))
+        val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
+        val investigation = progress.getByCaseForUser(caseId, userId)
+            ?: throw DomainError.NotFound("Сначала начните расследование")
+        val cached = dialogue.getInvestigationHistory(investigation.id, suspectId)
+        if (investigation.id > 0 && connectivity.isNetworkAvailable()) {
+            try {
+                val remote = api.getDialogue("eq.${investigation.id}", "eq.$suspectId").mapNotNull { row ->
+                    val id = (row["id"] as? Number)?.toLong() ?: return@mapNotNull null
+                    DialogueMessageEntity(
+                        id = id, investigationId = investigation.id, caseId = caseId, suspectId = suspectId,
+                        author = row["author"]?.toString() ?: "player", text = row["text"]?.toString().orEmpty(),
+                        createdAt = row["create_at"]?.toString().orEmpty(), synced = true,
+                    )
+                }
+                db.withWriteTransaction {
+                    remote.forEach { dialogue.insert(it) }
+                    val replyIds = remote.filter { it.author == "suspect" }.mapTo(mutableSetOf()) { it.id }
+                    val playerTexts = remote.filter { it.author == "player" }.mapTo(mutableSetOf()) { it.text }
+                    val provisional = cached.filter {
+                        it.id < 0 && -it.id in replyIds && it.author == "player" && it.text in playerTexts
+                    }.map { it.id }
+                    if (provisional.isNotEmpty()) {
+                        dialogue.removeProvisionalMessages(investigation.id, suspectId, provisional)
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (cached.isEmpty()) throw error
             }
         }
-        Result.success(dialogue.getHistory(caseId, suspectId).map { it.toDomain() }.ifEmpty { cached.map { it.toDomain() } })
-    } catch (error: Throwable) { Result.failure(error) }
+        Result.success(dialogue.getInvestigationHistory(investigation.id, suspectId).map { it.toDomain() })
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
 
     override suspend fun sendMessage(caseId: Int, suspectId: Int, message: String): Result<DialogueMessage> =
         send(caseId, suspectId, message, null)
 
-    override suspend fun presentClue(caseId: Int, suspectId: Int, clueId: Int): Result<DialogueMessage> =
-        send(caseId, suspectId, "Предъявляю улику №$clueId", clueId)
+    override suspend fun presentClue(caseId: Int, suspectId: Int, clueId: Int, message: String): Result<DialogueMessage> =
+        send(caseId, suspectId, message, clueId)
 
     private suspend fun send(caseId: Int, suspectId: Int, text: String, clueId: Int?): Result<DialogueMessage> = try {
         require(text.isNotBlank() && text.length <= 1000)
-        val investigation = progress.getByCase(caseId) ?: throw DomainError.NotFound("Сначала начните расследование")
+        val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
+        val investigation = progress.getByCaseForUser(caseId, userId) ?: throw DomainError.NotFound("Сначала начните расследование")
         val request = NpcChatRequestDto(investigation.id, suspectId, text, clueId)
-        if (connectivity.isNetworkAvailable()) {
+        if (investigation.id > 0 && connectivity.isNetworkAvailable()) {
             try {
                 val reply = api.npcChat(request)
                 val now = System.currentTimeMillis().toString()
@@ -65,11 +91,17 @@ class DialogueRepositoryImpl @Inject constructor(
                 val suspect = DialogueMessageEntity(reply.messageId.toLong(), investigation.id, caseId, suspectId, "suspect", reply.reply, now, true)
                 db.withWriteTransaction { dialogue.insert(player); dialogue.insert(suspect) }
                 Result.success(suspect.toDomain())
+            } catch (error: CancellationException) {
+                throw error
             } catch (networkError: Exception) {
                 savePending(investigation.id, caseId, suspectId, text, request)
             }
         } else savePending(investigation.id, caseId, suspectId, text, request)
-    } catch (error: Throwable) { Result.failure(error) }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
 
     private suspend fun savePending(investigationId: Int, caseId: Int, suspectId: Int, text: String, request: NpcChatRequestDto): Result<DialogueMessage> {
         val localId = -System.nanoTime().coerceAtLeast(1L)

@@ -1,6 +1,7 @@
 package com.example.mrdetective.data.sync
 
 import android.content.Context
+import androidx.room3.withWriteTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.mrdetective.data.local.AppDatabase
@@ -15,6 +16,7 @@ import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.network.SupabaseConfig
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
+import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -49,8 +51,9 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
         val restApi = entry.restApi()
         val userId = entry.settings().userId.first()
         try {
+            val deferredOps = mutableSetOf<Long>()
             while (true) {
-                val op = db.syncQueueDao().pending().firstOrNull() ?: break
+                val op = db.syncQueueDao().pending().firstOrNull { it.id !in deferredOps } ?: break
                 try {
                     when (op.entityType) {
                         "collected_clue" -> api.postQueued(
@@ -86,16 +89,18 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         }
 
                         "investigation" -> {
-                            val response = api.postQueued(
-                                SupabaseConfig.baseUrl + "rest/v1/investigations?on_conflict=user_id,case_id",
-                                "resolution=merge-duplicates,return=representation",
-                                op.payload.toRequestBody("application/json".toMediaType()),
-                            )
-                            val rows = JSONArray(response.string())
-                            if (rows.length() > 0) {
-                                val serverId = rows.getJSONObject(0).optInt("id", 0)
-                                val localId = op.entityId.toIntOrNull()
-                                if (serverId > 0 && localId != null) {
+                            val localId = checkNotNull(op.entityId.toIntOrNull())
+                            val local = db.investigationDao().getInvestigation(localId)
+                            if (local != null) {
+                                if (local.userId != userId) {
+                                    deferredOps.add(op.id)
+                                    continue
+                                }
+                                val server = api.startInvestigation(InvestigationInsertDto(local.caseId)).firstOrNull()
+                                    ?: api.getInvestigations("eq.${local.caseId}", "eq.${local.userId}").firstOrNull()
+                                    ?: error("Сервер не вернул расследование")
+                                val serverId = server.id
+                                db.withWriteTransaction {
                                     db.investigationDao().remapInvestigation(localId, serverId)
                                     db.investigationDao().remapCollected(localId, serverId)
                                     db.investigationDao().remapSolved(localId, serverId)
@@ -109,24 +114,27 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
 
                         "dialogue_message" -> {
                             val request = GsonHolder.gson.fromJson(op.payload, NpcChatRequestDto::class.java)
-                            val reply = api.npcChat(request)
-                            val localId = op.entityId.toLongOrNull()
-                            if (localId != null) {
-                                val playerMessage = db.dialogueDao().getById(localId)
-                                if (playerMessage != null) {
-                                    db.dialogueDao().markSynced(localId)
+                            val localId = checkNotNull(op.entityId.toLongOrNull())
+                            val player = db.dialogueDao().getById(localId)
+                            if (player != null) {
+                                val investigation = db.investigationDao().getInvestigation(player.investigationId)
+                                if (investigation?.userId != userId || player.investigationId <= 0) {
+                                    deferredOps.add(op.id)
+                                    continue
+                                }
+                                val reply = api.npcChat(request.copy(investigationId = player.investigationId))
+                                db.withWriteTransaction {
+                                    db.dialogueDao().delete(localId)
+                                    db.dialogueDao().insert(player.copy(id = -reply.messageId.toLong(), synced = true))
                                     db.dialogueDao().insert(
-                                        DialogueMessageEntity(
+                                        player.copy(
                                             id = reply.messageId.toLong(),
-                                            investigationId = request.investigationId,
-                                            caseId = playerMessage.caseId,
-                                            suspectId = request.suspectId,
                                             author = "suspect",
                                             text = reply.reply,
-                                            createdAt = System.currentTimeMillis().toString(),
                                             synced = true,
                                         )
                                     )
+                                    db.syncQueueDao().remove(op.id)
                                 }
                             }
                         }
@@ -193,14 +201,14 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                     throw e
                 }
             }
-            refreshLocalSnapshot(db, api, restApi)
+            if (userId != null) refreshLocalSnapshot(db, api, restApi, userId)
             Result.success()
         } catch (_: Exception) {
             Result.retry()
         }
     }
 
-    private suspend fun refreshLocalSnapshot(db: AppDatabase, api: OfflineApi, restApi: SupabaseRestApi) {
+    private suspend fun refreshLocalSnapshot(db: AppDatabase, api: OfflineApi, restApi: SupabaseRestApi, userId: String) {
         val cases = restApi.getCases()
         db.caseDao().upsertAll(cases.map { it.toEntity() })
         for (case in cases) {
@@ -219,7 +227,7 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                 )
             })
 
-            val investigation = db.investigationDao().getByCase(case.id) ?: continue
+            val investigation = db.investigationDao().getByCaseForUser(case.id, userId) ?: continue
             api.getCollectedClues("eq.${investigation.id}").forEach { row ->
                 val clueId = (row["clue_id"] as? Number)?.toInt() ?: return@forEach
                 val collectedAt = row["collected_at"]?.toString() ?: System.currentTimeMillis().toString()

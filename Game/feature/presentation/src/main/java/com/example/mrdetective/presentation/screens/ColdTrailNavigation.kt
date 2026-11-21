@@ -1,5 +1,9 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,12 +28,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -38,8 +46,6 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mrdetective.presentation.ui.components.AppButton
-import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 
 
 
@@ -55,7 +61,6 @@ fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) {
     if (state.signedIn) {
         val viewModel = cases()
         DisposableEffect(viewModel) {
-            viewModel.reload()
             onDispose { viewModel.reset() }
         }
         SignedInNavigation(viewModel, state, auth::signOut)
@@ -77,12 +82,25 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route
+    val showingInventory = entry?.destination?.hasRoute<InventoryRoute>() == true
+    val showingMorse = entry?.destination?.hasRoute<MorseRoute>() == true
+    val caseId = entry?.let { current ->
+        when {
+            current.destination.hasRoute<InvestigationRoute>() -> current.toRoute<InvestigationRoute>().caseId
+            showingInventory -> current.toRoute<InventoryRoute>().caseId
+            showingMorse -> current.toRoute<MorseRoute>().caseId
+            else -> null
+        }
+    }
+    LaunchedEffect(route, viewModel) {
+        if (route == Tab.Cases.route) viewModel.reload()
+    }
     val colors = AppTheme.colors
     Scaffold(
         containerColor = colors.bg,
         contentColor = colors.text,
         bottomBar = {
-            if (Tab.entries.any { it.route == route }) {
+            if (caseId != null || Tab.entries.any { it.route == route }) {
                 Surface(
                     modifier = Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
                     color = colors.surface,
@@ -90,29 +108,24 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                     border = BorderStroke(1.dp, colors.outline),
                 ) {
                     Row(Modifier.fillMaxWidth().padding(4.dp).selectableGroup()) {
-                        Tab.entries.forEach { tab ->
-                            val selected = route == tab.route
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = AppShapes.control,
-                                color = if (selected) colors.surface2 else colors.surface,
-                            ) {
-                                Column(
-                                    modifier = Modifier.selectable(selected, role = Role.Tab) {
-                                        if (!selected) {
-                                            navController.navigate(tab.route) {
-                                                popUpTo(Tab.Cases.route) { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
+                        if (caseId != null) {
+                            NavigationItem("Дела", R.drawable.ic_cases, !showingInventory, Modifier.weight(1f)) {
+                                if (showingInventory) navController.popBackStack<InvestigationRoute>(inclusive = false)
+                            }
+                            NavigationItem("Инвентарь", R.drawable.ic_inventory, showingInventory, Modifier.weight(1f)) {
+                                if (!showingInventory) navController.navigate(InventoryRoute(caseId)) { launchSingleTop = true }
+                            }
+                        } else {
+                            Tab.entries.forEach { tab ->
+                                val selected = route == tab.route
+                                NavigationItem(tab.label, tab.icon, selected, Modifier.weight(1f)) {
+                                    if (!selected) {
+                                        navController.navigate(tab.route) {
+                                            popUpTo(Tab.Cases.route) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                    }.heightIn(min = 48.dp).padding(4.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Icon(painterResource(tab.icon), null, Modifier.size(16.dp),
-                                        tint = if (selected) colors.text else colors.text2)
-                                    Text(tab.label, style = MaterialTheme.typography.bodySmall)
+                                    }
                                 }
                             }
                         }
@@ -121,20 +134,80 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = Tab.Cases.route, modifier = Modifier.padding(padding)) {
-            composable(Tab.Cases.route) { CasesRoute(viewModel) }
-            composable(Tab.Profile.route) {
-                Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 28.dp)) {
-                    Text("Профиль", style = MaterialTheme.typography.displayLarge, modifier = Modifier.padding(bottom = 16.dp))
-                    auth.message?.let { Text(it, color = colors.error) }
-                    AppButton(
-                        text = if (auth.busy) "Выходим…" else "Выйти из аккаунта",
-                        onClick = onSignOut,
-                        enabled = !auth.busy,
-                        style = AppButtonStyle.Outlined,
-                    )
-                }
+        NavHost(
+            navController,
+            startDestination = Tab.Cases.route,
+            modifier = Modifier.padding(padding),
+            enterTransition = {
+                slideInHorizontally(tween(800)) { width -> width }
+            },
+            exitTransition = {
+                slideOutHorizontally(tween(800)) { width -> -width }
+            },
+            popEnterTransition = {
+                slideInHorizontally(tween(800)) { width -> -width }
+            },
+            popExitTransition = {
+                slideOutHorizontally(tween(800)) { width -> width }
+            },
+        ) {
+            composable(Tab.Cases.route) {
+                CasesRoute(viewModel) { navController.navigate(InvestigationRoute(it)) }
             }
+            composable<InvestigationRoute> {
+                InvestigationScreen(
+                    viewModel = hiltViewModel(),
+                    onBack = { navController.popBackStack() },
+                    onStatusChanged = viewModel::updateCaseStatus,
+                    onMorse = { navController.navigate(MorseRoute(it)) },
+                    onAccusation = { navController.navigate(AccusationRoute(it)) },
+                    onInterrogate = { caseId, suspectId -> navController.navigate(InterrogationRoute(caseId, suspectId)) },
+                )
+            }
+            composable<InventoryRoute> {
+                InventoryScreen(hiltViewModel()) { navController.popBackStack() }
+            }
+            composable<MorseRoute> {
+                MorseScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
+            }
+            composable<DeviceSettingsRoute> {
+                DeviceSettingsScreen(hiltViewModel()) { navController.popBackStack() }
+            }
+            composable<AccusationRoute> {
+                AccusationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus)
+            }
+            composable<InterrogationRoute> {
+                InterrogationScreen(hiltViewModel()) { navController.popBackStack() }
+            }
+            composable(Tab.Profile.route) {
+                ProfileScreen(
+                    hiltViewModel(),
+                    auth,
+                    onBack = { navController.popBackStack() },
+                    onSettings = { navController.navigate(DeviceSettingsRoute) { launchSingleTop = true } },
+                    onSignOut = onSignOut,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavigationItem(label: String, icon: Int, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    Surface(
+        modifier = modifier,
+        shape = AppShapes.control,
+        color = if (selected) colors.surface2 else colors.surface,
+    ) {
+        Column(
+            modifier = Modifier.selectable(selected, role = Role.Tab, onClick = onClick)
+                .heightIn(min = 48.dp).padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(painterResource(icon), null, Modifier.size(16.dp), tint = if (selected) colors.text else colors.text2)
+            Text(label, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

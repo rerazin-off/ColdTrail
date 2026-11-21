@@ -14,17 +14,22 @@ class PresentClueToSuspectUseCase
             caseId: Int,
             suspectId: Int,
             clueId: Int,
+            message: String = "Предъявляю улику №$clueId",
         ): Result<DialogueMessage> {
             if (caseId <= 0 || suspectId <= 0 || clueId <= 0) {
                 return Result.failure(
                     DomainError.Validation("Некорректные идентификаторы"),
                 )
             }
+            if (message.isBlank() || message.length > 1000) {
+                return Result.failure(DomainError.Validation("Некорректный текст сообщения"))
+            }
 
             return repository.presentClue(
                 caseId,
                 suspectId,
                 clueId,
+                message,
             )
         }
     }

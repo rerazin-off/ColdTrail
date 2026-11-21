@@ -1,5 +1,6 @@
 package com.example.mrdetective.domain.fakes
 
+import com.example.mrdetective.domain.hardware.MorseSignalPlayer
 import com.example.mrdetective.domain.models.Accusation
 import com.example.mrdetective.domain.models.Case
 import com.example.mrdetective.domain.models.Clue
@@ -21,7 +22,6 @@ import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.repositories.PuzzleRepository
 import com.example.mrdetective.domain.repositories.SceneRepository
 import com.example.mrdetective.domain.repositories.SuspectRepository
-import com.example.mrdetective.domain.usecases.puzzles.MorseSignalPlayer
 
 class FakeAuthRepository : AuthRepository {
     var signInResult: Result<String> = Result.success("user-1")
@@ -53,6 +53,8 @@ class FakeAuthRepository : AuthRepository {
 class FakeAccusationRepository : AccusationRepository {
     var result: Result<Accusation> = Result.success(TestData.accusation)
     val calls = mutableListOf<List<Any?>>()
+
+    override suspend fun getResult(caseId: Int): Result<Accusation> = Result.success(TestData.accusation)
 
     override suspend fun submitAccusation(
         caseId: Int,
@@ -131,6 +133,7 @@ class FakeDialogueRepository : DialogueRepository {
         caseId: Int,
         suspectId: Int,
         clueId: Int,
+        message: String,
     ): Result<DialogueMessage> {
         presentCalls += listOf(caseId, suspectId, clueId)
         return presentResult
@@ -269,6 +272,10 @@ class FakeSuspectRepository : SuspectRepository {
 }
 
 class FakeMorseSignalPlayer : MorseSignalPlayer {
+    var available = true
+
+    override fun isAvailable(): Boolean = available
+
     var error: Throwable? = null
     val played = mutableListOf<String>()
 

@@ -1,4 +1,4 @@
-﻿package com.example.mrdetective.presentation.ui
+package com.example.mrdetective.presentation.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,6 +6,7 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.usecases.auth.SignInUseCase
 import com.example.mrdetective.domain.usecases.auth.SignUpUseCase
+import com.example.mrdetective.domain.usecases.auth.validateAuthCredentials
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -54,8 +55,8 @@ class AuthViewModel @Inject constructor(
     fun submit(email: String, password: String, register: Boolean) {
         if (state.value.busy || state.value.signedIn || state.value.checkingSession) return
         val address = email.trim()
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()) {
-            mutableState.value = state.value.copy(message = "Введите корректный адрес почты.", confirmationRequired = false)
+        validateAuthCredentials(address, password, register)?.let { validationError ->
+            mutableState.value = state.value.copy(message = validationError, confirmationRequired = false)
             return
         }
         mutableState.value = state.value.copy(busy = true, message = null, confirmationRequired = false)
@@ -70,8 +71,6 @@ class AuthViewModel @Inject constructor(
             } catch (error: Exception) {
                 val message = when {
                     error is DomainError.Network -> "Не удалось связаться с сервером. Проверьте подключение."
-                    password.isBlank() -> "Введите пароль."
-                    register && password.length < 6 -> "Пароль должен содержать не менее 6 символов."
                     error is DomainError.Validation || error is DomainError.Unauthorized ->
                         if (register) "Не удалось создать аккаунт. Проверьте почту и пароль."
                         else "Проверьте почту, пароль и подтверждение адреса."

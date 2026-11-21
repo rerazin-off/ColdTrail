@@ -13,7 +13,7 @@ export function calculateAccusation(
 
   const explanation = isCorrect
     ? `Верно! ${realSuspectName} — преступник. ${truth}`
-    : `Это ошибка. Преступником был ${realSuspectName}.`;
+    : `Это ошибка. Преступником был ${realSuspectName}. ${truth}`;
 
   return {
     isCorrect,
