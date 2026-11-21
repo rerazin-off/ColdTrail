@@ -27,10 +27,12 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,13 +49,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.mrdetective.domain.usecases.puzzles.DemoMorsePuzzle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mrdetective.domain.models.Suspect
-import com.example.mrdetective.domain.usecases.puzzles.MorseCodeCheck
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.AppTextField
+import com.example.mrdetective.presentation.ui.components.MorseAlphabetPanel
 import com.example.mrdetective.presentation.ui.components.ClueCard
 import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
@@ -71,13 +75,26 @@ private fun CaseToolHeader(title: String, onBack: () -> Unit) {
 }
 
 @Composable
-internal fun ProfileScreen(auth: AuthUiState, onBack: () -> Unit, onSignOut: () -> Unit) {
+internal fun ProfileScreen(
+    viewModel: ProfileStatisticsViewModel,
+    auth: AuthUiState,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    onSignOut: () -> Unit,
+) {
+    val statisticsState by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
     val colors = AppTheme.colors
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.fillMaxWidth()) { CaseToolHeader("Профиль", onBack) }
+        Box(Modifier.fillMaxWidth()) {
+            CaseToolHeader("Профиль", onBack)
+            IconButton(onSettings, Modifier.align(Alignment.CenterEnd)) {
+                Icon(painterResource(R.drawable.ic_settings), "Настройки", tint = colors.text)
+            }
+        }
         Spacer(Modifier.height(42.dp))
         Surface(
             modifier = Modifier.size(120.dp),
@@ -93,15 +110,20 @@ internal fun ProfileScreen(auth: AuthUiState, onBack: () -> Unit, onSignOut: () 
         Text("Следователь", style = MaterialTheme.typography.headlineLarge)
         Text("Ваш прогресс в расследованиях", style = MaterialTheme.typography.bodySmall, color = colors.text2)
         Spacer(Modifier.height(32.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("3" to "Всего дел", "2" to "Активных", "1" to "Раскрыто").forEach { (value, label) ->
-                AppCard(Modifier.weight(1f), outlined = true, padding = 8.dp) {
-                    Column(
-                        Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(value, color = colors.accent, style = MaterialTheme.typography.headlineMedium)
-                        Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+        when (val current = statisticsState) {
+            ProfileStatisticsState.Loading -> CircularProgressIndicator(color = colors.accent)
+            ProfileStatisticsState.Error -> ScreenRetry("Не удалось загрузить статистику.", viewModel::load)
+            is ProfileStatisticsState.Content -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val stats = current.statistics
+                listOf(stats.total to "Всего дел", stats.active to "Активных", stats.solved to "Раскрыто").forEach { (value, label) ->
+                    AppCard(Modifier.weight(1f), outlined = true, padding = 8.dp) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(value.toString(), color = colors.accent, style = MaterialTheme.typography.headlineMedium)
+                            Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                        }
                     }
                 }
             }
@@ -191,96 +213,208 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
 }
 
 @Composable
-internal fun MorseScreen(onBack: () -> Unit) {
+internal fun MorseScreen(
+    viewModel: VibrationViewModel,
+    game: MorseChallengeViewModel,
+    onBack: () -> Unit,
+) {
+    val puzzle by game.state.collectAsStateWithLifecycle()
+    val answer by game.answer.collectAsStateWithLifecycle()
+    val challenge = puzzle.challenge
+    val vibration by viewModel.state.collectAsStateWithLifecycle()
+    var showVibrationOptions by rememberSaveable { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { viewModel.stopPlayback() }
+    LaunchedEffect(challenge?.id, vibration.loading, vibration.enabled, vibration.settingsError) {
+        if (challenge != null && !vibration.loading && vibration.enabled == null && vibration.settingsError == null) {
+            showVibrationOptions = true
+        }
+    }
     val colors = AppTheme.colors
-    var code by rememberSaveable { mutableStateOf("") }
-    var status by rememberSaveable { mutableStateOf<MorseCodeCheck?>(null) }
-    val solved = status == MorseCodeCheck.Correct
-    val border = when (status) {
-        MorseCodeCheck.Incorrect, MorseCodeCheck.Incomplete -> colors.error
-        MorseCodeCheck.Correct -> colors.success
-        null -> colors.outline
+    val solved = puzzle.solved
+    val border = when {
+        solved -> colors.success
+        puzzle.answerError != null -> colors.error
+        else -> colors.outline
     }
 
     fun checkCode() {
-        if (!solved) status = DemoMorsePuzzle.check(code)
+        viewModel.stopPlayback()
+        game.submit()
     }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CaseToolHeader("Головоломка", onBack)
-        Text("Восстановите код", style = MaterialTheme.typography.displayLarge)
-        Text("Расшифруйте четыре цифры сигнала Морзе.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
-        Spacer(Modifier.height(12.dp))
-        AppCard(outlined = true) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Код доступа", style = MaterialTheme.typography.bodySmall, color = colors.text2)
-                Text(DemoMorsePuzzle.Signal, style = MaterialTheme.typography.headlineMedium)
-                Text("Каждая цифра — пять знаков. Для 1–5 сначала идут точки, для 6–0 — тире.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    repeat(DemoMorsePuzzle.CodeLength) { index ->
-                        Surface(
-                            modifier = Modifier.weight(1f).height(58.dp),
-                            shape = AppShapes.control,
-                            color = if (solved) colors.success else colors.surface2,
-                            contentColor = if (solved) colors.bg else colors.text,
-                            border = BorderStroke(1.dp, border),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(code.getOrNull(index)?.toString() ?: "–", style = MaterialTheme.typography.headlineMedium)
+        Box(Modifier.fillMaxWidth()) {
+            CaseToolHeader("Головоломка", onBack)
+            IconButton(
+                onClick = {
+                    viewModel.stopPlayback()
+                    showVibrationOptions = true
+                },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                Icon(painterResource(R.drawable.ic_help), "Настройки вибрации", tint = colors.text)
+            }
+        }
+        when {
+            puzzle.loading -> CircularProgressIndicator(color = colors.accent)
+            puzzle.loadError != null -> ScreenRetry(puzzle.loadError.orEmpty(), game::load)
+            challenge == null -> AppCard(outlined = true) {
+                Text("Для этого дела больше нет доступных загадок Морзе.")
+            }
+            else -> {
+                Text(challenge.title, style = MaterialTheme.typography.displayLarge)
+                Text("Расшифруйте сигнал Морзе.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                Spacer(Modifier.height(12.dp))
+                AppCard(outlined = true) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        challenge.hint?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                        }
+                        when {
+                            vibration.loading -> Text("Загружаем настройку сигнала…", style = MaterialTheme.typography.bodySmall)
+                            vibration.usesVibration -> AppButton(
+                                if (vibration.playing) "Проигрываем сигнал…" else "Проиграть код",
+                                { viewModel.play(challenge.signal) },
+                                style = AppButtonStyle.Outlined,
+                                enabled = !vibration.playing && !vibration.saving && !solved && !puzzle.submitting,
+                            )
+                            vibration.enabled != null || vibration.settingsError != null -> Text(
+                                challenge.signal.replace(" ", " / "),
+                                style = MaterialTheme.typography.headlineMedium,
+                            )
+                        }
+                        vibration.playbackError?.let { Text(it, color = colors.text2, style = MaterialTheme.typography.bodySmall) }
+                        if (challenge.numericOnly) {
+                            (0 until challenge.answerLength).toList().chunked(6).forEach { slots ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    slots.forEach { index ->
+                                        Surface(
+                                            modifier = Modifier.weight(1f).height(58.dp),
+                                            shape = AppShapes.control,
+                                            color = if (solved) colors.success else colors.surface2,
+                                            contentColor = if (solved) colors.bg else colors.text,
+                                            border = BorderStroke(1.dp, border),
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(answer.getOrNull(index)?.toString() ?: "–", style = MaterialTheme.typography.headlineMedium)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (!solved) {
+                            AppTextField(
+                                value = answer,
+                                onValueChange = game::updateAnswer,
+                                placeholder = "Ответ латиницей или цифрами",
+                                enabled = !puzzle.submitting,
+                            )
+                            Text("Знаков в ответе: ${challenge.answerLength}", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                        }
+                        if (solved) {
+                            Text("Улика добавлена в инвентарь.", color = colors.success, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        puzzle.answerError?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
+                    }
+                }
+
+                if (challenge.numericOnly && !solved) {
+                    Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓").chunked(3).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                row.forEach { key ->
+                                    AppButton(
+                                        text = key,
+                                        onClick = {
+                                            when (key) {
+                                                "✓" -> checkCode()
+                                                "⌫" -> game.updateAnswer(answer.dropLast(1))
+                                                else -> game.updateAnswer(answer + key)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        style = if (key == "✓") AppButtonStyle.Primary else AppButtonStyle.Outlined,
+                                        enabled = !puzzle.submitting,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-                val feedback = when (status) {
-                    MorseCodeCheck.Incomplete -> "Введите все четыре цифры."
-                    MorseCodeCheck.Incorrect -> "Неверный код. Проверьте сигнал."
-                    MorseCodeCheck.Correct -> "Код принят."
-                    null -> null
-                }
-                feedback?.let { Text(it, color = border, style = MaterialTheme.typography.bodySmall) }
-            }
-        }
-        Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓").chunked(3).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    row.forEach { key ->
-                        AppButton(
-                            text = key,
-                            onClick = {
-                                when (key) {
-                                    "✓" -> checkCode()
-                                    "⌫" -> { code = code.dropLast(1); status = null }
-                                    else -> if (code.length < DemoMorsePuzzle.CodeLength) {
-                                        code += key
-                                        status = null
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            style = if (key == "✓") AppButtonStyle.Primary else AppButtonStyle.Outlined,
-                            enabled = !solved,
-                        )
-                    }
+                if (solved) {
+                    AppButton("Вернуться к делу", onBack, style = AppButtonStyle.Accent)
+                } else {
+                    MorseAlphabetPanel()
+                    AppButton(
+                        if (puzzle.submitting) "Проверяем ответ…" else "Проверить ответ",
+                        ::checkCode,
+                        style = AppButtonStyle.Accent,
+                        enabled = !puzzle.submitting,
+                    )
                 }
             }
-        }
-        if (solved) {
-            Surface(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth(),
-                shape = AppShapes.control,
-                color = colors.success,
-                contentColor = colors.bg,
-            ) {
-                Text("Вернуться к делу", Modifier.padding(14.dp), textAlign = TextAlign.Center)
-            }
-        } else {
-            AppButton("Проверить код", ::checkCode, style = AppButtonStyle.Accent)
         }
         Spacer(Modifier.height(8.dp))
+    }
+    if (showVibrationOptions) {
+        val dismiss = {
+            if (!vibration.saving) {
+                if (vibration.enabled == null && !vibration.loading) viewModel.setEnabled(false)
+                showVibrationOptions = false
+            }
+        }
+        AlertDialog(
+            onDismissRequest = dismiss,
+            title = { Text("Как получать сигнал Морзе") },
+            text = { VibrationSettingRow(vibration, viewModel::setEnabled, viewModel::load) },
+            confirmButton = { AppButton("Продолжить", dismiss, enabled = !vibration.saving && !vibration.loading) },
+            containerColor = colors.bg,
+        )
+    }
+}
+
+@Composable
+internal fun DeviceSettingsScreen(viewModel: VibrationViewModel, onBack: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val colors = AppTheme.colors
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        CaseToolHeader("Настройки", onBack)
+        Text("Возможности устройства", style = MaterialTheme.typography.headlineLarge, color = colors.text)
+        AppCard(outlined = true) { VibrationSettingRow(state, viewModel::setEnabled, viewModel::load) }
+    }
+}
+
+@Composable
+private fun VibrationSettingRow(state: VibrationState, onChange: (Boolean) -> Unit, onRetry: () -> Unit) {
+    val colors = AppTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Вибрация для Морзе", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (state.available) "Телефон передаёт точки и тире вибрацией. Если выключить, сигнал будет показан на экране."
+                    else "На устройстве нет доступного вибромотора. Сигнал будет показан на экране.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.text2,
+                )
+            }
+            Switch(
+                checked = state.enabled == true && state.available,
+                onCheckedChange = onChange,
+                enabled = state.available && !state.loading && !state.saving,
+            )
+        }
+        state.settingsError?.let { ScreenRetry(it, onRetry) }
     }
 }
 

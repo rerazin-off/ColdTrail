@@ -4,6 +4,7 @@ import com.example.mrdetective.domain.fakes.FakeMorseSignalPlayer
 import com.example.mrdetective.domain.fakes.FakePuzzleRepository
 import com.example.mrdetective.domain.fakes.FakeSceneRepository
 import com.example.mrdetective.domain.fakes.assertValidationError
+import com.example.mrdetective.domain.models.DomainError
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -61,6 +62,22 @@ class PlayMorseSignalUseCaseTest {
     fun `пустой сигнал возвращает ошибку валидации`() =
         runTest {
             assertValidationError(useCase(" "))
+            assertTrue(player.played.isEmpty())
+        }
+
+    @Test
+    fun `символы вне Морзе не передаются устройству`() =
+        runTest {
+            assertValidationError(useCase("..- 2 .-"))
+            assertTrue(player.played.isEmpty())
+        }
+
+    @Test
+    fun `без вибромотора воспроизведение недоступно`() =
+        runTest {
+            player.available = false
+            assertFalse(useCase.isAvailable())
+            assertTrue(useCase("...").exceptionOrNull() is DomainError.HardwareUnavailable)
             assertTrue(player.played.isEmpty())
         }
 }

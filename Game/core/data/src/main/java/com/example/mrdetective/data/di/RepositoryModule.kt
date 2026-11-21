@@ -19,7 +19,9 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindDialogueRepository(impl: DialogueRepositoryImpl): DialogueRepository
     @Binds @Singleton abstract fun bindInventoryRepository(impl: InventoryRepositoryImpl): InventoryRepository
     @Binds @Singleton abstract fun bindProgressRepository(impl: ProgressRepositoryImpl): ProgressRepository
+    @Binds @Singleton abstract fun bindProfileStatistics(impl: ProfileStatisticsRepositoryImpl): ProfileStatisticsRepository
     @Binds @Singleton abstract fun bindPuzzleRepository(impl: PuzzleRepositoryImpl): PuzzleRepository
+    @Binds @Singleton abstract fun bindMorseChallengeRepository(impl: SupabaseMorseChallengeRepository): MorseChallengeRepository
     @Binds @Singleton abstract fun bindAccusationRepository(impl: AccusationRepositoryImpl): AccusationRepository
     @Binds @Singleton abstract fun bindSceneRepository(impl: SceneRepositoryImpl): SceneRepository
     @Binds @Singleton abstract fun bindPhotoRepository(impl: PhotoRepositoryImpl): PhotoRepository

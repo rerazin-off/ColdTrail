@@ -7,6 +7,7 @@ import com.example.mrdetective.data.remote.dto.ClueDto
 import com.example.mrdetective.data.remote.dto.InvestigationDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
+import com.example.mrdetective.data.remote.dto.MorseChallengeDto
 import com.example.mrdetective.data.remote.dto.NpcChatResponseDto
 import com.example.mrdetective.data.remote.dto.PuzzleDto
 import okhttp3.RequestBody
@@ -29,7 +30,7 @@ interface OfflineApi {
 
     @GET("rest/v1/investigations?select=id,user_id,case_id,status,start_at")
     suspend fun getInvestigations(
-        @Query("case_id") caseId: String,
+        @Query("case_id") caseId: String?,
         @Query("user_id") userId: String,
     ): List<InvestigationDto>
 
@@ -54,6 +55,9 @@ interface OfflineApi {
 
     @POST("rest/v1/rpc/check_puzzle")
     suspend fun checkPuzzle(@Body body: CheckPuzzleDto): Boolean
+
+    @POST("rest/v1/rpc/get_morse_challenges")
+    suspend fun getMorseChallenges(@Body body: Map<String, Int>): List<MorseChallengeDto>
 
     @POST("functions/v1/npc-chat")
     suspend fun npcChat(@Body body: NpcChatRequestDto): NpcChatResponseDto

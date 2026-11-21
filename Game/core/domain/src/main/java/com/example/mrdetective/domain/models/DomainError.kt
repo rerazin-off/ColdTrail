@@ -14,6 +14,8 @@ sealed class DomainError(
 
     class Network(cause: Throwable? = null) : DomainError("Ошибка сети", cause)
 
+    class HardwareUnavailable : DomainError("Вибрация недоступна на этом устройстве")
+
     class Unknown(cause: Throwable? = null) : DomainError(cause?.message, cause)
 }
 

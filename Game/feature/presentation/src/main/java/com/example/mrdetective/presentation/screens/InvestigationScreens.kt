@@ -115,7 +115,9 @@ internal fun InvestigationScreen(
                             )
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                AppButton("Мини-игра Морзе", { onMorse(case.id) }, style = AppButtonStyle.Accent)
+                                if (state.status !in setOf("solved", "failed", "closed")) {
+                                    AppButton("Добыть улику", { onMorse(case.id) }, style = AppButtonStyle.Accent)
+                                }
                                 AppButton(
                                     if (state.status in setOf("solved", "failed", "closed")) "Итог расследования" else "Выдвинуть обвинение",
                                     { onAccusation(case.id) },

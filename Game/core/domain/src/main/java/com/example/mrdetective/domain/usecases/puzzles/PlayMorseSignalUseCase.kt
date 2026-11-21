@@ -1,27 +1,30 @@
 package com.example.mrdetective.domain.usecases.puzzles
 
+import com.example.mrdetective.domain.hardware.MorseSignalPlayer
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.domainCatching
 import javax.inject.Inject
 
-interface MorseSignalPlayer {
-    suspend fun play(pattern: String)
-}
+private val MorsePattern = Regex("[.-]+(?:\\s+[.-]+|\\s*/\\s*[.-]+)*")
 
 class PlayMorseSignalUseCase
     @Inject
     constructor(
         private val player: MorseSignalPlayer,
     ) {
+        fun isAvailable(): Boolean = player.isAvailable()
+
         suspend operator fun invoke(pattern: String): Result<Unit> {
-            if (pattern.isBlank()) {
+            val signal = pattern.trim()
+            if (signal.length > 256 || !MorsePattern.matches(signal)) {
                 return Result.failure(
-                    DomainError.Validation("Сигнал не задан"),
+                    DomainError.Validation("Некорректный сигнал Морзе"),
                 )
             }
 
             return domainCatching {
-                player.play(pattern)
+                if (!isAvailable()) throw DomainError.HardwareUnavailable()
+                player.play(signal)
             }
         }
     }

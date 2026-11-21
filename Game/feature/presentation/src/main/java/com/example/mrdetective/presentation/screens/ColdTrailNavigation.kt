@@ -168,7 +168,10 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                 InventoryScreen(hiltViewModel()) { navController.popBackStack() }
             }
             composable<MorseRoute> {
-                MorseScreen { navController.popBackStack() }
+                MorseScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
+            }
+            composable<DeviceSettingsRoute> {
+                DeviceSettingsScreen(hiltViewModel()) { navController.popBackStack() }
             }
             composable<AccusationRoute> {
                 AccusationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus)
@@ -177,7 +180,13 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                 InterrogationScreen(hiltViewModel()) { navController.popBackStack() }
             }
             composable(Tab.Profile.route) {
-                ProfileScreen(auth, onBack = { navController.popBackStack() }, onSignOut = onSignOut)
+                ProfileScreen(
+                    hiltViewModel(),
+                    auth,
+                    onBack = { navController.popBackStack() },
+                    onSettings = { navController.navigate(DeviceSettingsRoute) { launchSingleTop = true } },
+                    onSignOut = onSignOut,
+                )
             }
         }
     }

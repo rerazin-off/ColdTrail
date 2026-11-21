@@ -21,7 +21,7 @@ import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.repositories.PuzzleRepository
 import com.example.mrdetective.domain.repositories.SceneRepository
 import com.example.mrdetective.domain.repositories.SuspectRepository
-import com.example.mrdetective.domain.usecases.puzzles.MorseSignalPlayer
+import com.example.mrdetective.domain.hardware.MorseSignalPlayer
 
 class FakeAuthRepository : AuthRepository {
     var signInResult: Result<String> = Result.success("user-1")
@@ -272,6 +272,9 @@ class FakeSuspectRepository : SuspectRepository {
 }
 
 class FakeMorseSignalPlayer : MorseSignalPlayer {
+    var available = true
+
+    override fun isAvailable(): Boolean = available
     var error: Throwable? = null
     val played = mutableListOf<String>()
 
