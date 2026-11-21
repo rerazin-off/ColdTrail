@@ -116,6 +116,7 @@ internal data class InterrogationState(
     val loading: Boolean = true,
     val suspect: Suspect? = null,
     val messages: List<DialogueMessage> = emptyList(),
+    val animatedMessageIds: Set<Int> = emptySet(),
     val sending: Boolean = false,
     val historyUnavailable: Boolean = false,
     val feedback: String? = null,
@@ -214,8 +215,12 @@ internal class InterrogationViewModel @Inject constructor(
             savedState["draft"] = ""
             mutableAttachment.value = null
             val updated = history(route.caseId, route.suspectId).valueOrThrowCancellation()
+            val messages = if (updated.isNullOrEmpty()) (current.messages + message).distinctBy { it.id } else updated
+            val oldIds = current.messages.mapTo(mutableSetOf()) { it.id }
+            val outgoing = messages.lastOrNull { it.id !in oldIds && it.author == MessageAuthor.PLAYER && it.text == text }
             mutableState.value = current.copy(
-                messages = if (updated.isNullOrEmpty()) (current.messages + message).distinctBy { it.id } else updated,
+                messages = messages,
+                animatedMessageIds = setOfNotNull(message.id, outgoing?.id) - oldIds,
                 historyUnavailable = updated == null,
                 feedback = if (message.author == MessageAuthor.PLAYER) "Сообщение сохранено. Ответ пока недоступен." else null,
             )

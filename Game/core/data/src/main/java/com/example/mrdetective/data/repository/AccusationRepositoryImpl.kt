@@ -58,6 +58,8 @@ class AccusationRepositoryImpl @Inject constructor(
             isCorrect = response.isCorrect,
             explanation = response.explanation,
             culpritId = response.culpritId ?: suspectId.takeIf { response.isCorrect },
+            selectedTruth = response.selectedTruth,
+            culpritTruth = response.culpritTruth,
         )
     }
 }

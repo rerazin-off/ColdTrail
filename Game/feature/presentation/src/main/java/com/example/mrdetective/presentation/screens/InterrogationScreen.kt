@@ -1,5 +1,9 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +53,7 @@ import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.AppTextField
+import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import java.time.Instant
@@ -114,17 +119,36 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
             }
 
             if (state.historyUnavailable) ScreenRetry("Не удалось обновить историю.", viewModel::load)
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                state = listState,
-                contentPadding = PaddingValues(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Surface(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp),
+                color = colors.surface,
+                contentColor = colors.text,
+                border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.45f)),
             ) {
-                if (state.messages.isEmpty() && !state.historyUnavailable) {
-                    item { Text("Задайте подозреваемому первый вопрос.", color = colors.text2) }
-                }
-                items(state.messages, key = { it.id }) { message ->
-                    DialogueBubble(message, suspect.name)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (state.messages.isEmpty() && !state.historyUnavailable) {
+                        item { Text("Задайте подозреваемому первый вопрос.", color = colors.text2) }
+                    }
+                    items(state.messages, key = { it.id }) { message ->
+                        val animate = message.id in state.animatedMessageIds
+                        if (message.author == MessageAuthor.PLAYER && animate) {
+                            var visible by rememberSaveable { mutableStateOf(false) }
+                            LaunchedEffect(Unit) { visible = true }
+                            AnimatedVisibility(
+                                visible = visible,
+                                enter = fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 4 },
+                            ) {
+                                DialogueBubble(message, suspect.name, animateText = false)
+                            }
+                        } else {
+                            DialogueBubble(message, suspect.name, animateText = animate)
+                        }
+                    }
                 }
             }
 
@@ -203,10 +227,10 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
 }
 
 @Composable
-private fun DialogueBubble(message: DialogueMessage, suspectName: String) {
+private fun DialogueBubble(message: DialogueMessage, suspectName: String, animateText: Boolean) {
     val colors = AppTheme.colors
     val player = message.author == MessageAuthor.PLAYER
-    val background = if (player) colors.surface else if (colors.isDark) colors.primary else colors.surface2
+    val background = if (player) colors.surface2 else if (colors.isDark) colors.primary else colors.bg
     val foreground = if (!player && colors.isDark) colors.bg else colors.text
     Box(Modifier.fillMaxWidth(), contentAlignment = if (player) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
@@ -218,7 +242,7 @@ private fun DialogueBubble(message: DialogueMessage, suspectName: String) {
         ) {
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(if (player) "Вы" else suspectName, style = MaterialTheme.typography.bodySmall)
-                Text(message.text, style = MaterialTheme.typography.bodyMedium)
+                TypewriterText(message.text, style = MaterialTheme.typography.bodyMedium, animate = animateText)
                 messageTime(message.createdAt)?.let { time ->
                     Text(time, style = MaterialTheme.typography.bodySmall)
                 }

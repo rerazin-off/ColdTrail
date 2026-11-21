@@ -7,4 +7,6 @@ data class Accusation(
     val isCorrect: Boolean? = null,
     val explanation: String = "",
     val culpritId: Int? = null,
+    val selectedTruth: String? = null,
+    val culpritTruth: String? = null,
 )

@@ -1,5 +1,9 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,14 +48,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mrdetective.domain.usecases.puzzles.DemoMorsePuzzle
+import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.domain.usecases.puzzles.MorseCodeCheck
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.ClueCard
+import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
+import kotlinx.coroutines.delay
 
 @Composable
 private fun CaseToolHeader(title: String, onBack: () -> Unit) {
@@ -356,27 +363,61 @@ internal fun AccusationScreen(
         )
     }
     if (result != null) {
+        val accused = state.suspects.firstOrNull { it.id == result.suspectId }
         val culprit = state.suspects.firstOrNull { it.id == result.culpritId }
             ?: state.suspects.singleOrNull { result.explanation == "Это ошибка. Преступником был ${it.name}." }
+        val showAccused = result.isCorrect != true && accused != null
+        val summary = if (result.culpritTruth == null) result.explanation
+        else if (result.isCorrect == true) "Вы правильно определили виновного."
+        else "Подозреваемый, которого вы выбрали, не совершал это преступление."
         AlertDialog(
             onDismissRequest = onBack,
             title = { Text(if (result.isCorrect == true) "Дело раскрыто" else "Обвинение ошибочно") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(result.explanation, style = MaterialTheme.typography.bodyMedium)
-                    culprit?.let {
-                        Text("Настоящий виновник", style = MaterialTheme.typography.bodySmall, color = colors.text2)
-                        AppCard(outlined = true) {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(it.name, style = MaterialTheme.typography.headlineMedium)
-                                Text(it.profile, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
+                    TypewriterText(summary, style = MaterialTheme.typography.bodyMedium)
+                    if (showAccused && accused != null) {
+                        VerdictCard("Кого вы обвинили", accused, result.selectedTruth, delayMillis = 280)
+                    }
+                    if (culprit != null) {
+                        VerdictCard(
+                            "Настоящий виновник",
+                            culprit,
+                            result.culpritTruth,
+                            delayMillis = if (showAccused) 650 else 280,
+                        )
                     }
                 }
             },
             confirmButton = { AppButton("Вернуться к делу", onBack) },
             containerColor = colors.bg,
         )
+    }
+}
+
+@Composable
+private fun VerdictCard(label: String, suspect: Suspect, truth: String?, delayMillis: Long) {
+    val colors = AppTheme.colors
+    var visible by rememberSaveable(suspect.id, label) { mutableStateOf(false) }
+    LaunchedEffect(suspect.id, label) {
+        if (!visible) {
+            delay(delayMillis)
+            visible = true
+        }
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(380)) + slideInVertically(tween(380)) { it / 2 },
+    ) {
+        AppCard(outlined = true) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(label, style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                Text(suspect.name, style = MaterialTheme.typography.headlineMedium)
+                Text(suspect.profile, style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                truth?.takeIf { it.isNotBlank() }?.let {
+                    TypewriterText(it, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
     }
 }

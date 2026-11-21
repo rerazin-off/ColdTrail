@@ -15,4 +15,6 @@ data class AccusationResponseDto(
     val explanation: String,
     @SerializedName("suspect_id") val suspectId: Int? = null,
     @SerializedName("culprit_id") val culpritId: Int? = null,
+    @SerializedName("selected_truth") val selectedTruth: String? = null,
+    @SerializedName("culprit_truth") val culpritTruth: String? = null,
 )

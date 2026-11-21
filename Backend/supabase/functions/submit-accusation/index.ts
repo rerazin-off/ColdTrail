@@ -70,7 +70,22 @@ Deno.serve(async (req) => {
       }).eq("id", inv.id).eq("status", "in_progress");
       if (error) return fail(500, "internal_error", "Не удалось завершить расследование");
     }
-    return json(200, { ...accusation, culprit_id: real.id });
+    const selectedTruth = accusation.suspect_id === real.id
+      ? culprit.truth
+      : (await admin.from("suspects_secret")
+        .select("truth, suspects!inner(case_id)")
+        .eq("id_suspect", accusation.suspect_id)
+        .eq("suspects.case_id", inv.case_id)
+        .maybeSingle());
+    if (typeof selectedTruth !== "string" && selectedTruth.error) {
+      return fail(500, "internal_error", "Не удалось загрузить объяснение обвинения");
+    }
+    return json(200, {
+      ...accusation,
+      culprit_id: real.id,
+      selected_truth: typeof selectedTruth === "string" ? selectedTruth : selectedTruth.data?.truth ?? null,
+      culprit_truth: culprit.truth,
+    });
   };
   if (saved.data) return respondWithResult(saved.data);
 
