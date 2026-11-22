@@ -12,15 +12,19 @@ import com.example.mrdetective.domain.models.CameraChallenge
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.CameraChallengeRepository
 import com.example.mrdetective.domain.repositories.CameraSubmission
+import com.example.mrdetective.domain.repositories.SceneClueImage
+import com.example.mrdetective.domain.repositories.SceneClueRepository
 import com.example.mrdetective.domain.usecases.clues.CaptureCameraClueUseCase
 import com.example.mrdetective.domain.usecases.clues.ChooseClueChallengeUseCase
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
 import com.example.mrdetective.domain.usecases.clues.ClueFramePosition
+import com.example.mrdetective.domain.usecases.clues.buildClueSearchScene
 import com.example.mrdetective.domain.usecases.clues.chooseClueAzimuth
 import com.example.mrdetective.domain.usecases.clues.cluePositionInFrame
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
+import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -76,6 +80,8 @@ internal data class CameraClueUiState(
     val submission: CameraSubmission? = null,
     val loadMessage: String? = null,
     val captureMessage: String? = null,
+    val sceneItems: List<SceneClueImage>? = null,
+    val sceneMessage: String? = null,
 )
 
 @HiltViewModel
@@ -84,10 +90,12 @@ internal class CameraClueViewModel @Inject constructor(
     private val repository: CameraChallengeRepository,
     private val camera: ClueCamera<Pair<LifecycleOwner, PreviewView>>,
     private val captureClue: CaptureCameraClueUseCase,
+    private val scene: SceneClueRepository,
 ) : ViewModel() {
     private val route = savedState.toRoute<CameraClueRoute>()
     private val mutableState = MutableStateFlow(CameraClueUiState())
     val state = mutableState.asStateFlow()
+    val searchingScene = savedState.getStateFlow("searchingScene", false)
     private val cameraState = MutableStateFlow(ClueCameraState())
     val hardware = cameraState.asStateFlow()
     val targetAzimuth = savedState.getStateFlow<Float?>("cameraTargetAzimuth", null)
@@ -95,6 +103,7 @@ internal class CameraClueViewModel @Inject constructor(
     val position = mutablePosition.asStateFlow()
     private var loadJob: Job? = null
     private var observation: Job? = null
+    private var sceneLoad: Job? = null
 
     init {
         load()
@@ -122,6 +131,48 @@ internal class CameraClueViewModel @Inject constructor(
                 },
                 {
                     mutableState.value = CameraClueUiState(loading = false, loadMessage = it.challengeLoadMessage())
+                },
+            )
+        }
+    }
+
+    fun useScene(enabled: Boolean) {
+        savedState["searchingScene"] = enabled
+    }
+
+    fun loadScene() {
+        val current = state.value
+        val challenge = current.challenge ?: return
+        if (sceneLoad?.isActive == true || current.sceneItems != null) return
+        sceneLoad = viewModelScope.launch {
+            val decoys = scene.loadDecoys(challenge.clueId)
+            val items = buildClueSearchScene(SceneClueImage(challenge.clueId, challenge.imageUrl), decoys, Random(challenge.id))
+            mutableState.update { it.copy(sceneItems = items) }
+        }
+    }
+
+    fun selectSceneItem(index: Int) {
+        val current = state.value
+        val challenge = current.challenge ?: return
+        val selected = current.sceneItems?.getOrNull(index) ?: return
+        if (current.capturing || current.submission in setOf(CameraSubmission.Pending, CameraSubmission.Awarded)) return
+        if (selected.clueId != challenge.clueId) {
+            mutableState.update { it.copy(sceneMessage = "Это другой предмет. Продолжайте поиск.") }
+            return
+        }
+
+        mutableState.update { it.copy(capturing = true, sceneMessage = null) }
+        viewModelScope.launch {
+            scene.submit(challenge, challenge.clueId).fold(
+                onSuccess = { mutableState.update { it.copy(capturing = false, submission = CameraSubmission.Awarded) } },
+                onFailure = { error ->
+                    if (error is CancellationException) throw error
+                    val message = if (error is DomainError.Network) {
+                        "Подключитесь к интернету и нажмите на улику ещё раз."
+                    } else {
+                        "Не удалось подтвердить улику. Попробуйте ещё раз."
+                    }
+                    mutableState.update { it.copy(capturing = false, sceneMessage = message) }
                 },
             )
         }

@@ -8,9 +8,10 @@ import com.example.mrdetective.data.local.entity.PuzzleEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.network.ConnectivityChecker
-import com.example.mrdetective.data.network.SupabaseConfig
+
 import com.example.mrdetective.data.network.apiCall
 import com.example.mrdetective.data.network.remoteOrCache
+import com.example.mrdetective.data.network.toClueImageUrl
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.dto.CameraCaptureDto
 import com.example.mrdetective.data.sync.SyncScheduler
@@ -24,7 +25,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.flow.map
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+
 
 class SupabaseCameraChallengeRepository @Inject constructor(
     private val auth: AuthRepository,
@@ -114,19 +115,6 @@ class SupabaseCameraChallengeRepository @Inject constructor(
         id, investigationId, title, hint, clue.id, clue.title, clue.description,
         clue.image.toClueImageUrl(), pendingOrCompleted, rewardClaimed,
     )
-
-    private fun String?.toClueImageUrl(): String? {
-        val path = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        val base = SupabaseConfig.baseUrl.toHttpUrlOrNull() ?: return null
-        val prefix = "storage/v1/object/public/clue-images/"
-        val absolute = path.toHttpUrlOrNull()
-        if (absolute != null) {
-            return path.takeIf { absolute.host == base.host && absolute.encodedPath.startsWith("/$prefix") }
-        }
-        return base.newBuilder()
-            .addPathSegments(prefix + path.trimStart('/').removePrefix("clue-images/"))
-            .build().toString()
-    }
 
     private val CameraChallenge.queueKey get() = "$investigationId:$id"
 }

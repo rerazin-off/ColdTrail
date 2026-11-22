@@ -23,6 +23,8 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindPuzzleRepository(impl: PuzzleRepositoryImpl): PuzzleRepository
     @Binds @Singleton abstract fun bindMorseChallengeRepository(impl: SupabaseMorseChallengeRepository): MorseChallengeRepository
     @Binds @Singleton abstract fun bindCameraChallengeRepository(impl: SupabaseCameraChallengeRepository): CameraChallengeRepository
+    @Binds @Singleton abstract fun bindSceneClueRepository(impl: SupabaseSceneClueRepository): SceneClueRepository
+    @Binds @Singleton abstract fun bindCodeChallengeRepository(impl: SupabaseCodeChallengeRepository): CodeChallengeRepository
     @Binds @Singleton abstract fun bindAccusationRepository(impl: AccusationRepositoryImpl): AccusationRepository
     @Binds @Singleton abstract fun bindSceneRepository(impl: SceneRepositoryImpl): SceneRepository
     @Binds @Singleton abstract fun bindPhotoRepository(impl: PhotoRepositoryImpl): PhotoRepository

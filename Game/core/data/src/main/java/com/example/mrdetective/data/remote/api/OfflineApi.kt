@@ -11,6 +11,7 @@ import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
 import com.example.mrdetective.data.remote.dto.MorseChallengeDto
 import com.example.mrdetective.data.remote.dto.NpcChatResponseDto
 import com.example.mrdetective.data.remote.dto.PuzzleDto
+import com.example.mrdetective.data.remote.dto.SceneClueImageDto
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.http.Body
@@ -37,6 +38,9 @@ interface OfflineApi {
 
     @GET("rest/v1/clues?select=*")
     suspend fun getCluesByCase(@Query("case_id") caseId: String): List<ClueDto>
+
+    @GET("rest/v1/clues?select=id,image&image=not.is.null&order=id&limit=50")
+    suspend fun getClueImages(@Query("id") excludeId: String): List<SceneClueImageDto>
 
     @GET("rest/v1/puzzles?select=id,case_id,kind,title,hint,reward_clue")
     suspend fun getPuzzlesByCase(@Query("case_id") caseId: String): List<PuzzleDto>
@@ -65,6 +69,9 @@ interface OfflineApi {
 
     @POST("rest/v1/rpc/complete_camera_puzzle")
     suspend fun completeCameraPuzzle(@Body body: Map<String, Int>): Int
+
+    @POST("rest/v1/rpc/complete_scene_camera_puzzle")
+    suspend fun completeSceneCameraPuzzle(@Body body: Map<String, Int>): Int
 
     @POST("functions/v1/npc-chat")
     suspend fun npcChat(@Body body: NpcChatRequestDto): NpcChatResponseDto

@@ -1,7 +1,10 @@
 package com.example.mrdetective.presentation.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
@@ -29,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,11 +85,27 @@ internal fun ChooseClueChallengeScreen(
 internal fun CameraClueScreen(viewModel: CameraClueViewModel, onBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val searchingScene by viewModel.searchingScene.collectAsStateWithLifecycle()
+    val hardware by viewModel.hardware.collectAsStateWithLifecycle()
+    val hasRearCamera = remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
     fun hasPermission() =
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     var permitted by remember(context) { mutableStateOf(hasPermission()) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permitted = it }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { permitted = hasPermission() }
+    var openingSettings by rememberSaveable { mutableStateOf(false) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permitted = it
+        viewModel.useScene(!it)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        val hadPermission = permitted
+        permitted = hasPermission()
+        if (openingSettings && permitted) viewModel.useScene(false)
+        if (hadPermission && !permitted) viewModel.useScene(true)
+        openingSettings = false
+    }
+    LaunchedEffect(hardware.error) {
+        if (hardware.error != null) viewModel.useScene(true)
+    }
 
     Column(
         Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -100,10 +120,27 @@ internal fun CameraClueScreen(viewModel: CameraClueViewModel, onBack: () -> Unit
                 ClueRewardDialog(challenge.clueTitle, challenge.clueDescription, onBack)
             state.submission == CameraSubmission.Pending ->
                 CameraClueMessage("Снимок сохранён. Улика появится в инвентаре после отправки снимка.", "К делу", onBack)
-            !permitted -> CameraClueMessage(
-                "Разрешите доступ к камере, чтобы осмотреть комнату и сфотографировать улику.",
-                "Разрешить доступ",
-            ) { permission.launch(Manifest.permission.CAMERA) }
+            searchingScene || !hasRearCamera -> SceneClueSearch(
+                challenge = challenge,
+                state = state,
+                onLoad = viewModel::loadScene,
+                onSelect = viewModel::selectSceneItem,
+                onCameraSettings = if (hasRearCamera && !permitted) {
+                    {
+                        openingSettings = true
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
+            !permitted -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Разрешите доступ к камере, чтобы осмотреть комнату и сфотографировать улику.")
+                AppButton("Разрешить доступ", { permission.launch(Manifest.permission.CAMERA) }, style = AppButtonStyle.Accent)
+                AppButton("Искать на картинке", { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
+            }
             else -> CameraViewfinder(challenge, state, viewModel, Modifier.weight(1f))
         }
     }

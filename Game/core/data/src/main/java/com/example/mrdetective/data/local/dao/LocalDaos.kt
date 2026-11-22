@@ -37,6 +37,8 @@ interface CaseDao {
 @Dao interface ClueDao {
     @Query("SELECT * FROM clues WHERE id = :id LIMIT 1") suspend fun getById(id: Int): ClueEntity?
     @Query("SELECT * FROM clues WHERE caseId = :caseId ORDER BY id") suspend fun getByCase(caseId: Int): List<ClueEntity>
+    @Query("SELECT * FROM clues WHERE image IS NOT NULL ORDER BY id LIMIT 50")
+    suspend fun getClueImages(): List<ClueEntity>
     @Query("SELECT c.* FROM clues c INNER JOIN collected_clues cc ON c.id = cc.clueId WHERE cc.investigationId = :investigationId ORDER BY cc.collectedAt")
     fun observeInventory(investigationId: Int): Flow<List<ClueEntity>>
     @Query("SELECT c.* FROM clues c INNER JOIN collected_clues cc ON c.id = cc.clueId WHERE cc.investigationId = :investigationId ORDER BY cc.collectedAt")

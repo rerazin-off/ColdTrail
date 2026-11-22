@@ -37,11 +37,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mrdetective.domain.usecases.clues.ClueChallengeKind
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
@@ -89,6 +91,7 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             current.destination.hasRoute<InvestigationRoute>() -> current.toRoute<InvestigationRoute>().caseId
             showingInventory -> current.toRoute<InventoryRoute>().caseId
             showingMorse -> current.toRoute<MorseRoute>().caseId
+            current.destination.hasRoute<CodeChallengeRoute>() -> current.toRoute<CodeChallengeRoute>().caseId
             else -> null
         }
     }
@@ -173,14 +176,13 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                     picker,
                     onChoice = { choice ->
                         if (navController.currentBackStackEntry == pickEntry) {
-                            if (choice.usesCamera) {
-                                navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId)) {
-                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
-                                }
-                            } else {
-                                navController.navigate(MorseRoute(picker.caseId, choice.puzzleId)) {
-                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
-                                }
+                            val options = navOptions {
+                                popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+                            }
+                            when (choice.kind) {
+                                ClueChallengeKind.Camera -> navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId), options)
+                                ClueChallengeKind.Morse -> navController.navigate(MorseRoute(picker.caseId, choice.puzzleId), options)
+                                ClueChallengeKind.Code -> navController.navigate(CodeChallengeRoute(picker.caseId, choice.puzzleId), options)
                             }
                         }
                     },
@@ -195,6 +197,11 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             composable<MorseRoute> { morseEntry ->
                 MorseScreen(hiltViewModel(), hiltViewModel()) {
                     if (navController.currentBackStackEntry == morseEntry) navController.popBackStack()
+                }
+            }
+            composable<CodeChallengeRoute> { codeEntry ->
+                CodeChallengeScreen(hiltViewModel()) {
+                    if (navController.currentBackStackEntry == codeEntry) navController.popBackStack()
                 }
             }
             composable<DeviceSettingsRoute> {

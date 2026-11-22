@@ -56,6 +56,8 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
+import com.example.mrdetective.presentation.ui.components.NumericPuzzleKeypad
+import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.components.MorseAlphabetPanel
@@ -236,12 +238,6 @@ internal fun MorseScreen(
     if (solved) {
         ClueRewardDialog(puzzle.reward?.title, puzzle.reward?.description, onBack)
     }
-    val border = when {
-        solved -> colors.success
-        puzzle.answerError != null -> colors.error
-        else -> colors.outline
-    }
-
     fun checkCode() {
         viewModel.stopPlayback()
         game.submit()
@@ -293,23 +289,7 @@ internal fun MorseScreen(
                         }
                         vibration.playbackError?.let { Text(it, color = colors.text2, style = MaterialTheme.typography.bodySmall) }
                         if (challenge.numericOnly) {
-                            (0 until challenge.answerLength).toList().chunked(6).forEach { slots ->
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    slots.forEach { index ->
-                                        Surface(
-                                            modifier = Modifier.weight(1f).height(58.dp),
-                                            shape = AppShapes.control,
-                                            color = if (solved) colors.success else colors.surface2,
-                                            contentColor = if (solved) colors.bg else colors.text,
-                                            border = BorderStroke(1.dp, border),
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text(answer.getOrNull(index)?.toString() ?: "–", style = MaterialTheme.typography.headlineMedium)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            NumericPuzzleSlots(challenge.answerLength, answer, solved, puzzle.answerError != null)
                         } else if (!solved) {
                             AppTextField(
                                 value = answer,
@@ -327,27 +307,12 @@ internal fun MorseScreen(
                 }
 
                 if (challenge.numericOnly && !solved) {
-                    Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓").chunked(3).forEach { row ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                row.forEach { key ->
-                                    AppButton(
-                                        text = key,
-                                        onClick = {
-                                            when (key) {
-                                                "✓" -> checkCode()
-                                                "⌫" -> game.updateAnswer(answer.dropLast(1))
-                                                else -> game.updateAnswer(answer + key)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        style = if (key == "✓") AppButtonStyle.Primary else AppButtonStyle.Outlined,
-                                        enabled = !puzzle.submitting,
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    NumericPuzzleKeypad(
+                        onDigit = { game.updateAnswer(game.answer.value + it) },
+                        onDelete = { game.updateAnswer(game.answer.value.dropLast(1)) },
+                        onSubmit = ::checkCode,
+                        enabled = !puzzle.submitting,
+                    )
                 }
                 if (solved) {
                     AppButton("Вернуться к делу", onBack, style = AppButtonStyle.Accent)
