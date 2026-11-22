@@ -34,7 +34,7 @@ internal fun InvestigationScreen(
     viewModel: InvestigationViewModel,
     onBack: () -> Unit,
     onStatusChanged: (Int, String) -> Unit,
-    onMorse: (Int) -> Unit,
+    onFindClue: (Int) -> Unit,
     onAccusation: (Int) -> Unit,
     onInterrogate: (Int, Int) -> Unit,
 ) {
@@ -116,7 +116,7 @@ internal fun InvestigationScreen(
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (state.status !in setOf("solved", "failed", "closed")) {
-                                    AppButton("Добыть улику", { onMorse(case.id) }, style = AppButtonStyle.Accent)
+                                    AppButton("Добыть улику", { onFindClue(case.id) }, style = AppButtonStyle.Accent)
                                 }
                                 AppButton(
                                     if (state.status in setOf("solved", "failed", "closed")) "Итог расследования" else "Выдвинуть обвинение",

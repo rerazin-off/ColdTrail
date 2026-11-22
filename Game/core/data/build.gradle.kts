@@ -65,6 +65,10 @@ dependencies {
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    api(libs.androidx.camera.view)
     implementation(libs.androidx.room3.common)
     implementation(libs.androidx.room3.runtime)
     ksp("androidx.room3:room3-compiler:${libs.versions.room3Runtime.get()}")

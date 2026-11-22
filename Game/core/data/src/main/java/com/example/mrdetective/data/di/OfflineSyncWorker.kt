@@ -15,6 +15,7 @@ import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.network.SupabaseConfig
+import com.example.mrdetective.data.remote.dto.CameraCaptureDto
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
@@ -163,6 +164,40 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                             }
                         }
 
+                        "camera_capture" -> {
+                            val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
+                            val investigation = db.investigationDao().getInvestigation(request.investigationId)
+                            if (userId == null || investigation?.userId != userId) {
+                                deferredOps.add(op.id)
+                                continue
+                            }
+                            val file = File(request.filePath)
+                            if (!file.isFile) {
+                                db.syncQueueDao().remove(op.id)
+                                continue
+                            }
+                            api.uploadPhoto(
+                                "clue-photos",
+                                "$userId/${request.clueId}.jpg",
+                                file.readBytes().toRequestBody("image/jpeg".toMediaType()),
+                            ).close()
+                            val reward = api.completeCameraPuzzle(
+                                mapOf("p_investigation" to request.investigationId, "p_puzzle" to request.puzzleId),
+                            )
+                            val now = System.currentTimeMillis().toString()
+                            db.withWriteTransaction {
+                                db.investigationDao().markPuzzleSolved(
+                                    SolvedPuzzleEntity(request.investigationId, request.puzzleId, now, synced = true),
+                                )
+                                db.investigationDao().collectClue(
+                                    CollectedClueEntity(request.investigationId, reward, now, synced = true),
+                                )
+                                db.syncQueueDao().remove(op.id)
+                            }
+                            file.delete()
+                            continue
+                        }
+
                         "accusation" -> api.postQueued(
                             SupabaseConfig.baseUrl + "functions/v1/submit-accusation", null,
                             op.payload.toRequestBody("application/json".toMediaType()),
@@ -175,6 +210,10 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                     if (e is HttpException && e.code() in 400..499 && e.code() !in listOf(408, 429)) {
                         // Ошибка данных не исправится повтором. Операция остаётся локально видимой, но снимается с автоповтора.
                         db.syncQueueDao().recordFailure(op.id, "HTTP ${e.code()}: ${e.message()}")
+                        if (op.entityType == "camera_capture") {
+                            val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
+                            File(request.filePath).delete()
+                        }
                         db.syncQueueDao().remove(op.id)
                     } else {
                         db.syncQueueDao().recordFailure(op.id, e.message ?: "network error")

@@ -26,7 +26,7 @@ import kotlinx.serialization.Serializable
 internal data class InventoryRoute(val caseId: Int)
 
 @Serializable
-internal data class MorseRoute(val caseId: Int)
+internal data class MorseRoute(val caseId: Int, val puzzleId: Int? = null)
 
 @Serializable
 internal data class AccusationRoute(val caseId: Int)

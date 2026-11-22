@@ -159,13 +159,36 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                     viewModel = hiltViewModel(),
                     onBack = { navController.popBackStack() },
                     onStatusChanged = viewModel::updateCaseStatus,
-                    onMorse = { navController.navigate(MorseRoute(it)) },
+                    onFindClue = { navController.navigate(ChooseClueChallengeRoute(it)) { launchSingleTop = true } },
                     onAccusation = { navController.navigate(AccusationRoute(it)) },
                     onInterrogate = { caseId, suspectId -> navController.navigate(InterrogationRoute(caseId, suspectId)) },
                 )
             }
             composable<InventoryRoute> {
                 InventoryScreen(hiltViewModel()) { navController.popBackStack() }
+            }
+            composable<ChooseClueChallengeRoute> { pickEntry ->
+                val picker: ClueChallengePickerViewModel = hiltViewModel()
+                ChooseClueChallengeScreen(
+                    picker,
+                    onChoice = { choice ->
+                        if (navController.currentBackStackEntry == pickEntry) {
+                            if (choice.usesCamera) {
+                                navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId)) {
+                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+                                }
+                            } else {
+                                navController.navigate(MorseRoute(picker.caseId, choice.puzzleId)) {
+                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+                                }
+                            }
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable<CameraClueRoute> {
+                CameraClueScreen(hiltViewModel()) { navController.popBackStack() }
             }
             composable<MorseRoute> {
                 MorseScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }

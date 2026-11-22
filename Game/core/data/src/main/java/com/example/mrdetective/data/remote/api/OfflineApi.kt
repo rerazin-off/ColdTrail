@@ -2,6 +2,7 @@ package com.example.mrdetective.data.remote.api
 
 import com.example.mrdetective.data.remote.dto.AccusationRequestDto
 import com.example.mrdetective.data.remote.dto.AccusationResponseDto
+import com.example.mrdetective.data.remote.dto.CameraChallengeDto
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.ClueDto
 import com.example.mrdetective.data.remote.dto.InvestigationDto
@@ -58,6 +59,12 @@ interface OfflineApi {
 
     @POST("rest/v1/rpc/get_morse_challenges")
     suspend fun getMorseChallenges(@Body body: Map<String, Int>): List<MorseChallengeDto>
+
+    @POST("rest/v1/rpc/get_camera_challenges")
+    suspend fun getCameraChallenges(@Body body: Map<String, Int>): List<CameraChallengeDto>
+
+    @POST("rest/v1/rpc/complete_camera_puzzle")
+    suspend fun completeCameraPuzzle(@Body body: Map<String, Int>): Int
 
     @POST("functions/v1/npc-chat")
     suspend fun npcChat(@Body body: NpcChatRequestDto): NpcChatResponseDto

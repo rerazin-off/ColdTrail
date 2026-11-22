@@ -35,7 +35,7 @@ internal class MorseChallengeViewModel @Inject constructor(
     private val challenges: MorseChallengeRepository,
     private val playPuzzle: PlayPuzzleUseCase,
 ) : ViewModel() {
-    private val caseId = savedState.toRoute<MorseRoute>().caseId
+    private val route = savedState.toRoute<MorseRoute>()
     private val mutableState = MutableStateFlow(MorseGameState())
     val state = mutableState.asStateFlow()
     val answer = savedState.getStateFlow("morseAnswer", "")
@@ -50,9 +50,10 @@ internal class MorseChallengeViewModel @Inject constructor(
         mutableState.value = MorseGameState()
         loadJob = viewModelScope.launch {
             mutableState.value = try {
-                val available = challenges.load(caseId).getOrThrow()
+                val available = challenges.load(route.caseId).getOrThrow()
                 val restoredId = savedState.get<Int>("morsePuzzle")
-                val challenge = chooseMorseChallenge(available.puzzles, restoredId)
+                val candidates = route.puzzleId?.let { id -> available.puzzles.filter { it.id == id } } ?: available.puzzles
+                val challenge = chooseMorseChallenge(candidates, restoredId ?: route.puzzleId)
                 if (challenge?.id != restoredId) savedState["morseAnswer"] = ""
                 savedState["morsePuzzle"] = challenge?.id
                 MorseGameState(

@@ -14,6 +14,7 @@ kotlin {
 dependencies {
     // нужен для @Inject в use case'ах (в domain нет android.*)
     implementation("javax.inject:javax.inject:1")
+    api(libs.kotlinx.coroutines.core)
 
     // только для тестов (src/test); тесты используют свои Fake-классы, MockK не нужен
     testImplementation("junit:junit:4.13.2")

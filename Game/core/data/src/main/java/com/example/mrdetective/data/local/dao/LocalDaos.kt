@@ -59,6 +59,7 @@ interface CaseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun markPuzzleSolved(item: SolvedPuzzleEntity): Long
     @Query("SELECT clueId FROM collected_clues WHERE investigationId = :investigationId ORDER BY collectedAt") suspend fun collectedClueIds(investigationId: Int): List<Int>
     @Query("SELECT puzzleId FROM solved_puzzles WHERE investigationId = :investigationId") suspend fun solvedPuzzleIds(investigationId: Int): List<Int>
+
     @Query("UPDATE collected_clues SET investigationId = :newId WHERE investigationId = :oldId") suspend fun remapCollected(oldId: Int, newId: Int)
     @Query("UPDATE solved_puzzles SET investigationId = :newId WHERE investigationId = :oldId") suspend fun remapSolved(oldId: Int, newId: Int)
     @Query("DELETE FROM investigations WHERE id = :id") suspend fun deleteInvestigation(id: Int)
@@ -102,6 +103,14 @@ interface CaseDao {
     @Query("DELETE FROM sync_queue WHERE id = :id") suspend fun remove(id: Long)
     @Query("UPDATE sync_queue SET attempts = attempts + 1, lastError = :error WHERE id = :id") suspend fun recordFailure(id: Long, error: String)
     @Query("SELECT COUNT(*) FROM sync_queue") fun observeCount(): Flow<Int>
+    @Query("""
+        SELECT CASE
+            WHEN EXISTS (SELECT 1 FROM solved_puzzles WHERE investigationId = :investigationId AND puzzleId = :puzzleId) THEN 2
+            WHEN EXISTS (SELECT 1 FROM sync_queue WHERE entityType = 'camera_capture' AND entityId = :key) THEN 1
+            ELSE 0
+        END
+    """)
+    fun observeCameraCapture(investigationId: Int, puzzleId: Int, key: String): Flow<Int>
     @Query("UPDATE sync_queue SET payload = replace(payload, :oldValue, :newValue) WHERE payload LIKE '%' || :oldValue || '%'")
     suspend fun replacePayload(oldValue: String, newValue: String)
 }

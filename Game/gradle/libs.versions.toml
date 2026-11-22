@@ -21,6 +21,7 @@ turbine = "1.2.1"
 mockk = "1.13.13"
 coroutines = "1.11.0"
 coil = "3.4.0"
+cameraX = "1.5.3"
 hilt="2.59.2"
 ksp = "2.3.4"
 ktlint = "12.1.1"
@@ -63,6 +64,11 @@ mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "moc
 
 #Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraX" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraX" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraX" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraX" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }

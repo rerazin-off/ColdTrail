@@ -65,7 +65,7 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 
 @Composable
-private fun CaseToolHeader(title: String, onBack: () -> Unit) {
+internal fun CaseToolHeader(title: String, onBack: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onBack) {
             Icon(painterResource(R.drawable.ic_chat_back), "Назад", tint = AppTheme.colors.text)
