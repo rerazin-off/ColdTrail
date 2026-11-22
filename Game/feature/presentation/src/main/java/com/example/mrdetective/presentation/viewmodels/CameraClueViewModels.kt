@@ -15,6 +15,7 @@ import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.example.mrdetective.domain.usecases.clues.CaptureCameraClueUseCase
 import com.example.mrdetective.domain.usecases.clues.ChooseClueChallengeUseCase
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
+import com.example.mrdetective.domain.usecases.clues.chooseClueAzimuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -77,7 +78,7 @@ internal data class CameraClueUiState(
 
 @HiltViewModel
 internal class CameraClueViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+    private val savedState: SavedStateHandle,
     private val repository: CameraChallengeRepository,
     private val camera: ClueCamera<Pair<LifecycleOwner, PreviewView>>,
     private val captureClue: CaptureCameraClueUseCase,
@@ -87,6 +88,7 @@ internal class CameraClueViewModel @Inject constructor(
     val state = mutableState.asStateFlow()
     private val cameraState = MutableStateFlow(ClueCameraState())
     val hardware = cameraState.asStateFlow()
+    val targetAzimuth = savedState.getStateFlow<Float?>("cameraTargetAzimuth", null)
     private var loadJob: Job? = null
     private var observation: Job? = null
 
@@ -122,7 +124,12 @@ internal class CameraClueViewModel @Inject constructor(
     }
 
     fun attach(owner: LifecycleOwner, preview: PreviewView): AutoCloseable {
-        val session = camera.attach(owner to preview) { cameraState.value = it }
+        val session = camera.attach(owner to preview) { update ->
+            if (targetAzimuth.value == null && update.previewReady && update.error == null) {
+                update.direction?.let(::chooseClueAzimuth)?.let { savedState["cameraTargetAzimuth"] = it }
+            }
+            cameraState.value = update
+        }
         return AutoCloseable {
             session.close()
             cameraState.value = ClueCameraState()
@@ -132,6 +139,7 @@ internal class CameraClueViewModel @Inject constructor(
     fun capture() {
         val current = state.value
         val challenge = current.challenge ?: return
+        val target = targetAzimuth.value ?: return
         val currentCamera = hardware.value
         val direction = currentCamera.direction ?: return
         if (!currentCamera.previewReady || currentCamera.error != null || current.capturing ||
@@ -140,7 +148,7 @@ internal class CameraClueViewModel @Inject constructor(
         mutableState.update { it.copy(capturing = true, captureMessage = null, submission = null) }
         viewModelScope.launch {
             try {
-                val path = captureClue(challenge.id, direction, camera)
+                val path = captureClue(target, direction, camera)
                 if (path == null) {
                     mutableState.update { it.copy(captureMessage = "Улика не попала в кадр. Продолжайте поиск.") }
                     return@launch

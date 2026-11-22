@@ -16,24 +16,40 @@ class CaptureCameraClueUseCaseTest {
     @Test
     fun capturesWhenClueFitsTheFrame() =
         runTest {
-            assertEquals("fake-photo.jpg", capture(1, CameraDirection(137f, 0f), camera))
+            assertEquals("fake-photo.jpg", capture(180f, CameraDirection(180f, 0f), camera))
             assertEquals(1, camera.shots)
         }
 
     @Test
     fun skipsTheShutterWhenClueIsOutsideTheFrame() =
         runTest {
-            assertNull(capture(1, CameraDirection(162f, 0f), camera))
-            assertNull(capture(1, CameraDirection(137f, -19f), camera))
+            assertNull(capture(180f, CameraDirection(205f, 0f), camera))
+            assertNull(capture(180f, CameraDirection(180f, -19f), camera))
             assertEquals(0, camera.shots)
         }
 
     @Test
     fun clueRemainsVisibleAcrossNorth() {
-        // Puzzle 113 has bearing 1°. Both headings should show the same object.
-        assertNotNull(cluePositionInFrame(113, CameraDirection(359f, 0f)))
-        assertNotNull(cluePositionInFrame(113, CameraDirection(3f, 0f)))
-        assertNull(cluePositionInFrame(113, CameraDirection(180f, 0f)))
+        assertNotNull(cluePositionInFrame(0f, CameraDirection(359f, 0f)))
+        assertNotNull(cluePositionInFrame(0f, CameraDirection(3f, 0f)))
+        assertNull(cluePositionInFrame(0f, CameraDirection(180f, 0f)))
+    }
+
+    @Test
+    fun everyStartingHeadingRequiresTurningTowardACardinalDirection() {
+        for (heading in 0..359) {
+            val start = CameraDirection(heading.toFloat(), 0f)
+            val goal = checkNotNull(chooseClueAzimuth(start))
+            assertEquals(0f, goal % 90f, 0f)
+            assertNull(cluePositionInFrame(goal, start))
+            assertNotNull(cluePositionInFrame(goal, CameraDirection(goal, 0f)))
+        }
+    }
+
+    @Test
+    fun waitsUntilCameraPointsTowardTheRoom() {
+        assertNull(chooseClueAzimuth(CameraDirection(90f, -60f)))
+        assertNull(chooseClueAzimuth(CameraDirection(90f, 45f)))
     }
 
     private class FakeClueCamera : ClueCamera<Unit> {

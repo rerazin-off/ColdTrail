@@ -5,11 +5,9 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -115,6 +114,7 @@ private fun CameraViewfinder(
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val hardware by viewModel.hardware.collectAsStateWithLifecycle()
+    val targetAzimuth by viewModel.targetAzimuth.collectAsStateWithLifecycle()
     val preview = remember(context) { PreviewView(context) }
     val colors = AppTheme.colors
     DisposableEffect(owner, preview, viewModel) {
@@ -122,8 +122,10 @@ private fun CameraViewfinder(
         onDispose { attachment.close() }
     }
 
-    val position = hardware.direction?.takeIf { hardware.previewReady && hardware.error == null }
-        ?.let { cluePositionInFrame(challenge.id, it) }
+    val position = targetAzimuth?.let { target ->
+        hardware.direction?.takeIf { hardware.previewReady && hardware.error == null }
+            ?.let { cluePositionInFrame(target, it) }
+    }
     val instruction = when {
         hardware.error != null -> hardware.error.orEmpty()
         state.submission == CameraSubmission.Failed -> "Не удалось подтвердить снимок. Сфотографируйте улику ещё раз."
@@ -131,13 +133,21 @@ private fun CameraViewfinder(
         state.captureMessage != null && state.captureMessage.startsWith("Не удалось") -> state.captureMessage
         position != null -> "Улика в кадре. Сделайте снимок."
         !hardware.previewReady -> "Открываем камеру…"
-        hardware.direction == null -> "Определяем направление камеры…"
+        hardware.direction == null || targetAzimuth == null -> "Держите телефон перед собой, чтобы начать поиск."
         else -> challenge.hint?.takeIf { it.isNotBlank() }
             ?: "Держите телефон перед собой и медленно поворачивайтесь."
     }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(instruction, style = MaterialTheme.typography.bodyMedium, color = colors.text)
+        // Keep the viewfinder size stable when the instruction changes.
+        Text(
+            instruction,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.text,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
         BoxWithConstraints(
             Modifier.fillMaxWidth().weight(1f)
                 .clip(AppShapes.control)
@@ -145,7 +155,7 @@ private fun CameraViewfinder(
                 .border(1.dp, colors.outline, AppShapes.control),
             contentAlignment = Alignment.Center,
         ) {
-            AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+            AndroidView(factory = { preview }, modifier = Modifier.matchParentSize())
             if (!hardware.previewReady && hardware.error == null) {
                 CircularProgressIndicator(color = colors.accent)
             }
@@ -169,7 +179,8 @@ private fun CameraViewfinder(
             if (state.capturing) "Сохраняем снимок…" else "Сфотографировать",
             viewModel::capture,
             style = AppButtonStyle.Accent,
-            enabled = hardware.previewReady && hardware.direction != null && hardware.error == null && !state.capturing,
+            enabled = hardware.previewReady && hardware.direction != null && targetAzimuth != null &&
+                hardware.error == null && !state.capturing,
         )
     }
 }
