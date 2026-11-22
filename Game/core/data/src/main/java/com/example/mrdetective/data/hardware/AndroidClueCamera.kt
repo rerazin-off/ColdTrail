@@ -19,6 +19,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import com.example.mrdetective.domain.hardware.CameraDirection
+import com.example.mrdetective.domain.hardware.CameraDirectionFilter
 import com.example.mrdetective.domain.hardware.ClueCamera
 import com.example.mrdetective.domain.hardware.ClueCameraState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -55,6 +56,7 @@ class AndroidClueCamera @Inject constructor(
         }
         var active = true
         var state = ClueCameraState()
+        val directionFilter = CameraDirectionFilter()
         fun publish(next: ClueCameraState) {
             state = next
             onState(next)
@@ -71,7 +73,8 @@ class AndroidClueCamera @Inject constructor(
                 val up = -matrix[8]
                 val heading = Math.toDegrees(atan2(east.toDouble(), north.toDouble())).toFloat()
                 val elevation = Math.toDegrees(asin(up.coerceIn(-1f, 1f).toDouble())).toFloat()
-                publish(state.copy(direction = CameraDirection((heading + 360f) % 360f, elevation)))
+                val direction = directionFilter.update(CameraDirection((heading + 360f) % 360f, elevation), event.timestamp)
+                publish(state.copy(direction = direction))
             }
 
             override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
@@ -86,6 +89,7 @@ class AndroidClueCamera @Inject constructor(
 
             override fun onPause(owner: LifecycleOwner) {
                 sensors.unregisterListener(sensorListener)
+                directionFilter.reset()
                 publish(state.copy(previewReady = false, direction = null))
             }
         }

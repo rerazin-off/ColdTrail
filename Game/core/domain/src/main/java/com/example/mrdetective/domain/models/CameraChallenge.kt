@@ -7,6 +7,7 @@ data class CameraChallenge(
     val hint: String?,
     val clueId: Int,
     val clueTitle: String,
+    val clueDescription: String,
     val imageUrl: String?,
     val pendingOrCompleted: Boolean,
     val rewardClaimed: Boolean,

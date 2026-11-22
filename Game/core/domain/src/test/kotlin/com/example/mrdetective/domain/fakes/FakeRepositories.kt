@@ -218,6 +218,9 @@ class FakeProgressRepository : ProgressRepository {
         return progressResult
     }
 
+    override fun observeCollectedClueIds(caseId: Int) =
+        kotlinx.coroutines.flow.flowOf(progressResult.getOrNull()?.collectedClueIds.orEmpty().toSet())
+
     override suspend fun saveProgress(progress: InvestigationProgress): Result<Unit> = Result.success(Unit)
 
     override suspend fun completeCase(caseId: Int): Result<Unit> = Result.success(Unit)

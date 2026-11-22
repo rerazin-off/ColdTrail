@@ -66,7 +66,11 @@ class SupabaseCaseRepositoryImpl @Inject constructor(
 
     override suspend fun getCase(id: Int): Result<Case> = remoteOrCache(
         connectivity,
-        cached = { local.getById(id)?.toDomain() },
+        cached = {
+            local.getById(id)?.toDomain()?.copy(
+                clueIds = clues.getByCase(id).mapTo(mutableSetOf()) { it.id }.takeIf { it.isNotEmpty() },
+            )
+        },
         remote = {
             val dto = api.getCase("eq.$id").firstOrNull() ?: throw DomainError.NotFound("Дело не найдено")
             // First open downloads all reference data needed to play this case offline.
@@ -86,7 +90,7 @@ class SupabaseCaseRepositoryImpl @Inject constructor(
                     it.rewardClueId
                 )
             })
-            dto.toDomain()
+            dto.toDomain().copy(clueIds = clueRows.mapTo(mutableSetOf()) { it.id })
         },
     )
 

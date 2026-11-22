@@ -15,6 +15,9 @@ import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 @Singleton
 class ProgressRepositoryImpl @Inject constructor(
@@ -35,6 +38,12 @@ class ProgressRepositoryImpl @Inject constructor(
                 collectedClueIds = progress.collectedClueIds(investigation.id), status = investigation.status,
             ))
         } catch (error: Throwable) { Result.failure(error) }
+    }
+
+    override fun observeCollectedClueIds(caseId: Int) = flow {
+        val userId = auth.currentUser()
+        if (userId == null) emit(emptySet())
+        else emitAll(progress.observeCollectedClueIds(caseId, userId).map { it.toSet() })
     }
 
     override suspend fun saveProgress(progressModel: InvestigationProgress): Result<Unit> = try {

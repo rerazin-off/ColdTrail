@@ -111,7 +111,7 @@ class SupabaseCameraChallengeRepository @Inject constructor(
         pendingOrCompleted: Boolean,
         rewardClaimed: Boolean,
     ) = CameraChallenge(
-        id, investigationId, title, hint, clue.id, clue.title,
+        id, investigationId, title, hint, clue.id, clue.title, clue.description,
         clue.image.toClueImageUrl(), pendingOrCompleted, rewardClaimed,
     )
 

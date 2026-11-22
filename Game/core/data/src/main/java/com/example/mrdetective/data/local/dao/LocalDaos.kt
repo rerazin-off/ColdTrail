@@ -58,6 +58,12 @@ interface CaseDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun collectClue(item: CollectedClueEntity): Long
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun markPuzzleSolved(item: SolvedPuzzleEntity): Long
     @Query("SELECT clueId FROM collected_clues WHERE investigationId = :investigationId ORDER BY collectedAt") suspend fun collectedClueIds(investigationId: Int): List<Int>
+    @Query("""
+        SELECT DISTINCT captured.clueId FROM collected_clues AS captured
+        INNER JOIN investigations AS investigation ON investigation.id = captured.investigationId
+        WHERE investigation.caseId = :caseId AND investigation.userId = :userId
+    """)
+    fun observeCollectedClueIds(caseId: Int, userId: String): Flow<List<Int>>
     @Query("SELECT puzzleId FROM solved_puzzles WHERE investigationId = :investigationId") suspend fun solvedPuzzleIds(investigationId: Int): List<Int>
 
     @Query("UPDATE collected_clues SET investigationId = :newId WHERE investigationId = :oldId") suspend fun remapCollected(oldId: Int, newId: Int)

@@ -10,6 +10,7 @@ import com.example.mrdetective.domain.models.DialogueMessage
 import com.example.mrdetective.domain.models.MessageAuthor
 import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.domain.repositories.CaseRepository
+import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.usecases.cases.LoadSuspectsUseCase
 import com.example.mrdetective.domain.usecases.cases.RestoreInvestigationProgressUseCase
 import com.example.mrdetective.domain.usecases.cases.StartInvestigationUseCase
@@ -22,6 +23,7 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -39,9 +41,13 @@ internal data class InvestigationState(
     val starting: Boolean = false,
     val started: Boolean = false,
     val status: String? = null,
-    val collectedClueCount: Int = 0,
+    val collectedClueIds: Set<Int> = emptySet(),
     val error: String? = null,
-)
+) {
+    val totalClueCount get() = case?.clueIds?.size
+    val collectedClueCount get() = case?.clueIds?.count { it in collectedClueIds } ?: collectedClueIds.size
+    val hasRemainingClues get() = totalClueCount?.let { collectedClueCount < it } ?: true
+}
 
 @HiltViewModel
 internal class InvestigationViewModel @Inject constructor(
@@ -50,12 +56,18 @@ internal class InvestigationViewModel @Inject constructor(
     private val loadSuspects: LoadSuspectsUseCase,
     private val startInvestigation: StartInvestigationUseCase,
     private val restoreProgress: RestoreInvestigationProgressUseCase,
+    private val progressRepository: ProgressRepository,
 ) : ViewModel() {
     private val caseId = savedState.toRoute<InvestigationRoute>().caseId
     private val mutableState = MutableStateFlow(InvestigationState())
     val state = mutableState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            progressRepository.observeCollectedClueIds(caseId).collect { clueIds ->
+                mutableState.update { it.copy(collectedClueIds = clueIds) }
+            }
+        }
         load()
     }
 
@@ -65,21 +77,22 @@ internal class InvestigationViewModel @Inject constructor(
             mutableState.value = previous.copy(loading = true, error = null)
             val case = cases.getCase(caseId).valueOrThrowCancellation()
             if (case == null) {
-                mutableState.value = previous.copy(loading = false, error = "Не удалось загрузить дело.")
+                mutableState.update { it.copy(loading = false, error = "Не удалось загрузить дело.") }
                 return@launch
             }
             val suspects = loadSuspects(caseId).valueOrThrowCancellation()
             val progress = restoreProgress(caseId).valueOrThrowCancellation()
-            mutableState.value = previous.copy(
-                loading = false,
-                case = case,
-                suspects = suspects ?: previous.suspects,
-                suspectsUnavailable = suspects == null,
-                started = previous.started || progress != null,
-                status = progress?.status ?: previous.status,
-                collectedClueCount = progress?.collectedClueIds?.size ?: previous.collectedClueCount,
-                error = null,
-            )
+            mutableState.update {
+                it.copy(
+                    loading = false,
+                    case = case,
+                    suspects = suspects ?: it.suspects,
+                    suspectsUnavailable = suspects == null,
+                    started = it.started || progress != null,
+                    status = progress?.status ?: it.status,
+                    error = null,
+                )
+            }
         }
     }
 
@@ -90,7 +103,6 @@ internal class InvestigationViewModel @Inject constructor(
             mutableState.value = state.value.copy(
                 started = true,
                 status = progress.status,
-                collectedClueCount = progress.collectedClueIds.size,
             )
         }
     }

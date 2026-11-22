@@ -4,9 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.MorseChallenge
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
+import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
 import com.example.mrdetective.domain.usecases.puzzles.PlayPuzzleUseCase
 import com.example.mrdetective.domain.usecases.puzzles.chooseMorseChallenge
 import com.example.mrdetective.domain.usecases.puzzles.validateMorseChallengeAnswer
@@ -25,6 +27,7 @@ internal data class MorseGameState(
     val investigationId: Int = 0,
     val submitting: Boolean = false,
     val solved: Boolean = false,
+    val reward: Clue? = null,
     val loadError: String? = null,
     val answerError: String? = null,
 )
@@ -34,6 +37,7 @@ internal class MorseChallengeViewModel @Inject constructor(
     private val savedState: SavedStateHandle,
     private val challenges: MorseChallengeRepository,
     private val playPuzzle: PlayPuzzleUseCase,
+    private val loadInventory: LoadInventoryUseCase,
 ) : ViewModel() {
     private val route = savedState.toRoute<MorseRoute>()
     private val mutableState = MutableStateFlow(MorseGameState())
@@ -61,6 +65,7 @@ internal class MorseChallengeViewModel @Inject constructor(
                     challenge = challenge,
                     investigationId = available.investigationId,
                     solved = challenge?.solved == true,
+                    reward = if (challenge?.solved == true) findReward(available.investigationId, challenge.rewardClueId) else null,
                 )
             } catch (error: CancellationException) {
                 throw error
@@ -98,8 +103,14 @@ internal class MorseChallengeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val correct = playPuzzle(current.investigationId, challenge.id, submittedAnswer).getOrThrow()
+                val reward = if (correct) findReward(current.investigationId, challenge.rewardClueId) else null
                 mutableState.update {
-                    it.copy(submitting = false, solved = correct, answerError = if (correct) null else "Неверный ответ. Проверьте сигнал.")
+                    it.copy(
+                        submitting = false,
+                        solved = correct,
+                        reward = reward,
+                        answerError = if (correct) null else "Неверный ответ. Проверьте сигнал.",
+                    )
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -113,4 +124,10 @@ internal class MorseChallengeViewModel @Inject constructor(
             }
         }
     }
+
+    private suspend fun findReward(investigationId: Int, clueId: Int): Clue? =
+        loadInventory(investigationId).getOrElse {
+            if (it is CancellationException) throw it
+            emptyList()
+        }.firstOrNull { it.id == clueId }
 }

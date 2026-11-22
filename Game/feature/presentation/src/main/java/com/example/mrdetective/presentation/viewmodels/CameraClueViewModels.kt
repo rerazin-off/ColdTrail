@@ -15,7 +15,9 @@ import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.example.mrdetective.domain.usecases.clues.CaptureCameraClueUseCase
 import com.example.mrdetective.domain.usecases.clues.ChooseClueChallengeUseCase
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
+import com.example.mrdetective.domain.usecases.clues.ClueFramePosition
 import com.example.mrdetective.domain.usecases.clues.chooseClueAzimuth
+import com.example.mrdetective.domain.usecases.clues.cluePositionInFrame
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -89,6 +91,8 @@ internal class CameraClueViewModel @Inject constructor(
     private val cameraState = MutableStateFlow(ClueCameraState())
     val hardware = cameraState.asStateFlow()
     val targetAzimuth = savedState.getStateFlow<Float?>("cameraTargetAzimuth", null)
+    private val mutablePosition = MutableStateFlow<ClueFramePosition?>(null)
+    val position = mutablePosition.asStateFlow()
     private var loadJob: Job? = null
     private var observation: Job? = null
 
@@ -128,10 +132,17 @@ internal class CameraClueViewModel @Inject constructor(
             if (targetAzimuth.value == null && update.previewReady && update.error == null) {
                 update.direction?.let(::chooseClueAzimuth)?.let { savedState["cameraTargetAzimuth"] = it }
             }
+            val target = targetAzimuth.value
+            mutablePosition.value = if (target != null && update.previewReady && update.error == null) {
+                update.direction?.let { cluePositionInFrame(target, it, alreadyVisible = position.value != null) }
+            } else {
+                null
+            }
             cameraState.value = update
         }
         return AutoCloseable {
             session.close()
+            mutablePosition.value = null
             cameraState.value = ClueCameraState()
         }
     }
@@ -145,6 +156,10 @@ internal class CameraClueViewModel @Inject constructor(
         if (!currentCamera.previewReady || currentCamera.error != null || current.capturing ||
             current.submission == CameraSubmission.Awarded || current.submission == CameraSubmission.Pending
         ) return
+        if (position.value == null) {
+            mutableState.update { it.copy(captureMessage = "Улика не попала в кадр. Продолжайте поиск.") }
+            return
+        }
         mutableState.update { it.copy(capturing = true, captureMessage = null, submission = null) }
         viewModelScope.launch {
             try {

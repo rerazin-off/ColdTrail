@@ -187,11 +187,15 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable<CameraClueRoute> {
-                CameraClueScreen(hiltViewModel()) { navController.popBackStack() }
+            composable<CameraClueRoute> { cameraEntry ->
+                CameraClueScreen(hiltViewModel()) {
+                    if (navController.currentBackStackEntry == cameraEntry) navController.popBackStack()
+                }
             }
-            composable<MorseRoute> {
-                MorseScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
+            composable<MorseRoute> { morseEntry ->
+                MorseScreen(hiltViewModel(), hiltViewModel()) {
+                    if (navController.currentBackStackEntry == morseEntry) navController.popBackStack()
+                }
             }
             composable<DeviceSettingsRoute> {
                 DeviceSettingsScreen(hiltViewModel()) { navController.popBackStack() }

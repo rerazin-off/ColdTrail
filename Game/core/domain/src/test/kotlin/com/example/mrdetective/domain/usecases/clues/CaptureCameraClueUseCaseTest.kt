@@ -47,6 +47,14 @@ class CaptureCameraClueUseCaseTest {
     }
 
     @Test
+    fun visibleClueStaysInFrameNearTheEntryThreshold() {
+        val nearEdge = CameraDirection(22f, 0f)
+        assertNull(cluePositionInFrame(0f, nearEdge, alreadyVisible = false))
+        assertNotNull(cluePositionInFrame(0f, nearEdge, alreadyVisible = true))
+        assertNull(cluePositionInFrame(0f, CameraDirection(25f, 0f), alreadyVisible = true))
+    }
+
+    @Test
     fun waitsUntilCameraPointsTowardTheRoom() {
         assertNull(chooseClueAzimuth(CameraDirection(90f, -60f)))
         assertNull(chooseClueAzimuth(CameraDirection(90f, 45f)))

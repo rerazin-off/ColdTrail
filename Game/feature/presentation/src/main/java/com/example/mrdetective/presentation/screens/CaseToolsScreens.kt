@@ -55,6 +55,7 @@ import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
+import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.components.MorseAlphabetPanel
@@ -232,6 +233,9 @@ internal fun MorseScreen(
     }
     val colors = AppTheme.colors
     val solved = puzzle.solved
+    if (solved) {
+        ClueRewardDialog(puzzle.reward?.title, puzzle.reward?.description, onBack)
+    }
     val border = when {
         solved -> colors.success
         puzzle.answerError != null -> colors.error
@@ -360,7 +364,7 @@ internal fun MorseScreen(
         }
         Spacer(Modifier.height(8.dp))
     }
-    if (showVibrationOptions) {
+    if (showVibrationOptions && !solved) {
         val dismiss = {
             if (!vibration.saving) {
                 if (vibration.enabled == null && !vibration.loading) viewModel.setEnabled(false)

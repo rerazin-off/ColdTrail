@@ -17,9 +17,12 @@ fun chooseClueAzimuth(start: CameraDirection): Float? {
 fun cluePositionInFrame(
     targetAzimuth: Float,
     direction: CameraDirection,
+    alreadyVisible: Boolean = true,
 ): ClueFramePosition? {
     val delta = ((targetAzimuth - direction.azimuth + 540f) % 360f) - 180f
-    if (delta !in -24f..24f || direction.elevation !in -18f..18f) return null
+    val horizontalLimit = if (alreadyVisible) 24f else 20f
+    val verticalLimit = if (alreadyVisible) 18f else 15f
+    if (delta !in -horizontalLimit..horizontalLimit || direction.elevation !in -verticalLimit..verticalLimit) return null
     // Keep the entire object inside the viewfinder when the shutter is pressed.
     return ClueFramePosition(x = 0.5f + delta / 80f, y = 0.5f + direction.elevation / 60f)
 }

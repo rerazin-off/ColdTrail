@@ -82,6 +82,7 @@ internal fun InvestigationScreen(
                                 2,
                                 "Собрать улики",
                                 when {
+                                    state.totalClueCount != null -> "Найдено улик: ${state.collectedClueCount}/${state.totalClueCount}"
                                     state.collectedClueCount > 0 -> "Найдено улик: ${state.collectedClueCount}"
                                     state.started -> "Доступно"
                                     else -> "После начала расследования"
@@ -115,7 +116,7 @@ internal fun InvestigationScreen(
                             )
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (state.status !in setOf("solved", "failed", "closed")) {
+                                if (state.hasRemainingClues && state.status !in setOf("solved", "failed", "closed")) {
                                     AppButton("Добыть улику", { onFindClue(case.id) }, style = AppButtonStyle.Accent)
                                 }
                                 AppButton(

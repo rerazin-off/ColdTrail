@@ -4,6 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -45,12 +49,13 @@ import coil3.compose.AsyncImage
 import com.example.mrdetective.domain.models.CameraChallenge
 import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
-import com.example.mrdetective.domain.usecases.clues.cluePositionInFrame
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
+import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
+import kotlin.math.roundToInt
 
 @Composable
 internal fun ChooseClueChallengeScreen(
@@ -92,7 +97,7 @@ internal fun CameraClueScreen(viewModel: CameraClueViewModel, onBack: () -> Unit
             state.loading -> CameraClueLoading("Загружаем улику…")
             challenge == null -> CameraClueMessage(state.loadMessage.orEmpty(), "Повторить", viewModel::load)
             state.submission == CameraSubmission.Awarded ->
-                CameraClueMessage("Улика «${challenge.clueTitle}» добавлена в инвентарь.", "К делу", onBack)
+                ClueRewardDialog(challenge.clueTitle, challenge.clueDescription, onBack)
             state.submission == CameraSubmission.Pending ->
                 CameraClueMessage("Снимок сохранён. Улика появится в инвентаре после отправки снимка.", "К делу", onBack)
             !permitted -> CameraClueMessage(
@@ -122,10 +127,8 @@ private fun CameraViewfinder(
         onDispose { attachment.close() }
     }
 
-    val position = targetAzimuth?.let { target ->
-        hardware.direction?.takeIf { hardware.previewReady && hardware.error == null }
-            ?.let { cluePositionInFrame(target, it) }
-    }
+    val position by viewModel.position.collectAsStateWithLifecycle()
+    val visiblePosition = position
     val instruction = when {
         hardware.error != null -> hardware.error.orEmpty()
         state.submission == CameraSubmission.Failed -> "Не удалось подтвердить снимок. Сфотографируйте улику ещё раз."
@@ -159,8 +162,12 @@ private fun CameraViewfinder(
             if (!hardware.previewReady && hardware.error == null) {
                 CircularProgressIndicator(color = colors.accent)
             }
-            if (position != null) {
-                val size = minOf(maxWidth, maxHeight) * 0.30f
+            if (visiblePosition != null) {
+                val x by animateFloatAsState(visiblePosition.x, tween(90, easing = LinearEasing), label = "Clue horizontal position")
+                val y by animateFloatAsState(visiblePosition.y, tween(90, easing = LinearEasing), label = "Clue vertical position")
+                val width = maxWidth
+                val height = maxHeight
+                val size = minOf(width, height) * 0.30f
                 val placeholder = painterResource(R.drawable.ic_camera_clue_placeholder)
                 AsyncImage(
                     model = challenge.imageUrl,
@@ -170,7 +177,9 @@ private fun CameraViewfinder(
                     error = placeholder,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.align(Alignment.TopStart)
-                        .offset(maxWidth * position.x - size / 2, maxHeight * position.y - size / 2)
+                        .offset {
+                            IntOffset((width.toPx() * x - size.toPx() / 2).roundToInt(), (height.toPx() * y - size.toPx() / 2).roundToInt())
+                        }
                         .size(size),
                 )
             }
