@@ -1,9 +1,8 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
+import android.content.res.Configuration
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +33,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -105,6 +107,9 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
     }
     val colors = AppTheme.colors
     val sideNavigation = LocalAppWindow.current.isMediumWidth
+    val verticalTransitions = sideNavigation || LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val forwardSlide = if (verticalTransitions) SlideDirection.Up else SlideDirection.Left
+    val backSlide = if (verticalTransitions) SlideDirection.Down else SlideDirection.Right
     val showNavigation = caseId != null || Tab.entries.any { it.route == route }
     val navigationItems: @Composable (Modifier) -> Unit = { itemModifier ->
         if (caseId != null) {
@@ -165,18 +170,18 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
             NavHost(
                 navController,
                 startDestination = Tab.Cases.route,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).clipToBounds(),
                 enterTransition = {
-                    slideInHorizontally(tween(800)) { width -> width }
+                    slideIntoContainer(forwardSlide, tween(800))
                 },
                 exitTransition = {
-                    slideOutHorizontally(tween(800)) { width -> -width }
+                    slideOutOfContainer(forwardSlide, tween(800))
                 },
                 popEnterTransition = {
-                    slideInHorizontally(tween(800)) { width -> -width }
+                    slideIntoContainer(backSlide, tween(800))
                 },
                 popExitTransition = {
-                    slideOutHorizontally(tween(800)) { width -> width }
+                    slideOutOfContainer(backSlide, tween(800))
                 },
             ) {
                 composable(Tab.Cases.route) {
