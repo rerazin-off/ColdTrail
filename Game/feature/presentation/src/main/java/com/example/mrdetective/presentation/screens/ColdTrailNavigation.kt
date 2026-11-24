@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,19 +47,22 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeKind
 import com.example.mrdetective.presentation.R
+import com.example.mrdetective.presentation.ui.theme.AppWindow
+import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
+import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 
-private enum class Tab(val route: String, val label: String, val icon: Int) {
-    Cases("cases", "Дела", R.drawable.ic_cases),
-    Profile("profile", "Профиль", R.drawable.ic_profile),
+private enum class Tab(val route: String, val label: Int, val icon: Int) {
+    Cases("cases", R.string.cases, R.drawable.ic_cases),
+    Profile("profile", R.string.profile, R.drawable.ic_profile),
 }
 
 @Composable
-fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) {
+fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) = AppWindow {
     val state by auth.state.collectAsStateWithLifecycle()
     val colors = AppTheme.colors
     if (state.signedIn) {
@@ -99,11 +104,36 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
         if (route == Tab.Cases.route) viewModel.reload()
     }
     val colors = AppTheme.colors
+    val sideNavigation = LocalAppWindow.current.isMediumWidth
+    val showNavigation = caseId != null || Tab.entries.any { it.route == route }
+    val navigationItems: @Composable (Modifier) -> Unit = { itemModifier ->
+        if (caseId != null) {
+            NavigationItem(stringResource(R.string.cases), R.drawable.ic_cases, !showingInventory, itemModifier) {
+                if (showingInventory) navController.popBackStack<InvestigationRoute>(inclusive = false)
+            }
+            NavigationItem(stringResource(R.string.inventory), R.drawable.ic_inventory, showingInventory, itemModifier) {
+                if (!showingInventory) navController.navigate(InventoryRoute(caseId)) { launchSingleTop = true }
+            }
+        } else {
+            Tab.entries.forEach { tab ->
+                val selected = route == tab.route
+                NavigationItem(stringResource(tab.label), tab.icon, selected, itemModifier) {
+                    if (!selected) {
+                        navController.navigate(tab.route) {
+                            popUpTo(Tab.Cases.route) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            }
+        }
+    }
     Scaffold(
         containerColor = colors.bg,
         contentColor = colors.text,
         bottomBar = {
-            if (caseId != null || Tab.entries.any { it.route == route }) {
+            if (showNavigation && !sideNavigation) {
                 Surface(
                     modifier = Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 10.dp),
                     color = colors.surface,
@@ -111,118 +141,112 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                     border = BorderStroke(1.dp, colors.outline),
                 ) {
                     Row(Modifier.fillMaxWidth().padding(4.dp).selectableGroup()) {
-                        if (caseId != null) {
-                            NavigationItem("Дела", R.drawable.ic_cases, !showingInventory, Modifier.weight(1f)) {
-                                if (showingInventory) navController.popBackStack<InvestigationRoute>(inclusive = false)
-                            }
-                            NavigationItem("Инвентарь", R.drawable.ic_inventory, showingInventory, Modifier.weight(1f)) {
-                                if (!showingInventory) navController.navigate(InventoryRoute(caseId)) { launchSingleTop = true }
-                            }
-                        } else {
-                            Tab.entries.forEach { tab ->
-                                val selected = route == tab.route
-                                NavigationItem(tab.label, tab.icon, selected, Modifier.weight(1f)) {
-                                    if (!selected) {
-                                        navController.navigate(tab.route) {
-                                            popUpTo(Tab.Cases.route) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        navigationItems(Modifier.weight(1f))
                     }
                 }
             }
         },
     ) { padding ->
-        NavHost(
-            navController,
-            startDestination = Tab.Cases.route,
-            modifier = Modifier.padding(padding),
-            enterTransition = {
-                slideInHorizontally(tween(800)) { width -> width }
-            },
-            exitTransition = {
-                slideOutHorizontally(tween(800)) { width -> -width }
-            },
-            popEnterTransition = {
-                slideInHorizontally(tween(800)) { width -> -width }
-            },
-            popExitTransition = {
-                slideOutHorizontally(tween(800)) { width -> width }
-            },
-        ) {
-            composable(Tab.Cases.route) {
-                CasesRoute(viewModel) { navController.navigate(InvestigationRoute(it)) }
+        Row(Modifier.fillMaxSize().padding(padding)) {
+            if (showNavigation && sideNavigation) {
+                Surface(
+                    modifier = Modifier.widthIn(min = 100.dp, max = 144.dp).padding(8.dp),
+                    shape = AppShapes.control,
+                    color = colors.surface,
+                    border = BorderStroke(1.dp, colors.outline),
+                ) {
+                    Column(Modifier.width(128.dp).padding(4.dp).selectableGroup()) {
+                        navigationItems(Modifier.fillMaxWidth())
+                    }
+                }
             }
-            composable<InvestigationRoute> {
-                InvestigationScreen(
-                    viewModel = hiltViewModel(),
-                    onBack = { navController.popBackStack() },
-                    onStatusChanged = viewModel::updateCaseStatus,
-                    onFindClue = { navController.navigate(ChooseClueChallengeRoute(it)) { launchSingleTop = true } },
-                    onAccusation = { navController.navigate(AccusationRoute(it)) },
-                    onInterrogate = { caseId, suspectId -> navController.navigate(InterrogationRoute(caseId, suspectId)) },
-                )
-            }
-            composable<InventoryRoute> {
-                InventoryScreen(hiltViewModel()) { navController.popBackStack() }
-            }
-            composable<ChooseClueChallengeRoute> { pickEntry ->
-                val picker: ClueChallengePickerViewModel = hiltViewModel()
-                ChooseClueChallengeScreen(
-                    picker,
-                    hiltViewModel(),
-                    hiltViewModel(),
-                    onChoice = { choice ->
-                        if (navController.currentBackStackEntry == pickEntry) {
-                            val options = navOptions {
-                                popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+            NavHost(
+                navController,
+                startDestination = Tab.Cases.route,
+                modifier = Modifier.weight(1f),
+                enterTransition = {
+                    slideInHorizontally(tween(800)) { width -> width }
+                },
+                exitTransition = {
+                    slideOutHorizontally(tween(800)) { width -> -width }
+                },
+                popEnterTransition = {
+                    slideInHorizontally(tween(800)) { width -> -width }
+                },
+                popExitTransition = {
+                    slideOutHorizontally(tween(800)) { width -> width }
+                },
+            ) {
+                composable(Tab.Cases.route) {
+                    CasesRoute(viewModel) { navController.navigate(InvestigationRoute(it)) }
+                }
+                composable<InvestigationRoute> {
+                    InvestigationScreen(
+                        viewModel = hiltViewModel(),
+                        onBack = { navController.popBackStack() },
+                        onStatusChanged = viewModel::updateCaseStatus,
+                        onFindClue = { navController.navigate(ChooseClueChallengeRoute(it)) { launchSingleTop = true } },
+                        onAccusation = { navController.navigate(AccusationRoute(it)) },
+                        onInterrogate = { caseId, suspectId -> navController.navigate(InterrogationRoute(caseId, suspectId)) },
+                    )
+                }
+                composable<InventoryRoute> {
+                    InventoryScreen(hiltViewModel()) { navController.popBackStack() }
+                }
+                composable<ChooseClueChallengeRoute> { pickEntry ->
+                    val picker: ClueChallengePickerViewModel = hiltViewModel()
+                    ChooseClueChallengeScreen(
+                        picker,
+                        hiltViewModel(),
+                        hiltViewModel(),
+                        onChoice = { choice ->
+                            if (navController.currentBackStackEntry == pickEntry) {
+                                val options = navOptions {
+                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+                                }
+                                when (choice.kind) {
+                                    ClueChallengeKind.Camera -> navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId), options)
+                                    ClueChallengeKind.Morse -> navController.navigate(MorseRoute(picker.caseId, choice.puzzleId), options)
+                                    ClueChallengeKind.Code -> navController.navigate(CodeChallengeRoute(picker.caseId, choice.puzzleId), options)
+                                }
                             }
-                            when (choice.kind) {
-                                ClueChallengeKind.Camera -> navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId), options)
-                                ClueChallengeKind.Morse -> navController.navigate(MorseRoute(picker.caseId, choice.puzzleId), options)
-                                ClueChallengeKind.Code -> navController.navigate(CodeChallengeRoute(picker.caseId, choice.puzzleId), options)
-                            }
-                        }
-                    },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable<CameraClueRoute> { cameraEntry ->
-                CameraClueScreen(hiltViewModel(), hiltViewModel()) {
-                    if (navController.currentBackStackEntry == cameraEntry) navController.popBackStack()
+                        },
+                        onBack = { navController.popBackStack() },
+                    )
                 }
-            }
-            composable<MorseRoute> { morseEntry ->
-                MorseScreen(hiltViewModel(), hiltViewModel()) {
-                    if (navController.currentBackStackEntry == morseEntry) navController.popBackStack()
+                composable<CameraClueRoute> { cameraEntry ->
+                    CameraClueScreen(hiltViewModel(), hiltViewModel()) {
+                        if (navController.currentBackStackEntry == cameraEntry) navController.popBackStack()
+                    }
                 }
-            }
-            composable<CodeChallengeRoute> { codeEntry ->
-                CodeChallengeScreen(hiltViewModel()) {
-                    if (navController.currentBackStackEntry == codeEntry) navController.popBackStack()
+                composable<MorseRoute> { morseEntry ->
+                    MorseScreen(hiltViewModel(), hiltViewModel()) {
+                        if (navController.currentBackStackEntry == morseEntry) navController.popBackStack()
+                    }
                 }
-            }
-            composable<DeviceSettingsRoute> {
-                DeviceSettingsScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
-            }
-            composable<AccusationRoute> {
-                AccusationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus)
-            }
-            composable<InterrogationRoute> {
-                InterrogationScreen(hiltViewModel()) { navController.popBackStack() }
-            }
-            composable(Tab.Profile.route) {
-                ProfileScreen(
-                    hiltViewModel(),
-                    auth,
-                    onBack = { navController.popBackStack() },
-                    onSettings = { navController.navigate(DeviceSettingsRoute) { launchSingleTop = true } },
-                    onSignOut = onSignOut,
-                )
+                composable<CodeChallengeRoute> { codeEntry ->
+                    CodeChallengeScreen(hiltViewModel()) {
+                        if (navController.currentBackStackEntry == codeEntry) navController.popBackStack()
+                    }
+                }
+                composable<DeviceSettingsRoute> {
+                    DeviceSettingsScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
+                }
+                composable<AccusationRoute> {
+                    AccusationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus)
+                }
+                composable<InterrogationRoute> {
+                    InterrogationScreen(hiltViewModel()) { navController.popBackStack() }
+                }
+                composable(Tab.Profile.route) {
+                    ProfileScreen(
+                        hiltViewModel(),
+                        auth,
+                        onBack = { navController.popBackStack() },
+                        onSettings = { navController.navigate(DeviceSettingsRoute) { launchSingleTop = true } },
+                        onSignOut = onSignOut,
+                    )
+                }
             }
         }
     }
@@ -253,8 +277,8 @@ private fun SplashScreen() {
     val colors = AppTheme.colors
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Холодный след", style = MaterialTheme.typography.displayLarge)
-            Text("Каждая деталь оставляет след", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.app_title), style = MaterialTheme.typography.displayLarge)
+            Text(stringResource(R.string.tagline), style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(56.dp))
             LinearProgressIndicator(
                 modifier = Modifier.width(190.dp),
@@ -262,7 +286,7 @@ private fun SplashScreen() {
                 trackColor = colors.surface2,
             )
             Spacer(Modifier.height(12.dp))
-            Text("Проверяем сеанс…", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.checking_session), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

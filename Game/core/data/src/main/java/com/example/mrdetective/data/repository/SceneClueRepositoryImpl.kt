@@ -22,12 +22,12 @@ class SceneClueRepositoryImpl @Inject constructor(
     override suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage> {
         val remote = if (connectivity.isNetworkAvailable()) {
             apiCall { api.getClueImages("neq.$targetClueId") }.getOrNull().orEmpty()
-                .mapNotNull { row -> row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it) } }
+                .mapNotNull { row -> row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) } }
         } else {
             emptyList()
         }
         val cached = apiCall { db.clueDao().getClueImages() }.getOrNull().orEmpty().mapNotNull { row ->
-            row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it) }
+            row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) }
         }
         return remote + cached
     }

@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mrdetective.domain.models.DomainError
@@ -25,6 +26,7 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val auth: AuthRepository,
     private val signIn: SignInUseCase,
     private val signUp: SignUpUseCase,
@@ -39,7 +41,7 @@ class AuthViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                AuthUiState(checkingSession = false, message = "Не удалось восстановить сеанс. Войдите снова.")
+                AuthUiState(checkingSession = false, message = strings.get(R.string.session_restore_error))
             }
             delay(650)
             mutableState.value = restored
@@ -56,7 +58,7 @@ class AuthViewModel @Inject constructor(
         if (state.value.busy || state.value.signedIn || state.value.checkingSession) return
         val address = email.trim()
         validateAuthCredentials(address, password, register)?.let { validationError ->
-            mutableState.value = state.value.copy(message = validationError, confirmationRequired = false)
+            mutableState.value = state.value.copy(message = strings.domainMessage(validationError, strings.get(R.string.credentials_error)), confirmationRequired = false)
             return
         }
         mutableState.value = state.value.copy(busy = true, message = null, confirmationRequired = false)
@@ -70,11 +72,11 @@ class AuthViewModel @Inject constructor(
                 throw error
             } catch (error: Exception) {
                 val message = when {
-                    error is DomainError.Network -> error.uiMessage("Не удалось войти.")
+                    error is DomainError.Network -> error.uiMessage(strings, strings.get(R.string.sign_in_error))
                     error is DomainError.Validation || error is DomainError.Unauthorized ->
-                        if (register) "Не удалось создать аккаунт. Проверьте почту и пароль."
-                        else "Проверьте почту, пароль и подтверждение адреса."
-                    else -> "Не удалось выполнить запрос. Попробуйте ещё раз."
+                        if (register) strings.get(R.string.sign_up_error)
+                        else strings.get(R.string.credentials_error)
+                    else -> strings.get(R.string.request_error)
                 }
                 AuthUiState(checkingSession = false, message = message)
             }
@@ -91,7 +93,7 @@ class AuthViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                AuthUiState(checkingSession = false, signedIn = true, message = "Не удалось выйти. Попробуйте ещё раз.")
+                AuthUiState(checkingSession = false, signedIn = true, message = strings.get(R.string.sign_out_error))
             }
         }
     }

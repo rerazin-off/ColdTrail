@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -75,6 +76,7 @@ internal data class AccusationState(
 
 @HiltViewModel
 internal class AccusationViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val savedState: SavedStateHandle,
     private val loadSuspects: LoadSuspectsUseCase,
     private val restoreProgress: RestoreInvestigationProgressUseCase,
@@ -110,9 +112,9 @@ internal class AccusationViewModel @Inject constructor(
                     loading = false,
                     suspects = suspects,
                     closed = closed,
-                    error = if (closed) error.uiMessage("Не удалось загрузить итог расследования.")
-                    else if (error is DomainError.NotFound) "Сначала начните расследование."
-                    else error.uiMessage("Не удалось открыть обвинение."),
+                    error = if (closed) error.uiMessage(strings, strings.get(R.string.verdict_load_error))
+                    else if (error is DomainError.NotFound) strings.get(R.string.investigation_not_started)
+                    else error.uiMessage(strings, strings.get(R.string.accusation_load_error)),
                 )
             }
         }
@@ -135,7 +137,7 @@ internal class AccusationViewModel @Inject constructor(
                 throw error
             } catch (error: Exception) {
                 current.copy(
-                    error = error.uiMessage("Не удалось отправить обвинение."),
+                    error = error.uiMessage(strings, strings.get(R.string.accusation_send_error)),
                 )
             }
         }

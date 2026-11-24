@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -52,6 +53,7 @@ internal data class InvestigationState(
 
 @HiltViewModel
 internal class InvestigationViewModel @Inject constructor(
+    private val strings: UiStrings,
     savedState: SavedStateHandle,
     private val cases: CaseRepository,
     private val loadSuspects: LoadSuspectsUseCase,
@@ -79,7 +81,7 @@ internal class InvestigationViewModel @Inject constructor(
             val caseResult = cases.getCase(caseId)
             val case = caseResult.valueOrThrowCancellation()
             if (case == null) {
-                val message = caseResult.exceptionOrNull()?.uiMessage("Не удалось загрузить дело.") ?: "Дело недоступно."
+                val message = caseResult.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.case_load_error)) ?: strings.get(R.string.case_unavailable)
                 mutableState.update { it.copy(loading = false, error = message) }
                 return@launch
             }
@@ -92,7 +94,7 @@ internal class InvestigationViewModel @Inject constructor(
                     case = case,
                     suspects = suspects ?: it.suspects,
                     suspectsUnavailable = suspects == null,
-                    suspectsError = suspectsResult.exceptionOrNull()?.uiMessage("Не удалось загрузить подозреваемых."),
+                    suspectsError = suspectsResult.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.suspects_load_error)),
                     started = it.started || progress != null,
                     status = progress?.status ?: it.status,
                     error = null,
@@ -123,7 +125,7 @@ internal class InvestigationViewModel @Inject constructor(
                 starting = false,
                 started = started,
                 status = status,
-                error = if (started) null else "Не удалось начать расследование.",
+                error = if (started) null else strings.get(R.string.investigation_start_error),
             )
         }
     }
@@ -149,6 +151,7 @@ internal sealed interface CluePickerState {
 
 @HiltViewModel
 internal class InterrogationViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val savedState: SavedStateHandle,
     private val loadSuspects: LoadSuspectsUseCase,
     private val history: LoadDialogueHistoryUseCase,
@@ -186,7 +189,7 @@ internal class InterrogationViewModel @Inject constructor(
                 suspect = suspect,
                 messages = messages ?: previous.messages,
                 historyUnavailable = messages == null,
-                historyError = historyResult?.exceptionOrNull()?.uiMessage("Не удалось обновить историю."),
+                historyError = historyResult?.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.history_error)),
                 feedback = null,
                 pendingFeedback = false,
             )
@@ -218,11 +221,11 @@ internal class InterrogationViewModel @Inject constructor(
         val current = state.value
         if (current.suspect == null || current.loading || current.sending || (question.isBlank() && clue == null)) return
         val text = if (clue == null) question else {
-            val label = "Улика: ${clue.title.take(200)}"
+            val label = strings.get(R.string.clue_attachment_label, clue.title.take(200))
             if (question.isBlank()) label else "$question\n\n$label"
         }
         if (text.length > 1000) {
-            mutableState.value = current.copy(feedback = "Сократите сообщение, чтобы прикрепить улику.", pendingFeedback = false)
+            mutableState.value = current.copy(feedback = strings.get(R.string.shorten_message), pendingFeedback = false)
             return
         }
         mutableState.value = current.copy(sending = true, feedback = null)
@@ -233,7 +236,7 @@ internal class InterrogationViewModel @Inject constructor(
             if (message == null) {
                 val failure = result.exceptionOrNull()
                 mutableState.value = current.copy(
-                    feedback = failure?.uiMessage("Не удалось отправить сообщение.") ?: "Не удалось отправить сообщение.",
+                    feedback = failure?.uiMessage(strings, strings.get(R.string.message_send_error)) ?: strings.get(R.string.message_send_error),
                     pendingFeedback = false,
                 )
                 return@launch
@@ -248,7 +251,7 @@ internal class InterrogationViewModel @Inject constructor(
                 messages = messages,
                 animatedMessageIds = setOfNotNull(message.id, outgoing?.id) - oldIds,
                 historyUnavailable = updated == null,
-                feedback = if (message.author == MessageAuthor.PLAYER) "Реплика сохранена на телефоне. Она отправится, когда сервер станет доступен." else null,
+                feedback = if (message.author == MessageAuthor.PLAYER) strings.get(R.string.message_pending) else null,
                 pendingFeedback = message.author == MessageAuthor.PLAYER,
             )
         }
@@ -257,7 +260,7 @@ internal class InterrogationViewModel @Inject constructor(
     fun retryPendingMessage() {
         viewModelScope.launch {
             val result = progressRepository.syncProgress()
-            mutableState.update { it.copy(feedback = result.exceptionOrNull()?.uiMessage("Не удалось запустить синхронизацию.")) }
+            mutableState.update { it.copy(feedback = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error))) }
         }
     }
 }

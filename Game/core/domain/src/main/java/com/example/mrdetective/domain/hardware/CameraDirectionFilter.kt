@@ -35,5 +35,8 @@ class CameraDirectionFilter {
         direction = null
     }
 
-    private fun movement(delta: Float, weight: Float): Float = if (abs(delta) < 0.6f) 0f else delta * weight
+    private fun movement(
+        delta: Float,
+        weight: Float,
+    ): Float = if (abs(delta) < 0.6f) 0f else delta * weight
 }

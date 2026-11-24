@@ -1,14 +1,15 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.domain.models.DomainError
 
-internal fun Throwable.uiMessage(fallback: String): String = when (this) {
+internal fun Throwable.uiMessage(strings: UiStrings, fallback: String): String = when (this) {
     is DomainError.Network -> when (kind) {
-        DomainError.Network.Kind.Offline -> "Нет подключения к интернету. Проверьте сеть и повторите."
-        DomainError.Network.Kind.Server -> "Сервер временно недоступен. Попробуйте ещё раз позже."
-        DomainError.Network.Kind.Connection -> "Не удалось связаться с сервером. Проверьте подключение и повторите."
+        DomainError.Network.Kind.Offline -> strings.get(R.string.network_offline)
+        DomainError.Network.Kind.Server -> strings.get(R.string.network_server)
+        DomainError.Network.Kind.Connection -> strings.get(R.string.network_connection)
     }
-    is DomainError.SyncPending -> "Данные сохранены на телефоне. Синхронизация продолжится при подключении к интернету."
-    is DomainError.Unauthorized -> "Сеанс недоступен. Войдите в аккаунт повторно."
+    is DomainError.SyncPending -> strings.get(R.string.sync_pending)
+    is DomainError.Unauthorized -> strings.get(R.string.session_unavailable)
     else -> fallback
 }

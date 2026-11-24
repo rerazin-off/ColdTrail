@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ fun AppTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else 3,
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
@@ -41,12 +44,15 @@ fun AppTextField(
         value = value,
         onValueChange = onValueChange,
         singleLine = singleLine,
+        maxLines = maxLines,
         enabled = enabled,
         keyboardOptions = keyboardOptions,
         visualTransformation = visualTransformation,
         textStyle = textStyle.copy(color = c.text),
         cursorBrush = SolidColor(c.accent),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics {
+            if (placeholder.isNotBlank()) contentDescription = placeholder
+        },
         decorationBox = { innerTextField ->
             Row(
                 modifier =

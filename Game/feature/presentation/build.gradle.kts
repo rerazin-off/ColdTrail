@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.window:window-core:1.5.0")
     implementation(libs.androidx.camera.view)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

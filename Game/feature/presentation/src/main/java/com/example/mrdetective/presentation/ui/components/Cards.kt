@@ -16,8 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
@@ -52,7 +53,7 @@ fun CaseCard(
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             Text(title, style = MaterialTheme.typography.headlineMedium)
             Text(intro, style = MaterialTheme.typography.bodyLarge, color = AppTheme.colors.text2)
-            AppButton(text = "Начать расследование", onClick = onStart)
+            AppButton(text = stringResource(R.string.start_investigation), onClick = onStart)
         }
     }
 }
@@ -76,15 +77,13 @@ fun SuspectCard(
                 avatar()
             }
             Column(Modifier.weight(0.66f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(name, style = MaterialTheme.typography.headlineMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(name, style = MaterialTheme.typography.headlineMedium)
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
                     color = AppTheme.colors.text2,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
                 )
-                AppButton("Открыть диалог", onInterrogate, enabled = enabled, compact = true)
+                AppButton(stringResource(R.string.open_dialogue), onInterrogate, enabled = enabled, compact = true)
             }
         }
     }
@@ -117,7 +116,7 @@ private fun AvatarPlaceholder(name: String) {
         modifier = Modifier.fillMaxWidth().height(118.dp).background(c.primary, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(name.take(1), style = MaterialTheme.typography.titleMedium, color = c.bg)
+        Text(name.take(1), style = MaterialTheme.typography.titleMedium, color = c.onPrimary)
     }
 }
 

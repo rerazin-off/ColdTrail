@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -40,6 +41,7 @@ internal data class CodeChallengeState(
 
 @HiltViewModel
 internal class CodeChallengeViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val savedState: SavedStateHandle,
     private val challenges: CodeChallengeRepository,
     private val playCode: PlayCodeChallengeUseCase,
@@ -76,7 +78,8 @@ internal class CodeChallengeViewModel @Inject constructor(
                     if (error is CancellationException) throw error
                     mutableState.value = CodeChallengeState(
                         loading = false,
-                        loadError = (error as? DomainError.Validation)?.message ?: error.uiMessage("Не удалось загрузить загадку."),
+                        loadError = if (error is DomainError.Validation) strings.domainMessage(error.message, strings.get(R.string.puzzle_load_error))
+                        else error.uiMessage(strings, strings.get(R.string.puzzle_load_error)),
                     )
                 },
             )
@@ -105,15 +108,15 @@ internal class CodeChallengeViewModel @Inject constructor(
                             submitting = false,
                             solved = correct,
                             reward = reward,
-                            answerError = if (correct) null else "Неверный код. Проверьте подсказку.",
+                            answerError = if (correct) null else strings.get(R.string.incorrect_code),
                         )
                     }
                 },
                 { error ->
                     if (error is CancellationException) throw error
                     val message = when (error) {
-                        is DomainError.Validation -> error.message ?: "Введите четыре цифры."
-                        else -> error.uiMessage("Не удалось проверить код.")
+                        is DomainError.Validation -> strings.domainMessage(error.message, strings.get(R.string.four_digits_required))
+                        else -> error.uiMessage(strings, strings.get(R.string.code_check_error))
                     }
                     mutableState.update {
                         it.copy(
@@ -131,7 +134,7 @@ internal class CodeChallengeViewModel @Inject constructor(
     fun retrySync() {
         viewModelScope.launch {
             val result = progress.syncProgress()
-            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage("Не удалось запустить синхронизацию.")) }
+            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error))) }
         }
     }
 

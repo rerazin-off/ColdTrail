@@ -1,6 +1,7 @@
 package com.example.mrdetective.presentation.ui
 
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -71,13 +72,13 @@ internal fun ChooseClueChallengeScreen(
         state.choice?.let(onChoice)
     }
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        CaseToolHeader("Добыть улику", onBack)
+        CaseToolHeader(stringResource(R.string.find_clue), onBack)
         when {
-            state.loading || state.choice != null -> CameraClueLoading("Ищем доступную загадку…")
+            state.loading || state.choice != null -> CameraClueLoading(stringResource(R.string.looking_for_puzzle))
             state.error != null -> ScreenRetry(state.error.orEmpty(), viewModel::load)
             state.permissionsRequired -> AlertDialog(
                 onDismissRequest = onBack,
-                title = { Text("Камера и вибрация") },
+                title = { Text(stringResource(R.string.camera_and_vibration)) },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         DevicePermissionOptions(vibration, cameraSettings, access)
@@ -85,7 +86,7 @@ internal fun ChooseClueChallengeScreen(
                 },
                 confirmButton = {
                     AppButton(
-                        "Продолжить",
+                        stringResource(R.string.continue_action),
                         { viewModel.continueWithPermissions(access.granted) },
                         enabled = !cameraState.loading && !cameraState.saving && !vibrationState.loading && !vibrationState.saving,
                     )
@@ -94,7 +95,7 @@ internal fun ChooseClueChallengeScreen(
                 titleContentColor = AppTheme.colors.text,
                 textContentColor = AppTheme.colors.text,
             )
-            else -> CameraClueMessage("В этом деле больше нет доступных загадок.", "К делу", onBack)
+            else -> CameraClueMessage(stringResource(R.string.no_case_puzzles), stringResource(R.string.back_to_case), onBack)
         }
     }
 }
@@ -123,17 +124,17 @@ internal fun CameraClueScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val challenge = state.challenge
-        CaseToolHeader(challenge?.title ?: "Поиск улики", onBack)
+        CaseToolHeader(challenge?.title ?: stringResource(R.string.clue_search), onBack)
         when {
-            state.loading -> CameraClueLoading("Загружаем улику…")
+            state.loading -> CameraClueLoading(stringResource(R.string.loading_clue))
             challenge == null -> ScreenRetry(state.loadMessage.orEmpty(), viewModel::load)
             state.submission == CameraSubmission.Awarded ->
                 ClueRewardDialog(challenge.clueTitle, challenge.clueDescription, onBack)
             state.submission == CameraSubmission.Pending -> {
-                CameraClueMessage("Снимок сохранён. Улика появится в инвентаре после отправки снимка.", "К делу", onBack)
+                CameraClueMessage(stringResource(R.string.photo_queued), stringResource(R.string.back_to_case), onBack)
                 ErrorNotice(state.syncError, viewModel::retrySync)
             }
-            settings.loading || settings.saving -> CameraClueLoading("Загружаем настройку камеры…")
+            settings.loading || settings.saving -> CameraClueLoading(stringResource(R.string.loading_camera_settings))
             searchingScene || searchMode == ClueSearchMode.Picture -> SceneClueSearch(
                 challenge = challenge,
                 state = state,
@@ -146,9 +147,9 @@ internal fun CameraClueScreen(
                 },
             )
             searchMode == ClueSearchMode.AskPermission -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Разрешите доступ к камере, чтобы осмотреть комнату и сфотографировать улику.")
-                AppButton("Разрешить доступ", { access.requestOrOpenSettings(false) }, style = AppButtonStyle.Accent)
-                AppButton("Искать на картинке", { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
+                Text(stringResource(R.string.camera_permission_rationale))
+                AppButton(stringResource(R.string.allow_access), { access.requestOrOpenSettings(false) }, style = AppButtonStyle.Accent)
+                AppButton(stringResource(R.string.search_picture), { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
             }
             else -> CameraViewfinder(challenge, state, viewModel, Modifier.weight(1f))
         }
@@ -178,15 +179,15 @@ private fun CameraViewfinder(
     val instruction = when {
         hardware.error != null -> hardware.error.orEmpty()
 
-        position != null -> "Улика в кадре. Сделайте снимок."
-        !hardware.previewReady -> "Открываем камеру…"
-        hardware.direction == null || targetAzimuth == null -> "Держите телефон перед собой, чтобы начать поиск."
+        position != null -> stringResource(R.string.clue_in_frame_hint)
+        !hardware.previewReady -> stringResource(R.string.opening_camera)
+        hardware.direction == null || targetAzimuth == null -> stringResource(R.string.hold_camera)
         else -> challenge.hint?.takeIf { it.isNotBlank() }
-            ?: "Держите телефон перед собой и медленно поворачивайтесь."
+            ?: stringResource(R.string.turn_camera)
     }
 
     ErrorNotice(state.captureMessage)
-    ErrorNotice(if (state.submission == CameraSubmission.Failed) "Не удалось подтвердить снимок. Сфотографируйте улику ещё раз." else null)
+    ErrorNotice(if (state.submission == CameraSubmission.Failed) stringResource(R.string.capture_failed) else null)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Keep the viewfinder size stable when the instruction changes.
         Text(
@@ -217,7 +218,7 @@ private fun CameraViewfinder(
                 val placeholder = painterResource(R.drawable.ic_camera_clue_placeholder)
                 AsyncImage(
                     model = challenge.imageUrl,
-                    contentDescription = "Улика в кадре",
+                    contentDescription = stringResource(R.string.clue_in_frame),
                     placeholder = placeholder,
                     fallback = placeholder,
                     error = placeholder,
@@ -231,7 +232,7 @@ private fun CameraViewfinder(
             }
         }
         AppButton(
-            if (state.capturing) "Сохраняем снимок…" else "Сфотографировать",
+            if (state.capturing) stringResource(R.string.saving_photo) else stringResource(R.string.take_photo),
             viewModel::capture,
             style = AppButtonStyle.Accent,
             enabled = hardware.previewReady && hardware.direction != null && targetAzimuth != null &&

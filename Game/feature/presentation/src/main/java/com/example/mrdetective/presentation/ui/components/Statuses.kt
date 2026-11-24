@@ -1,5 +1,7 @@
 package com.example.mrdetective.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
@@ -13,11 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-enum class ChipStatus(val label: String) {
-    ClueFound("Улика найдена"),
-    Available("Доступно"),
-    Done("Выполнено"),
-    Error("Ошибка"),
+enum class ChipStatus(val label: Int) {
+    ClueFound(R.string.clue_found),
+    Available(R.string.available),
+    Done(R.string.done),
+    Error(R.string.error),
 }
 
 
@@ -25,7 +27,7 @@ enum class ChipStatus(val label: String) {
 fun Statuses(
     status: ChipStatus,
     modifier: Modifier = Modifier,
-    text: String = status.label,
+    text: String = stringResource(status.label),
 ) {
     val c = AppTheme.colors
     val color: Color =
@@ -39,7 +41,7 @@ fun Statuses(
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
-        color = color,
+        color = if (status == ChipStatus.ClueFound) c.text else color,
         modifier =
             modifier
                 .background(color.copy(alpha = 0.16f), shape)

@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -40,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.DialogueMessage
 import com.example.mrdetective.domain.models.MessageAuthor
+import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
@@ -57,6 +60,8 @@ import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
+import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
+import com.example.mrdetective.presentation.ui.theme.isShort
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -73,8 +78,9 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
     val focus = LocalFocusManager.current
     val colors = AppTheme.colors
 
-    LaunchedEffect(state.messages.lastOrNull()?.id) {
-        if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.lastIndex)
+    val compact = LocalAppWindow.current.isShort || LocalDensity.current.fontScale >= 1.4f
+    LaunchedEffect(state.messages.lastOrNull()?.id, compact) {
+        if (state.messages.isNotEmpty()) listState.scrollToItem(state.messages.lastIndex + if (compact) 1 else 0)
     }
     LaunchedEffect(pickingClue) {
         if (pickingClue) viewModel.loadClues()
@@ -83,44 +89,21 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
     Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(painterResource(R.drawable.ic_chat_back), "Назад к делу", tint = colors.text)
+                Icon(painterResource(R.drawable.ic_chat_back), stringResource(R.string.back_to_investigation), tint = colors.text)
             }
-            Text("Допрос подозреваемого", style = MaterialTheme.typography.headlineMedium, color = colors.text)
+            Text(stringResource(R.string.interrogation), style = MaterialTheme.typography.headlineMedium, color = colors.text)
         }
 
         val suspect = state.suspect
         if (state.loading) {
             ScreenProgress()
         } else if (suspect == null) {
-            ScreenRetry("Не удалось открыть диалог.", viewModel::load)
+            ScreenRetry(stringResource(R.string.dialogue_open_error), viewModel::load)
         } else {
-            AppCard(outlined = true, padding = 8.dp) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(46.dp),
-                        shape = AppShapes.control,
-                        color = colors.surface2,
-                        border = BorderStroke(1.dp, colors.outline),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(suspect.name.take(1), color = colors.text, style = MaterialTheme.typography.titleMedium)
-                        }
-                    }
-                    Column {
-                        Text(suspect.name, style = MaterialTheme.typography.headlineMedium)
-                        Text(
-                            suspect.profile,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.text2,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
+            if (!compact) InterrogationSuspect(suspect, compact = false)
 
             if (state.historyUnavailable && state.feedback == null) {
-                ScreenRetry(state.historyError ?: "Не удалось обновить историю.", viewModel::load)
+                ScreenRetry(state.historyError ?: stringResource(R.string.history_error), viewModel::load)
             }
             Surface(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp),
@@ -134,8 +117,9 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                     contentPadding = PaddingValues(10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (compact) item { InterrogationSuspect(suspect, compact = true) }
                     if (state.messages.isEmpty() && !state.historyUnavailable) {
-                        item { Text("Задайте подозреваемому первый вопрос.", color = colors.text2) }
+                        item { Text(stringResource(R.string.first_question), color = colors.text2) }
                     }
                     items(state.messages, key = { it.id }) { message ->
                         val animate = message.id in state.animatedMessageIds
@@ -160,8 +144,8 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 ErrorNotice(state.feedback, if (state.pendingFeedback) viewModel::retryPendingMessage else viewModel::send)
-                if (attachment == null) {
-                    Text("Скрепка — прикрепить улику к сообщению", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                if (attachment == null && !compact) {
+                    Text(stringResource(R.string.attach_hint), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                 }
                 attachment?.let { clue ->
                     AppCard(outlined = true, padding = 6.dp) {
@@ -175,7 +159,7 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             IconButton(onClick = { viewModel.attach(null) }, enabled = !state.sending) {
-                                Icon(painterResource(R.drawable.ic_chat_close), "Убрать улику", tint = colors.text)
+                                Icon(painterResource(R.drawable.ic_chat_close), stringResource(R.string.remove_clue), tint = colors.text)
                             }
                         }
                     }
@@ -183,7 +167,9 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                 AppTextField(
                     value = draft,
                     onValueChange = viewModel::updateDraft,
-                    placeholder = "Ваш вопрос подозреваемому…",
+                    placeholder = stringResource(R.string.suspect_question),
+                    singleLine = false,
+                    maxLines = if (compact) 2 else 3,
                     enabled = !state.sending,
                     textStyle = MaterialTheme.typography.bodySmall,
                     trailingContent = {
@@ -194,7 +180,7 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                                 pickingClue = true
                             },
                         ) {
-                            Icon(painterResource(R.drawable.ic_chat_attach), "Прикрепить улику", tint = colors.outline)
+                            Icon(painterResource(R.drawable.ic_chat_attach), stringResource(R.string.attach_clue), tint = colors.outline)
                         }
                         IconButton(
                             onClick = viewModel::send,
@@ -205,7 +191,7 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                             } else {
                                 Icon(
                                     painterResource(R.drawable.ic_chat_send),
-                                    "Отправить сообщение",
+                                    stringResource(R.string.send_message),
                                     tint = if (draft.isNotBlank() || attachment != null) colors.text else colors.text2.copy(alpha = 0.45f),
                                 )
                             }
@@ -230,11 +216,40 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
 }
 
 @Composable
+private fun InterrogationSuspect(suspect: Suspect, compact: Boolean) {
+    val colors = AppTheme.colors
+    AppCard(outlined = true, padding = 8.dp) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier.size(46.dp),
+                shape = AppShapes.control,
+                color = colors.surface2,
+                border = BorderStroke(1.dp, colors.outline),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(suspect.name.take(1), color = colors.text, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+            Column {
+                Text(suspect.name, style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    suspect.profile,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.text2,
+                    maxLines = if (compact) Int.MAX_VALUE else 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun DialogueBubble(message: DialogueMessage, suspectName: String, animateText: Boolean) {
     val colors = AppTheme.colors
     val player = message.author == MessageAuthor.PLAYER
     val background = if (player) colors.surface2 else if (colors.isDark) colors.primary else colors.bg
-    val foreground = if (!player && colors.isDark) colors.bg else colors.text
+    val foreground = if (!player && colors.isDark) colors.onPrimary else colors.text
     Box(Modifier.fillMaxWidth(), contentAlignment = if (player) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
             modifier = Modifier.fillMaxWidth(if (player) 0.72f else 0.82f),
@@ -244,7 +259,7 @@ private fun DialogueBubble(message: DialogueMessage, suspectName: String, animat
             border = if (player) BorderStroke(1.dp, colors.outline) else null,
         ) {
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(if (player) "Вы" else suspectName, style = MaterialTheme.typography.bodySmall)
+                Text(if (player) stringResource(R.string.you) else suspectName, style = MaterialTheme.typography.bodySmall)
                 TypewriterText(message.text, style = MaterialTheme.typography.bodyMedium, animate = animateText)
                 messageTime(message.createdAt)?.let { time ->
                     Text(time, style = MaterialTheme.typography.bodySmall)
@@ -283,21 +298,21 @@ private fun CluePickerSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Прикрепить улику", style = MaterialTheme.typography.headlineMedium)
-                    Text("Выберите предмет из материалов дела.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                    Text(stringResource(R.string.attach_clue), style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.choose_case_item), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(painterResource(R.drawable.ic_chat_close), "Закрыть выбор улики", tint = colors.text)
+                    Icon(painterResource(R.drawable.ic_chat_close), stringResource(R.string.close_clue_picker), tint = colors.text)
                 }
             }
             when (state) {
                 CluePickerState.Loading -> CircularProgressIndicator(color = colors.outline)
-                CluePickerState.Error -> ScreenRetry("Не удалось загрузить улики.", onRetry)
+                CluePickerState.Error -> ScreenRetry(stringResource(R.string.clues_load_error), onRetry)
                 is CluePickerState.Content -> if (state.clues.isEmpty()) {
-                    Text("В этом расследовании пока нет собранных улик.", color = colors.text2)
+                    Text(stringResource(R.string.no_collected_clues), color = colors.text2)
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(230.dp),
                         modifier = Modifier.heightIn(max = 330.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -312,12 +327,12 @@ private fun CluePickerSheet(
                                             Text(clue.description, style = MaterialTheme.typography.bodySmall, color = colors.text2, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         }
                                     }
-                                    AppButton("Выбрать", { onSelect(clue) }, style = AppButtonStyle.Outlined, compact = true)
+                                    AppButton(stringResource(R.string.choose), { onSelect(clue) }, style = AppButtonStyle.Outlined, compact = true)
                                 }
                             }
                         }
                     }
-                    Text("Выбранная улика появится в сообщении.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                    Text(stringResource(R.string.selected_clue_info), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                 }
             }
         }

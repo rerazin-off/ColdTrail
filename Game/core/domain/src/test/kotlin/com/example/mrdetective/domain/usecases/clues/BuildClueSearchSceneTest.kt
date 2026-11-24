@@ -1,10 +1,10 @@
 package com.example.mrdetective.domain.usecases.clues
 
 import com.example.mrdetective.domain.repositories.SceneClueImage
-import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import kotlin.random.Random
 
 class BuildClueSearchSceneTest {
     private val target = SceneClueImage(10, "target.webp")

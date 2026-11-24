@@ -1,5 +1,7 @@
 package com.example.mrdetective.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
@@ -39,17 +41,17 @@ internal fun ClueRewardDialog(
 
     AlertDialog(
         onDismissRequest = onContinue,
-        title = { Text("Улика найдена") },
+        title = { Text(stringResource(R.string.clue_found)) },
         text = {
             Column(
                 Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
-                Text(description?.takeIf { it.isNotBlank() } ?: "Улика добавлена в инвентарь.")
+                Text(description?.takeIf { it.isNotBlank() } ?: stringResource(R.string.clue_added))
             }
         },
-        confirmButton = { AppButton("К делу", onContinue, style = AppButtonStyle.Accent) },
+        confirmButton = { AppButton(stringResource(R.string.back_to_case), onContinue, style = AppButtonStyle.Accent) },
         containerColor = colors.surface,
         titleContentColor = colors.text,
         textContentColor = colors.text,

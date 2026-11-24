@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -37,6 +38,7 @@ internal data class MorseGameState(
 
 @HiltViewModel
 internal class MorseChallengeViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val savedState: SavedStateHandle,
     private val challenges: MorseChallengeRepository,
     private val playPuzzle: PlayPuzzleUseCase,
@@ -77,8 +79,8 @@ internal class MorseChallengeViewModel @Inject constructor(
                 MorseGameState(
                     loading = false,
                     loadError = when (error) {
-                        is DomainError.Validation -> error.message
-                        else -> error.uiMessage("Не удалось загрузить загадку.")
+                        is DomainError.Validation -> strings.domainMessage(error.message, strings.get(R.string.puzzle_not_ready))
+                        else -> error.uiMessage(strings, strings.get(R.string.puzzle_load_error))
                     },
                 )
             }
@@ -99,7 +101,7 @@ internal class MorseChallengeViewModel @Inject constructor(
         if (current.solved || current.submitting || current.retrySync) return
         val submittedAnswer = answer.value.trim()
         if (!validateMorseChallengeAnswer(challenge, submittedAnswer)) {
-            mutableState.update { it.copy(answerError = "Введите ${challenge.answerLength} знаков ответа.") }
+            mutableState.update { it.copy(answerError = strings.get(R.string.answer_required_length, challenge.answerLength)) }
             return
         }
         mutableState.update { it.copy(submitting = true, answerError = null) }
@@ -112,7 +114,7 @@ internal class MorseChallengeViewModel @Inject constructor(
                         submitting = false,
                         solved = correct,
                         reward = reward,
-                        answerError = if (correct) null else "Неверный ответ. Проверьте сигнал.",
+                        answerError = if (correct) null else strings.get(R.string.incorrect_morse),
                     )
                 }
             } catch (error: CancellationException) {
@@ -121,7 +123,7 @@ internal class MorseChallengeViewModel @Inject constructor(
                 mutableState.update {
                     it.copy(
                         submitting = false,
-                        answerError = error.uiMessage("Не удалось проверить ответ."),
+                        answerError = error.uiMessage(strings, strings.get(R.string.answer_check_error)),
                         retrySync = error is DomainError.SyncPending,
                         retryAnswer = error !is DomainError.SyncPending,
                     )
@@ -133,7 +135,7 @@ internal class MorseChallengeViewModel @Inject constructor(
     fun retrySync() {
         viewModelScope.launch {
             val result = progress.syncProgress()
-            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage("Не удалось запустить синхронизацию.")) }
+            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error))) }
         }
     }
 

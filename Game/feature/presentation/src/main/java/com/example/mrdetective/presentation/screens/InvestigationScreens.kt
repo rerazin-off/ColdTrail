@@ -1,7 +1,10 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
+import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +32,10 @@ import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.SuspectCard
+import com.example.mrdetective.domain.models.Case
 import com.example.mrdetective.presentation.ui.theme.AppTheme
+import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
+import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 
 @Composable
 internal fun InvestigationScreen(
@@ -50,7 +57,7 @@ internal fun InvestigationScreen(
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) {
             Text(
-                state.case?.let { "‹   Дело №%02d".format(it.id) } ?: "‹   К списку дел",
+                state.case?.let { stringResource(R.string.case_number, it.id) } ?: stringResource(R.string.back_to_cases),
                 style = MaterialTheme.typography.headlineMedium,
                 color = colors.text,
             )
@@ -60,77 +67,124 @@ internal fun InvestigationScreen(
         } else {
             val case = state.case
             if (case == null) {
-                ScreenRetry(state.error ?: "Дело недоступно.", viewModel::load)
+                ScreenRetry(state.error ?: stringResource(R.string.case_unavailable), viewModel::load)
             } else {
                 if (state.suspectsUnavailable && state.error == null) {
-                    ScreenRetry(state.suspectsError ?: "Не удалось загрузить подозреваемых.", viewModel::load)
+                    ScreenRetry(state.suspectsError ?: stringResource(R.string.suspects_load_error), viewModel::load)
                 }
-                LazyColumn(
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item {
-                        Text(case.title, style = MaterialTheme.typography.headlineLarge)
-                    }
-                    item {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(case.introduction, style = MaterialTheme.typography.bodyMedium, color = colors.text2)
-                            if (case.objective.isNotBlank()) Text(case.objective)
-                        }
-                    }
-                    item {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Этапы расследования", style = MaterialTheme.typography.bodySmall, color = colors.text2)
-                            InvestigationStep(1, "Начать расследование", if (state.started) "Выполнено" else "Доступно")
-                            InvestigationStep(
-                                2,
-                                "Собрать улики",
-                                when {
-                                    state.totalClueCount != null -> "Найдено улик: ${state.collectedClueCount}/${state.totalClueCount}"
-                                    state.collectedClueCount > 0 -> "Найдено улик: ${state.collectedClueCount}"
-                                    state.started -> "Доступно"
-                                    else -> "После начала расследования"
-                                },
-                            )
-                        }
-                    }
-                    item { Text("Персонажи", style = MaterialTheme.typography.bodySmall, color = colors.text2) }
-                    if (state.suspects.isEmpty() && !state.suspectsUnavailable) {
-                        item { Text("Подозреваемых пока нет.", color = AppTheme.colors.text2) }
-                    } else {
-                        items(state.suspects, key = { it.id }) { suspect ->
-                            SuspectCard(
-                                name = suspect.name,
-                                description = suspect.profile,
-                                onInterrogate = { onInterrogate(case.id, suspect.id) },
-                                enabled = state.started,
-                            )
-                        }
-                    }
-                    item {
-                        ErrorNotice(state.error, viewModel::start)
-                        if (!state.started) {
-                            AppButton(
-                                text = if (state.starting) "Открываем дело…" else "Начать расследование",
-                                onClick = viewModel::start,
-                                enabled = !state.starting,
-                                style = AppButtonStyle.Accent,
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (state.hasRemainingClues && state.status !in setOf("solved", "failed", "closed")) {
-                                    AppButton("Добыть улику", { onFindClue(case.id) }, style = AppButtonStyle.Accent)
-                                }
-                                AppButton(
-                                    if (state.status in setOf("solved", "failed", "closed")) "Итог расследования" else "Выдвинуть обвинение",
-                                    { onAccusation(case.id) },
-                                    style = AppButtonStyle.Outlined,
-                                )
+                val details: LazyListScope.() -> Unit = {
+                    investigationDetails(case, state)
+                }
+                val actions: LazyListScope.() -> Unit = {
+                    investigationActions(case.id, state, viewModel::start, onFindClue, onAccusation)
+                }
+                BoxWithConstraints(Modifier.weight(1f)) {
+                    if (LocalAppWindow.current.isMediumWidth && maxWidth >= 620.dp) {
+                        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                            InvestigationPane(Modifier.weight(1.05f)) {
+                                details()
+                                actions()
                             }
+                            InvestigationPane(Modifier.weight(1f)) { investigationSuspects(case.id, state, onInterrogate) }
+                        }
+                    } else {
+                        InvestigationPane(Modifier.fillMaxSize()) {
+                            details()
+                            investigationSuspects(case.id, state, onInterrogate)
+                            actions()
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun InvestigationPane(modifier: Modifier, content: LazyListScope.() -> Unit) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content,
+    )
+}
+
+private fun LazyListScope.investigationDetails(case: Case, state: InvestigationState) {
+    item {
+        Text(case.title, style = MaterialTheme.typography.headlineLarge)
+    }
+    item {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(case.introduction, style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.text2)
+            if (case.objective.isNotBlank()) Text(case.objective)
+        }
+    }
+    item {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.investigation_steps), style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.text2)
+            InvestigationStep(1, stringResource(R.string.start_investigation), if (state.started) stringResource(R.string.done) else stringResource(R.string.available))
+            InvestigationStep(
+                2,
+                stringResource(R.string.collect_clues),
+                when {
+                    state.totalClueCount != null -> stringResource(R.string.clues_progress, state.collectedClueCount, state.totalClueCount ?: 0)
+                    state.collectedClueCount > 0 -> stringResource(R.string.clues_count, state.collectedClueCount)
+                    state.started -> stringResource(R.string.available)
+                    else -> stringResource(R.string.after_investigation_start)
+                },
+            )
+        }
+    }
+}
+
+private fun LazyListScope.investigationActions(
+    caseId: Int,
+    state: InvestigationState,
+    onStart: () -> Unit,
+    onFindClue: (Int) -> Unit,
+    onAccusation: (Int) -> Unit,
+) {
+    item {
+        ErrorNotice(state.error, onStart)
+        if (!state.started) {
+            AppButton(
+                text = if (state.starting) stringResource(R.string.opening_case) else stringResource(R.string.start_investigation),
+                onClick = onStart,
+                enabled = !state.starting,
+                style = AppButtonStyle.Accent,
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.hasRemainingClues && state.status !in setOf("solved", "failed", "closed")) {
+                    AppButton(stringResource(R.string.find_clue), { onFindClue(caseId) }, style = AppButtonStyle.Accent)
+                }
+                AppButton(
+                    if (state.status in setOf("solved", "failed", "closed")) stringResource(R.string.investigation_result) else stringResource(R.string.make_accusation),
+                    { onAccusation(caseId) },
+                    style = AppButtonStyle.Outlined,
+                )
+            }
+        }
+    }
+}
+
+private fun LazyListScope.investigationSuspects(
+    caseId: Int,
+    state: InvestigationState,
+    onInterrogate: (Int, Int) -> Unit,
+) {
+    item { Text(stringResource(R.string.characters), style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.text2) }
+    if (state.suspects.isEmpty() && !state.suspectsUnavailable) {
+        item { Text(stringResource(R.string.no_suspects), color = AppTheme.colors.text2) }
+    } else {
+        items(state.suspects, key = { it.id }) { suspect ->
+            SuspectCard(
+                name = suspect.name,
+                description = suspect.profile,
+                onInterrogate = { onInterrogate(caseId, suspect.id) },
+                enabled = state.started,
+            )
         }
     }
 }

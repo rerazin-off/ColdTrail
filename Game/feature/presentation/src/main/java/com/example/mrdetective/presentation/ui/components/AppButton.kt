@@ -2,7 +2,6 @@ package com.example.mrdetective.presentation.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
@@ -32,9 +31,7 @@ fun AppButton(
     compact: Boolean = false,
 ) {
     val c = AppTheme.colors
-    val size = modifier.fillMaxWidth().then(
-        if (compact) Modifier.heightIn(min = 32.dp) else Modifier.height(Sizes.controlHeight),
-    )
+    val size = modifier.fillMaxWidth().heightIn(min = Sizes.controlHeight)
     val padding = if (compact) PaddingValues(horizontal = 4.dp, vertical = 4.dp) else ButtonDefaults.ContentPadding
     val label: @Composable () -> Unit = {
         Text(

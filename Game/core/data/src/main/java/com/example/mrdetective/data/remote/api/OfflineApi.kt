@@ -39,7 +39,7 @@ interface OfflineApi {
     @GET("rest/v1/clues?select=*")
     suspend fun getCluesByCase(@Query("case_id") caseId: String): List<ClueDto>
 
-    @GET("rest/v1/clues?select=id,image&image=not.is.null&order=id&limit=50")
+    @GET("rest/v1/clues?select=id,image,title&image=not.is.null&order=id&limit=50")
     suspend fun getClueImages(@Query("id") excludeId: String): List<SceneClueImageDto>
 
     @GET("rest/v1/puzzles?select=id,case_id,kind,title,hint,reward_clue")

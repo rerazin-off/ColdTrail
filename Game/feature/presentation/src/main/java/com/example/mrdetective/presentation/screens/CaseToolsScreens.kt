@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -43,6 +45,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -72,12 +78,17 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun CaseToolHeader(title: String, onBack: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+internal fun CaseToolHeader(
+    title: String,
+    onBack: () -> Unit,
+    actions: @Composable () -> Unit = {},
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onBack) {
-            Icon(painterResource(R.drawable.ic_chat_back), "Назад", tint = AppTheme.colors.text)
+            Icon(painterResource(R.drawable.ic_chat_back), stringResource(R.string.back), tint = AppTheme.colors.text)
         }
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
+        actions()
     }
 }
 
@@ -101,10 +112,9 @@ internal fun ProfileScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.fillMaxWidth()) {
-            CaseToolHeader("Профиль", onBack)
-            IconButton(onSettings, Modifier.align(Alignment.CenterEnd)) {
-                Icon(painterResource(R.drawable.ic_settings), "Настройки", tint = colors.text)
+        CaseToolHeader(stringResource(R.string.profile), onBack) {
+            IconButton(onSettings) {
+                Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings), tint = colors.text)
             }
         }
         Spacer(Modifier.height(42.dp))
@@ -128,20 +138,24 @@ internal fun ProfileScreen(
                 viewModel.load()
             }
         }
-        Text("Ваш прогресс в расследованиях", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+        Text(stringResource(R.string.profile_progress), style = MaterialTheme.typography.bodySmall, color = colors.text2)
         Spacer(Modifier.height(32.dp))
         when (val current = statisticsState) {
             ProfileStatisticsState.Loading -> CircularProgressIndicator(color = colors.accent)
             is ProfileStatisticsState.Error -> Unit
-            is ProfileStatisticsState.Content -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            is ProfileStatisticsState.Content -> FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = if (LocalDensity.current.fontScale >= 1.4f) 1 else 3,
+            ) {
                 val stats = current.statistics
-                listOf(stats.total to "Всего дел", stats.active to "Активных", stats.solved to "Раскрыто").forEach { (value, label) ->
+                listOf(stats.total to stringResource(R.string.total_cases), stats.active to stringResource(R.string.active_total), stats.solved to stringResource(R.string.solved_total)).forEach { (value, label) ->
                     AppCard(Modifier.weight(1f), outlined = true, padding = 8.dp) {
                         Column(
                             Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text(value.toString(), color = colors.accent, style = MaterialTheme.typography.headlineMedium)
+                            Text(value.toString(), color = colors.text, style = MaterialTheme.typography.headlineMedium)
                             Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
                         }
                     }
@@ -150,7 +164,7 @@ internal fun ProfileScreen(
         }
         Spacer(Modifier.height(24.dp))
         AppButton(
-            text = if (auth.busy) "Выходим…" else "Выйти из аккаунта",
+            text = if (auth.busy) stringResource(R.string.signing_out) else stringResource(R.string.sign_out),
             onClick = onSignOut,
             enabled = !auth.busy,
             style = AppButtonStyle.Outlined,
@@ -165,13 +179,13 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
     val colors = AppTheme.colors
     var selectedClueId by rememberSaveable { mutableStateOf<Int?>(null) }
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        CaseToolHeader("Инвентарь улик", onBack)
-        Text("Материалы дела", style = MaterialTheme.typography.displayLarge)
-        Text("Найденные предметы и доказательства.", color = colors.text2, style = MaterialTheme.typography.bodySmall)
+        CaseToolHeader(stringResource(R.string.clue_inventory), onBack)
+        Text(stringResource(R.string.case_materials), style = MaterialTheme.typography.displayLarge)
+        Text(stringResource(R.string.inventory_intro), color = colors.text2, style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(20.dp))
         when (val current = state) {
             CluePickerState.Loading -> ScreenProgress()
-            CluePickerState.Error -> ScreenRetry("Не удалось загрузить инвентарь.", viewModel::load)
+            CluePickerState.Error -> ScreenRetry(stringResource(R.string.inventory_load_error), viewModel::load)
             is CluePickerState.Content -> if (current.clues.isEmpty()) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     AppCard(outlined = true) {
@@ -181,9 +195,9 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Icon(painterResource(R.drawable.ic_inventory), null, tint = colors.accent)
-                            Text("Пока нет улик", style = MaterialTheme.typography.headlineLarge)
+                            Text(stringResource(R.string.no_clues), style = MaterialTheme.typography.headlineLarge)
                             Text(
-                                "Осмотрите место происшествия, чтобы найти предметы.",
+                                stringResource(R.string.no_clues_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 textAlign = TextAlign.Center,
                                 color = colors.text2,
@@ -193,7 +207,7 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Adaptive(if (LocalDensity.current.fontScale >= 1.4f) 280.dp else 170.dp),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -220,9 +234,9 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
                 current.clues.firstOrNull { it.id == selectedClueId }?.let { clue ->
                     AlertDialog(
                         onDismissRequest = { selectedClueId = null },
-                        title = { Text("Материал дела") },
+                        title = { Text(stringResource(R.string.case_item)) },
                         text = { ClueCard(clue.title, clue.description) },
-                        confirmButton = { AppButton("Закрыть", { selectedClueId = null }) },
+                        confirmButton = { AppButton(stringResource(R.string.close), { selectedClueId = null }) },
                         containerColor = colors.bg,
                     )
                 }
@@ -259,27 +273,25 @@ internal fun MorseScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(Modifier.fillMaxWidth()) {
-            CaseToolHeader("Головоломка", onBack)
+        CaseToolHeader(stringResource(R.string.puzzle), onBack) {
             IconButton(
                 onClick = {
                     viewModel.stopPlayback()
                     showVibrationOptions = true
                 },
-                modifier = Modifier.align(Alignment.CenterEnd),
             ) {
-                Icon(painterResource(R.drawable.ic_help), "Настройки вибрации", tint = colors.text)
+                Icon(painterResource(R.drawable.ic_help), stringResource(R.string.vibration_settings), tint = colors.text)
             }
         }
         when {
             puzzle.loading -> CircularProgressIndicator(color = colors.accent)
             puzzle.loadError != null -> ScreenRetry(puzzle.loadError.orEmpty(), game::load)
             challenge == null -> AppCard(outlined = true) {
-                Text("Для этого дела больше нет доступных загадок Морзе.")
+                Text(stringResource(R.string.no_morse_puzzles))
             }
             else -> {
                 Text(challenge.title, style = MaterialTheme.typography.displayLarge)
-                Text("Расшифруйте сигнал Морзе.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                Text(stringResource(R.string.decode_morse), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                 Spacer(Modifier.height(12.dp))
                 AppCard(outlined = true) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -287,9 +299,9 @@ internal fun MorseScreen(
                             Text(it, style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         }
                         when {
-                            vibration.loading -> Text("Загружаем настройку сигнала…", style = MaterialTheme.typography.bodySmall)
+                            vibration.loading -> Text(stringResource(R.string.loading_signal_settings), style = MaterialTheme.typography.bodySmall)
                             vibration.usesVibration -> AppButton(
-                                if (vibration.playing) "Проигрываем сигнал…" else "Проиграть код",
+                                if (vibration.playing) stringResource(R.string.playing_signal) else stringResource(R.string.play_code),
                                 { viewModel.play(challenge.signal) },
                                 style = AppButtonStyle.Outlined,
                                 enabled = !vibration.playing && !vibration.saving && !solved && !puzzle.submitting,
@@ -306,13 +318,13 @@ internal fun MorseScreen(
                             AppTextField(
                                 value = answer,
                                 onValueChange = game::updateAnswer,
-                                placeholder = "Ответ латиницей или цифрами",
+                                placeholder = stringResource(R.string.morse_answer),
                                 enabled = !puzzle.submitting,
                             )
-                            Text("Знаков в ответе: ${challenge.answerLength}", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                            Text(stringResource(R.string.answer_length, challenge.answerLength), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         }
                         if (solved) {
-                            Text("Улика добавлена в инвентарь.", color = colors.success, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.clue_added), color = colors.success, style = MaterialTheme.typography.bodyMedium)
                         }
                         ErrorNotice(puzzle.answerError, when {
                             puzzle.retrySync -> game::retrySync
@@ -331,11 +343,11 @@ internal fun MorseScreen(
                     )
                 }
                 if (solved) {
-                    AppButton("Вернуться к делу", onBack, style = AppButtonStyle.Accent)
+                    AppButton(stringResource(R.string.return_to_case), onBack, style = AppButtonStyle.Accent)
                 } else {
                     MorseAlphabetPanel()
                     AppButton(
-                        if (puzzle.submitting) "Проверяем ответ…" else "Проверить ответ",
+                        if (puzzle.submitting) stringResource(R.string.checking_answer) else stringResource(R.string.check_answer),
                         ::checkCode,
                         style = AppButtonStyle.Accent,
                         enabled = !puzzle.submitting,
@@ -354,9 +366,9 @@ internal fun MorseScreen(
         }
         AlertDialog(
             onDismissRequest = dismiss,
-            title = { Text("Как получать сигнал Морзе") },
+            title = { Text(stringResource(R.string.morse_signal_options)) },
             text = { VibrationSettingRow(vibration, viewModel::setEnabled, viewModel::load) },
-            confirmButton = { AppButton("Продолжить", dismiss, enabled = !vibration.saving && !vibration.loading) },
+            confirmButton = { AppButton(stringResource(R.string.continue_action), dismiss, enabled = !vibration.saving && !vibration.loading) },
             containerColor = colors.bg,
         )
     }
@@ -373,8 +385,8 @@ internal fun DeviceSettingsScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        CaseToolHeader("Настройки", onBack)
-        Text("Возможности устройства", style = MaterialTheme.typography.headlineLarge, color = AppTheme.colors.text)
+        CaseToolHeader(stringResource(R.string.settings), onBack)
+        Text(stringResource(R.string.device_features), style = MaterialTheme.typography.headlineLarge, color = AppTheme.colors.text)
         DevicePermissionOptions(viewModel, cameraSettings, access)
     }
 }
@@ -392,11 +404,11 @@ internal fun DevicePermissionOptions(
         AppCard(outlined = true) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DeviceSwitchRow(
-                    title = "Камера для поиска улик",
+                    title = stringResource(R.string.clue_camera),
                     description = if (access.available) {
-                        "Камера нужна для поиска улик в комнате. Если выключить, поиск откроется на картинке склада."
+                        stringResource(R.string.camera_setting_summary)
                     } else {
-                        "На устройстве нет задней камеры. Улики можно искать на картинке склада."
+                        stringResource(R.string.rear_camera_missing)
                     },
                     checked = access.available && access.granted && camera.enabled != false && !camera.loading,
                     enabled = access.available && !camera.loading && !camera.saving && camera.error == null,
@@ -407,7 +419,7 @@ internal fun DevicePermissionOptions(
                 )
                 if (access.available) {
                     TextButton(onClick = { access.openSettings(!access.granted) }, enabled = !camera.saving) {
-                        Text("Разрешение в Android")
+                        Text(stringResource(R.string.android_permission))
                     }
                 }
                 camera.error?.let { ScreenRetry(it, cameraSettings::load) }
@@ -420,11 +432,11 @@ internal fun DevicePermissionOptions(
 private fun VibrationSettingRow(state: VibrationState, onChange: (Boolean) -> Unit, onRetry: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DeviceSwitchRow(
-            title = "Вибрация для Морзе",
+            title = stringResource(R.string.morse_vibration),
             description = if (state.available) {
-                "Телефон передаёт точки и тире вибрацией. Если выключить, сигнал будет показан на экране."
+                stringResource(R.string.vibration_summary)
             } else {
-                "На устройстве нет доступного вибромотора. Сигнал будет показан на экране."
+                stringResource(R.string.vibration_unavailable)
             },
             checked = state.enabled == true && state.available,
             enabled = state.available && !state.loading && !state.saving,
@@ -447,7 +459,12 @@ private fun DeviceSwitchRow(
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(description, style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.text2)
         }
-        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            enabled = enabled,
+            modifier = Modifier.semantics { contentDescription = title },
+        )
     }
 }
 
@@ -468,16 +485,16 @@ internal fun AccusationScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        CaseToolHeader("Обвинение", onBack)
-        Text("Кто виновен?", style = MaterialTheme.typography.displayLarge)
-        Text("Выберите одного подозреваемого.", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+        CaseToolHeader(stringResource(R.string.accusation), onBack)
+        Text(stringResource(R.string.who_did_it), style = MaterialTheme.typography.displayLarge)
+        Text(stringResource(R.string.choose_one_suspect), style = MaterialTheme.typography.bodySmall, color = colors.text2)
         when {
             state.loading -> ScreenProgress()
             state.error != null && (state.suspects.isEmpty() || state.closed) -> ScreenRetry(state.error.orEmpty(), viewModel::load)
-            state.suspects.isEmpty() -> Text("В деле пока нет подозреваемых.", color = colors.text2)
+            state.suspects.isEmpty() -> Text(stringResource(R.string.no_suspects_for_case), color = colors.text2)
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Adaptive(if (LocalDensity.current.fontScale >= 1.4f) 280.dp else 170.dp),
                     modifier = Modifier.weight(1f).selectableGroup(),
                     contentPadding = PaddingValues(vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -498,7 +515,7 @@ internal fun AccusationScreen(
                         ) {
                             Column(Modifier.heightIn(min = 154.dp).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Box(Modifier.size(40.dp).background(colors.primary, AppShapes.control), contentAlignment = Alignment.Center) {
-                                    Text(suspect.name.take(1), color = colors.bg)
+                                    Text(suspect.name.take(1), color = colors.onPrimary)
                                 }
                                 Text(suspect.name, style = MaterialTheme.typography.titleMedium)
                                 Text(suspect.profile, style = MaterialTheme.typography.bodySmall, color = colors.text2, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -508,7 +525,7 @@ internal fun AccusationScreen(
                 }
                 ErrorNotice(state.error, viewModel::accuse)
                 AppButton(
-                    text = if (state.submitting) "Проверяем обвинение…" else "Обвинить",
+                    text = if (state.submitting) stringResource(R.string.checking_accusation) else stringResource(R.string.accuse),
                     onClick = { confirming = true },
                     enabled = state.suspects.any { it.id == selected } && !state.submitting && !state.closed,
                     style = AppButtonStyle.Accent,
@@ -522,10 +539,10 @@ internal fun AccusationScreen(
     if (confirming && chosen != null && result == null && !state.closed) {
         AlertDialog(
             onDismissRequest = { confirming = false },
-            title = { Text("Подтвердить обвинение") },
-            text = { Text("Вы обвиняете персонажа «${chosen.name}». После отправки выбор станет окончательным.") },
-            confirmButton = { AppButton("Обвинить", { confirming = false; viewModel.accuse() }, style = AppButtonStyle.Accent) },
-            dismissButton = { AppButton("Отмена", { confirming = false }, style = AppButtonStyle.Outlined) },
+            title = { Text(stringResource(R.string.confirm_accusation)) },
+            text = { Text(stringResource(R.string.accusation_confirmation, chosen.name)) },
+            confirmButton = { AppButton(stringResource(R.string.accuse), { confirming = false; viewModel.accuse() }, style = AppButtonStyle.Accent) },
+            dismissButton = { AppButton(stringResource(R.string.cancel), { confirming = false }, style = AppButtonStyle.Outlined) },
             containerColor = colors.bg,
         )
     }
@@ -535,20 +552,20 @@ internal fun AccusationScreen(
             ?: state.suspects.singleOrNull { result.explanation == "Это ошибка. Преступником был ${it.name}." }
         val showAccused = result.isCorrect != true && accused != null
         val summary = if (result.culpritTruth == null) result.explanation
-        else if (result.isCorrect == true) "Вы правильно определили виновного."
-        else "Подозреваемый, которого вы выбрали, не совершал это преступление."
+        else if (result.isCorrect == true) stringResource(R.string.culprit_correct)
+        else stringResource(R.string.culprit_incorrect)
         AlertDialog(
             onDismissRequest = onBack,
-            title = { Text(if (result.isCorrect == true) "Дело раскрыто" else "Обвинение ошибочно") },
+            title = { Text(if (result.isCorrect == true) stringResource(R.string.case_solved) else stringResource(R.string.accusation_incorrect)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TypewriterText(summary, style = MaterialTheme.typography.bodyMedium)
                     if (showAccused && accused != null) {
-                        VerdictCard("Кого вы обвинили", accused, result.selectedTruth, delayMillis = 280)
+                        VerdictCard(stringResource(R.string.accused_person), accused, result.selectedTruth, delayMillis = 280)
                     }
                     if (culprit != null) {
                         VerdictCard(
-                            "Настоящий виновник",
+                            stringResource(R.string.actual_culprit),
                             culprit,
                             result.culpritTruth,
                             delayMillis = if (showAccused) 650 else 280,
@@ -556,7 +573,7 @@ internal fun AccusationScreen(
                     }
                 }
             },
-            confirmButton = { AppButton("Вернуться к делу", onBack) },
+            confirmButton = { AppButton(stringResource(R.string.return_to_case), onBack) },
             containerColor = colors.bg,
         )
     }

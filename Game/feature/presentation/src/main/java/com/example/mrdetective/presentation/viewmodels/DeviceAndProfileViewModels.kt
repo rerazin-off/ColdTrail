@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mrdetective.domain.hardware.CameraPreferences
@@ -35,6 +36,7 @@ internal data class VibrationState(
 
 @HiltViewModel
 internal class VibrationViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val preferences: VibrationPreferences,
     private val playSignal: PlayMorseSignalUseCase,
 ) : ViewModel() {
@@ -57,7 +59,7 @@ internal class VibrationViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                mutableState.update { it.copy(loading = false, settingsError = "Не удалось прочитать настройку вибрации.") }
+                mutableState.update { it.copy(loading = false, settingsError = strings.get(R.string.read_vibration_error)) }
             }
         }
     }
@@ -74,7 +76,7 @@ internal class VibrationViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                mutableState.update { it.copy(saving = false, settingsError = "Не удалось сохранить настройку вибрации.") }
+                mutableState.update { it.copy(saving = false, settingsError = strings.get(R.string.save_vibration_error)) }
             }
         }
     }
@@ -88,7 +90,7 @@ internal class VibrationViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                mutableState.update { it.copy(playbackError = "Вибрация не сработала. Сигнал показан на экране.") }
+                mutableState.update { it.copy(playbackError = strings.get(R.string.vibration_playback_error)) }
             } finally {
                 mutableState.update { it.copy(playing = false) }
             }
@@ -109,6 +111,7 @@ internal data class CameraSettingsState(
 
 @HiltViewModel
 internal class CameraSettingsViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val preferences: CameraPreferences,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(CameraSettingsState())
@@ -133,7 +136,7 @@ internal class CameraSettingsViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                mutableState.update { it.copy(loading = false, error = "Не удалось прочитать настройку камеры.") }
+                mutableState.update { it.copy(loading = false, error = strings.get(R.string.read_camera_error)) }
             }
         }
     }
@@ -149,7 +152,7 @@ internal class CameraSettingsViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                mutableState.update { it.copy(saving = false, error = "Не удалось сохранить настройку камеры.") }
+                mutableState.update { it.copy(saving = false, error = strings.get(R.string.save_camera_error)) }
             }
         }
     }
@@ -163,6 +166,7 @@ internal sealed interface ProfileStatisticsState {
 
 @HiltViewModel
 internal class ProfileStatisticsViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val repository: ProfileStatisticsRepository,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<ProfileStatisticsState>(ProfileStatisticsState.Loading)
@@ -180,7 +184,7 @@ internal class ProfileStatisticsViewModel @Inject constructor(
         nicknameJob = viewModelScope.launch {
             repository.loadNickname().fold(
                 { mutableNickname.value = it },
-                { mutableNicknameError.value = it.uiMessage("Не удалось загрузить никнейм.") },
+                { mutableNicknameError.value = it.uiMessage(strings, strings.get(R.string.nickname_load_error)) },
             )
         }
     }
@@ -194,7 +198,7 @@ internal class ProfileStatisticsViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                ProfileStatisticsState.Error(error.uiMessage("Не удалось загрузить статистику."))
+                ProfileStatisticsState.Error(error.uiMessage(strings, strings.get(R.string.statistics_load_error)))
             }
         }
     }

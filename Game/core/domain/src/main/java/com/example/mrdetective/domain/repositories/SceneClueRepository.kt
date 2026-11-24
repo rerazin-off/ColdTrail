@@ -2,7 +2,7 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.CameraChallenge
 
-data class SceneClueImage(val clueId: Int?, val imageUrl: String?)
+data class SceneClueImage(val clueId: Int?, val imageUrl: String?, val title: String? = null)
 
 interface SceneClueRepository {
     suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage>

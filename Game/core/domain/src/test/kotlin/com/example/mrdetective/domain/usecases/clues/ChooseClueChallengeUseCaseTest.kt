@@ -28,23 +28,26 @@ class ChooseClueChallengeUseCaseTest {
 
     private fun picker(codes: List<CodeChallenge>) =
         ChooseClueChallengeUseCase(
-            morse = object : MorseChallengeRepository {
-                override suspend fun load(caseId: Int) = Result.success(MorseChallenges(1, emptyList()))
-            },
-            camera = object : CameraChallengeRepository {
-                override suspend fun load(caseId: Int) = Result.success(emptyList<CameraChallenge>())
+            morse =
+                object : MorseChallengeRepository {
+                    override suspend fun load(caseId: Int) = Result.success(MorseChallenges(1, emptyList()))
+                },
+            camera =
+                object : CameraChallengeRepository {
+                    override suspend fun load(caseId: Int) = Result.success(emptyList<CameraChallenge>())
 
-                override suspend fun submit(
-                    challenge: CameraChallenge,
-                    photoPath: String,
-                ) = Result.success(Unit)
+                    override suspend fun submit(
+                        challenge: CameraChallenge,
+                        photoPath: String,
+                    ) = Result.success(Unit)
 
-                override fun observeSubmission(challenge: CameraChallenge) = emptyFlow<CameraSubmission>()
+                    override fun observeSubmission(challenge: CameraChallenge) = emptyFlow<CameraSubmission>()
 
-                override fun observeSubmissionError(challenge: CameraChallenge) = emptyFlow<String?>()
-            },
-            code = object : CodeChallengeRepository {
-                override suspend fun load(caseId: Int) = Result.success(CodeChallenges(1, codes))
-            },
+                    override fun observeSubmissionError(challenge: CameraChallenge) = emptyFlow<String?>()
+                },
+            code =
+                object : CodeChallengeRepository {
+                    override suspend fun load(caseId: Int) = Result.success(CodeChallenges(1, codes))
+                },
         )
 }

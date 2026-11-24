@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import com.example.mrdetective.presentation.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mrdetective.domain.models.Case
@@ -18,11 +19,12 @@ sealed interface CasesUiState {
     data object Loading : CasesUiState
     data object Empty : CasesUiState
     data class Content(val cases: List<Case>) : CasesUiState
-    data class Error(val unauthorized: Boolean, val message: String = "Не удалось загрузить дела.") : CasesUiState
+    data class Error(val unauthorized: Boolean, val message: String? = null) : CasesUiState
 }
 
 @HiltViewModel
 class CasesViewModel @Inject constructor(
+    private val strings: UiStrings,
     private val loadAvailableCases: LoadAvailableCasesUseCase,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<CasesUiState>(CasesUiState.Loading)
@@ -56,7 +58,7 @@ class CasesViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                CasesUiState.Error(error is DomainError.Unauthorized, error.uiMessage("Не удалось загрузить дела."))
+                CasesUiState.Error(error is DomainError.Unauthorized, error.uiMessage(strings, strings.get(R.string.cases_load_error)))
             }
         }
     }

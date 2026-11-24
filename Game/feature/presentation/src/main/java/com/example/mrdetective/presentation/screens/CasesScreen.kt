@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -46,6 +49,9 @@ import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
+import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
+import com.example.mrdetective.presentation.ui.theme.AppWindow
+import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 
 @Composable
 internal fun CasesRoute(viewModel: CasesViewModel, onOpen: (Int) -> Unit) {
@@ -57,88 +63,91 @@ internal fun CasesRoute(viewModel: CasesViewModel, onOpen: (Int) -> Unit) {
 private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit, onOpen: (Int) -> Unit) {
     val colors = AppTheme.colors
     var query by rememberSaveable { mutableStateOf("") }
-    val listState = rememberLazyListState()
-    Column(
-        Modifier.fillMaxSize().padding(horizontal = 20.dp),
+    val listState = rememberLazyGridState()
+    val term = query.trim()
+    val cases = (state as? CasesUiState.Content)?.cases.orEmpty()
+    val visibleCases = remember(cases, term) {
+        cases.filter { it.title.contains(term, ignoreCase = true) || it.introduction.contains(term, ignoreCase = true) }
+    }
+    LaunchedEffect(term) {
+        if (term.isNotEmpty()) listState.scrollToItem(0)
+    }
+    val loadingDescription = stringResource(R.string.loading_cases)
+    LazyVerticalGrid(
+        columns = if (LocalAppWindow.current.isMediumWidth) GridCells.Adaptive(280.dp) else GridCells.Fixed(1),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+        state = listState,
+        contentPadding = PaddingValues(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Spacer(Modifier.height(28.dp))
-        Text("Ваши дела", style = MaterialTheme.typography.displayLarge)
-        Text(
-            "Незакрытые расследования требуют внимания.",
-            color = colors.text2,
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Spacer(Modifier.height(20.dp))
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = state is CasesUiState.Content,
-            singleLine = true,
-            shape = AppShapes.control,
-            label = { Text("Поиск по делам") },
-            leadingIcon = { Icon(painterResource(R.drawable.ic_search), null, Modifier.size(18.dp)) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = colors.surface,
-                unfocusedContainerColor = colors.surface,
-                disabledContainerColor = colors.surface,
-                focusedBorderColor = colors.onAccent,
-                unfocusedBorderColor = colors.outline,
-            ),
-        )
-        Spacer(Modifier.height(16.dp))
-        Text("Активные дела", color = colors.text2, style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(8.dp))
+        if (state is CasesUiState.Error) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                ScreenRetry(state.message ?: stringResource(R.string.cases_load_error), onRetry)
+            }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column {
+                Spacer(Modifier.height(28.dp))
+                Text(stringResource(R.string.your_cases), style = MaterialTheme.typography.displayLarge)
+                Text(
+                    stringResource(R.string.cases_intro),
+                    color = colors.text2,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = state is CasesUiState.Content,
+                    singleLine = true,
+                    shape = AppShapes.control,
+                    label = { Text(stringResource(R.string.case_search)) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_search), null, Modifier.size(18.dp)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = colors.surface,
+                        unfocusedContainerColor = colors.surface,
+                        disabledContainerColor = colors.surface,
+                        focusedBorderColor = colors.onAccent,
+                        unfocusedBorderColor = colors.outline,
+                    ),
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(R.string.active_cases), color = colors.text2, style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+            }
+        }
         when (state) {
-            CasesUiState.Loading -> LazyColumn(
-                modifier = Modifier.semantics { contentDescription = "Загружаем дела" },
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                items(3) {
-                    AppCard(outlined = true) {
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            listOf(0.68f, 0.88f, 0.50f, 0.32f).forEach { width ->
-                                Box(Modifier.fillMaxWidth(width).height(8.dp).background(colors.surface2, AppShapes.control))
-                            }
+            CasesUiState.Loading -> items(3) { index ->
+                val semantics = if (index == 0) Modifier.semantics { contentDescription = loadingDescription } else Modifier
+                AppCard(semantics, outlined = true) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        listOf(0.68f, 0.88f, 0.50f, 0.32f).forEach { width ->
+                            Box(Modifier.fillMaxWidth(width).height(8.dp).background(colors.surface2, AppShapes.control))
                         }
                     }
                 }
             }
-            CasesUiState.Empty -> AppCard(outlined = true) {
-                Column(
-                    Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Icon(painterResource(R.drawable.ic_search), null, Modifier.size(28.dp), tint = colors.accent)
-                    Text("Пока нет дел", style = MaterialTheme.typography.headlineLarge)
-                    Text("Новые расследования появятся здесь.", color = colors.text2, textAlign = TextAlign.Center)
-                    AppButton("Обновить список", onRetry, modifier = Modifier.fillMaxWidth(0.75f))
-                }
-            }
-            is CasesUiState.Error -> ScreenRetry(state.message, onRetry)
-            is CasesUiState.Content -> {
-                val term = query.trim()
-                val visibleCases = remember(state.cases, term) {
-                    state.cases.filter {
-                        it.title.contains(term, ignoreCase = true) ||
-                            it.introduction.contains(term, ignoreCase = true)
-                    }
-                }
-                LaunchedEffect(term) {
-                    if (term.isNotEmpty()) listState.scrollToItem(0)
-                }
-                if (visibleCases.isEmpty()) {
-                    CasesMessage("По вашему запросу ничего не найдено")
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        contentPadding = PaddingValues(bottom = 12.dp),
+            CasesUiState.Empty -> item(span = { GridItemSpan(maxLineSpan) }) {
+                AppCard(outlined = true) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        items(visibleCases, key = { it.id }) { case -> CaseListCard(case) { onOpen(case.id) } }
+                        Icon(painterResource(R.drawable.ic_search), null, Modifier.size(28.dp), tint = colors.accent)
+                        Text(stringResource(R.string.no_cases), style = MaterialTheme.typography.headlineLarge)
+                        Text(stringResource(R.string.new_cases_info), color = colors.text2, textAlign = TextAlign.Center)
+                        AppButton(stringResource(R.string.refresh_cases), onRetry, modifier = Modifier.fillMaxWidth(0.75f))
                     }
                 }
+            }
+            is CasesUiState.Error -> Unit
+            is CasesUiState.Content -> if (visibleCases.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) { CasesMessage(stringResource(R.string.no_search_results)) }
+            } else {
+                items(visibleCases, key = { it.id }) { case -> CaseListCard(case) { onOpen(case.id) } }
             }
         }
     }
@@ -151,7 +160,7 @@ private fun CasesMessage(message: String, onRetry: (() -> Unit)? = null) {
             Text(message, textAlign = TextAlign.Center)
             if (onRetry != null) {
                 Spacer(Modifier.height(12.dp))
-                AppButton("Повторить", onRetry)
+                AppButton(stringResource(R.string.retry), onRetry)
             }
         }
     }
@@ -161,10 +170,10 @@ private fun CasesMessage(message: String, onRetry: (() -> Unit)? = null) {
 private fun CaseListCard(case: Case, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val status = when (case.status) {
-        "available" -> "Новое"
-        "in_progress", "in_investigation" -> "В работе"
-        "solved", "closed" -> "Закрыто"
-        "failed" -> "Не раскрыто"
+        "available" -> stringResource(R.string.case_new)
+        "in_progress", "in_investigation" -> stringResource(R.string.case_in_progress)
+        "solved", "closed" -> stringResource(R.string.case_closed)
+        "failed" -> stringResource(R.string.case_unsolved)
         else -> null
     }
     Surface(
@@ -189,7 +198,7 @@ private fun CaseListCard(case: Case, onClick: () -> Unit) {
                 )
             }
             if (case.status in setOf("solved", "closed", "failed")) {
-                Text("Расследование завершено", color = colors.text2, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.case_finished), color = colors.text2, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -211,11 +220,13 @@ class CasesPreviewStates : PreviewParameterProvider<CasesUiState> {
 }
 
 @Preview(widthDp = 390, heightDp = 760)
+@Preview(name = "Landscape", widthDp = 780, heightDp = 390)
+@Preview(name = "Tablet, large text", widthDp = 1000, heightDp = 750, fontScale = 2f, locale = "en")
 @Composable
 private fun CasesPreview(@PreviewParameter(CasesPreviewStates::class) state: CasesUiState) {
     ColdTrailTheme(darkTheme = true) {
         Surface(color = AppTheme.colors.bg, contentColor = AppTheme.colors.text) {
-            CasesScreen(state, onRetry = {}, onOpen = {})
+            AppWindow { CasesScreen(state, onRetry = {}, onOpen = {}) }
         }
     }
 }

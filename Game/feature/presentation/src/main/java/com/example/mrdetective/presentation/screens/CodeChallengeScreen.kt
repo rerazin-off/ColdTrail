@@ -1,5 +1,7 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
+import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,12 +37,12 @@ internal fun CodeChallengeScreen(viewModel: CodeChallengeViewModel, onBack: () -
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CaseToolHeader("Кодовый замок", onBack)
+        CaseToolHeader(stringResource(R.string.code_lock), onBack)
         val challenge = state.challenge
         when {
             state.loading -> CircularProgressIndicator(color = colors.accent)
             state.loadError != null -> ScreenRetry(state.loadError.orEmpty(), viewModel::load)
-            challenge == null -> AppCard(outlined = true) { Text("Эта загадка больше недоступна.") }
+            challenge == null -> AppCard(outlined = true) { Text(stringResource(R.string.puzzle_unavailable)) }
             else -> {
                 Text(challenge.title, style = MaterialTheme.typography.displayLarge)
                 challenge.hint?.takeIf { it.isNotBlank() }?.let { hint ->
@@ -48,9 +50,9 @@ internal fun CodeChallengeScreen(viewModel: CodeChallengeViewModel, onBack: () -
                 }
                 AppCard(outlined = true) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Введите четырёхзначный код", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                        Text(stringResource(R.string.enter_four_digits), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         NumericPuzzleSlots(CODE_CHALLENGE_LENGTH, code, state.solved, state.answerError != null)
-                        if (state.submitting) Text("Проверяем код…", color = colors.text2)
+                        if (state.submitting) Text(stringResource(R.string.checking_code), color = colors.text2)
                         ErrorNotice(state.answerError, when {
                             state.retrySync -> viewModel::retrySync
                             state.retryAnswer -> viewModel::submit

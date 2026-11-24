@@ -1,5 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +42,7 @@ private val scenePlaceholders = listOf(
     R.drawable.ic_scene_clue_note,
     R.drawable.ic_scene_clue_photo,
 )
+private val placeholderLabels = listOf(R.string.warehouse_key, R.string.warehouse_note, R.string.warehouse_photo)
 
 @Composable
 internal fun SceneClueSearch(
@@ -61,10 +63,12 @@ internal fun SceneClueSearch(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 val targetIndex = items?.indexOfFirst { it.clueId == challenge.clueId } ?: -1
                 if (items != null && targetIndex >= 0) {
-                    SceneArtwork(items[targetIndex], targetIndex, "Образец улики", Modifier.size(42.dp))
+                    val target = items[targetIndex]
+                    val label = target.title ?: stringResource(placeholderLabels[targetIndex])
+                    SceneArtwork(target, targetIndex, stringResource(R.string.clue_sample_desc, label), Modifier.size(42.dp))
                 }
                 Column {
-                    Text("Найдите на складе", style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                    Text(stringResource(R.string.find_in_warehouse), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                     Text(challenge.clueTitle, style = MaterialTheme.typography.titleMedium)
                 }
             }
@@ -77,7 +81,7 @@ internal fun SceneClueSearch(
             ) {
                 Image(
                     painter = painterResource(R.drawable.clue_search_warehouse),
-                    contentDescription = "Склад",
+                    contentDescription = stringResource(R.string.warehouse),
                     modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.FillBounds,
                 )
@@ -91,7 +95,8 @@ internal fun SceneClueSearch(
                             .clickable(enabled = !state.capturing, role = Role.Button) { onSelect(index) },
                         contentAlignment = Alignment.Center,
                     ) {
-                        SceneArtwork(item, index, "Предмет ${index + 1}", Modifier.size(artworkSize))
+                        val label = item.title ?: stringResource(placeholderLabels[index])
+                        SceneArtwork(item, index, label, Modifier.size(artworkSize))
                     }
                 }
             }
@@ -99,11 +104,11 @@ internal fun SceneClueSearch(
         val targetIndex = items?.indexOfFirst { it.clueId == challenge.clueId } ?: -1
         ErrorNotice(state.sceneMessage, if (state.sceneRetry && targetIndex >= 0) ({ onSelect(targetIndex) }) else null)
         Text(
-            if (state.capturing) "Проверяем улику…" else "Нажмите на предмет, который совпадает с образцом.",
+            if (state.capturing) stringResource(R.string.checking_clue) else stringResource(R.string.choose_matching_clue),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.text2,
         )
-        onCameraSettings?.let { TextButton(onClick = it, enabled = !state.capturing) { Text("Разрешение камеры") } }
+        onCameraSettings?.let { TextButton(onClick = it, enabled = !state.capturing) { Text(stringResource(R.string.camera_access)) } }
     }
 }
 
