@@ -34,8 +34,7 @@ import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.SuspectCard
 import com.example.mrdetective.domain.models.Case
 import com.example.mrdetective.presentation.ui.theme.AppTheme
-import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
-import com.example.mrdetective.presentation.ui.theme.isMediumWidth
+import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
 @Composable
 internal fun InvestigationScreen(
@@ -79,7 +78,7 @@ internal fun InvestigationScreen(
                     investigationActions(case.id, state, viewModel::start, onFindClue, onAccusation)
                 }
                 BoxWithConstraints(Modifier.weight(1f)) {
-                    if (LocalAppWindow.current.isMediumWidth && maxWidth >= 620.dp) {
+                    if (usesWideLayout() && maxWidth >= 620.dp) {
                         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                             InvestigationPane(Modifier.weight(1.05f)) {
                                 details()

@@ -49,9 +49,8 @@ import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
-import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
 import com.example.mrdetective.presentation.ui.theme.AppWindow
-import com.example.mrdetective.presentation.ui.theme.isMediumWidth
+import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
 @Composable
 internal fun CasesRoute(viewModel: CasesViewModel, onOpen: (Int) -> Unit) {
@@ -74,7 +73,7 @@ private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit, onOpen: (Int) 
     }
     val loadingDescription = stringResource(R.string.loading_cases)
     LazyVerticalGrid(
-        columns = if (LocalAppWindow.current.isMediumWidth) GridCells.Adaptive(280.dp) else GridCells.Fixed(1),
+        columns = if (usesWideLayout()) GridCells.Adaptive(280.dp) else GridCells.Fixed(1),
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
         state = listState,
         contentPadding = PaddingValues(bottom = 12.dp),
@@ -221,6 +220,7 @@ class CasesPreviewStates : PreviewParameterProvider<CasesUiState> {
 
 @Preview(widthDp = 390, heightDp = 760)
 @Preview(name = "Landscape", widthDp = 780, heightDp = 390)
+@Preview(name = "Tablet, portrait", widthDp = 800, heightDp = 1100)
 @Preview(name = "Tablet, large text", widthDp = 1000, heightDp = 750, fontScale = 2f, locale = "en")
 @Composable
 private fun CasesPreview(@PreviewParameter(CasesPreviewStates::class) state: CasesUiState) {

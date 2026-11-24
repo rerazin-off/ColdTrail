@@ -54,6 +54,7 @@ import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
 import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
+import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
@@ -106,8 +107,9 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
         if (route == Tab.Cases.route) viewModel.reload()
     }
     val colors = AppTheme.colors
-    val sideNavigation = LocalAppWindow.current.isMediumWidth
-    val verticalTransitions = sideNavigation || LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val sideNavigation = usesWideLayout()
+    val verticalTransitions = LocalAppWindow.current.isMediumWidth ||
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val forwardSlide = if (verticalTransitions) SlideDirection.Up else SlideDirection.Left
     val backSlide = if (verticalTransitions) SlideDirection.Down else SlideDirection.Right
     val showNavigation = caseId != null || Tab.entries.any { it.route == route }
