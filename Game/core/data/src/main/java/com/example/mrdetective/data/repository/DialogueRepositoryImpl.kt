@@ -8,6 +8,7 @@ import com.example.mrdetective.data.local.entity.DialogueMessageEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toDomain
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
 import com.example.mrdetective.data.sync.SyncScheduler
@@ -38,7 +39,9 @@ class DialogueRepositoryImpl @Inject constructor(
         val investigation = progress.getByCaseForUser(caseId, userId)
             ?: throw DomainError.NotFound("Сначала начните расследование")
         val cached = dialogue.getInvestigationHistory(investigation.id, suspectId)
-        if (investigation.id > 0 && connectivity.isNetworkAvailable()) {
+        val connected = connectivity.isNetworkAvailable()
+        if (!connected && cached.isEmpty()) throw DomainError.Network(kind = DomainError.Network.Kind.Offline)
+        if (investigation.id > 0 && connected) {
             try {
                 val remote = api.getDialogue("eq.${investigation.id}", "eq.$suspectId").mapNotNull { row ->
                     val id = (row["id"] as? Number)?.toLong() ?: return@mapNotNull null
@@ -69,7 +72,7 @@ class DialogueRepositoryImpl @Inject constructor(
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
-        Result.failure(error)
+        Result.failure(NetworkErrorHandler.map(error))
     }
 
     override suspend fun sendMessage(caseId: Int, suspectId: Int, message: String): Result<DialogueMessage> =
@@ -94,13 +97,15 @@ class DialogueRepositoryImpl @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (networkError: Exception) {
-                savePending(investigation.id, caseId, suspectId, text, request)
+                val failure = NetworkErrorHandler.map(networkError)
+                if (failure is DomainError.Network) savePending(investigation.id, caseId, suspectId, text, request)
+                else Result.failure(failure)
             }
         } else savePending(investigation.id, caseId, suspectId, text, request)
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
-        Result.failure(error)
+        Result.failure(NetworkErrorHandler.map(error))
     }
 
     private suspend fun savePending(investigationId: Int, caseId: Int, suspectId: Int, text: String, request: NpcChatRequestDto): Result<DialogueMessage> {

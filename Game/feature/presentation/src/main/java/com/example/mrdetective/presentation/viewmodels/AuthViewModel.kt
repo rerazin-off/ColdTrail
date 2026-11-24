@@ -70,7 +70,7 @@ class AuthViewModel @Inject constructor(
                 throw error
             } catch (error: Exception) {
                 val message = when {
-                    error is DomainError.Network -> "Не удалось связаться с сервером. Проверьте подключение."
+                    error is DomainError.Network -> error.uiMessage("Не удалось войти.")
                     error is DomainError.Validation || error is DomainError.Unauthorized ->
                         if (register) "Не удалось создать аккаунт. Проверьте почту и пароль."
                         else "Проверьте почту, пароль и подтверждение адреса."

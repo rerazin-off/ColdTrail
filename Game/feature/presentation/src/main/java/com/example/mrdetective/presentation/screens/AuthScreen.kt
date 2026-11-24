@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
+import com.example.mrdetective.presentation.ui.components.AppErrorDialog
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.theme.AppTheme
@@ -98,7 +99,7 @@ internal fun AuthScreen(
                         )
                     }
                     state.message?.let {
-                        Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, color = colors.error)
+                        AppErrorDialog(it, onClose = onClearMessage, onRetry = { onSubmit(email, password, register) })
                     }
                     AppButton(
                         text = when {

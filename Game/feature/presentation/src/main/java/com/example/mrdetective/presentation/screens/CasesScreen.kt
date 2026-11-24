@@ -116,11 +116,7 @@ private fun CasesScreen(state: CasesUiState, onRetry: () -> Unit, onOpen: (Int) 
                     AppButton("Обновить список", onRetry, modifier = Modifier.fillMaxWidth(0.75f))
                 }
             }
-            is CasesUiState.Error -> CasesMessage(
-                if (state.unauthorized) "Откройте профиль и войдите в аккаунт повторно."
-                else "Не удалось загрузить дела.",
-                onRetry,
-            )
+            is CasesUiState.Error -> ScreenRetry(state.message, onRetry)
             is CasesUiState.Content -> {
                 val term = query.trim()
                 val visibleCases = remember(state.cases, term) {

@@ -31,6 +31,7 @@ import com.example.mrdetective.domain.models.CameraChallenge
 import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
@@ -95,12 +96,10 @@ internal fun SceneClueSearch(
                 }
             }
         }
+        val targetIndex = items?.indexOfFirst { it.clueId == challenge.clueId } ?: -1
+        ErrorNotice(state.sceneMessage, if (state.sceneRetry && targetIndex >= 0) ({ onSelect(targetIndex) }) else null)
         Text(
-            when {
-                state.capturing -> "Проверяем улику…"
-                state.sceneMessage != null -> state.sceneMessage
-                else -> "Нажмите на предмет, который совпадает с образцом."
-            },
+            if (state.capturing) "Проверяем улику…" else "Нажмите на предмет, который совпадает с образцом.",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.text2,
         )

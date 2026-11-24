@@ -68,7 +68,7 @@ class PuzzleRepositoryImpl @Inject constructor(
                 operation = "check", payload = gson.toJson(request),
             ))
             SyncScheduler.enqueue(context)
-            Result.failure(DomainError.Network(IllegalStateException("Ответ сохранён и ожидает серверной проверки после восстановления сети.")))
+            Result.failure(DomainError.SyncPending())
         }
-    } catch (error: Throwable) { Result.failure(error) }
+    } catch (error: Throwable) { Result.failure(com.example.mrdetective.data.network.NetworkErrorHandler.map(error)) }
 }

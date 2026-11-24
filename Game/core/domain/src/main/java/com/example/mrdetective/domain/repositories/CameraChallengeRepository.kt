@@ -14,4 +14,6 @@ interface CameraChallengeRepository {
     ): Result<Unit>
 
     fun observeSubmission(challenge: CameraChallenge): Flow<CameraSubmission>
+
+    fun observeSubmissionError(challenge: CameraChallenge): Flow<String?>
 }

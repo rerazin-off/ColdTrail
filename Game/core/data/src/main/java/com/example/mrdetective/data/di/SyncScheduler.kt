@@ -12,14 +12,21 @@ object SyncScheduler {
             .setConstraints(connected())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork("coldtrail_sync_once", ExistingWorkPolicy.KEEP, request)
+        WorkManager.getInstance(context).enqueueUniqueWork("coldtrail_sync_once", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
     fun schedulePeriodic(context: Context) {
-        val request = PeriodicWorkRequestBuilder<OfflineSyncWorker>(15, TimeUnit.MINUTES)
+        val request = PeriodicWorkRequestBuilder<ScheduleOfflineSyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(connected()).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "coldtrail_sync_periodic", ExistingPeriodicWorkPolicy.KEEP, request,
+            "coldtrail_sync_periodic", ExistingPeriodicWorkPolicy.UPDATE, request,
         )
+    }
+}
+
+class ScheduleOfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        SyncScheduler.enqueue(applicationContext)
+        return Result.success()
     }
 }

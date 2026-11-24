@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SupabaseNotebookRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : NotebookRepository {
+class NotebookRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : NotebookRepository {
     // SQL allows multiple notes per investigation; Domain currently asks for a single note.
     override suspend fun getNote(investigationId: Int): Result<Note> = apiCall {
         api.getLatestNote("eq.$investigationId").firstOrNull()?.toDomain()

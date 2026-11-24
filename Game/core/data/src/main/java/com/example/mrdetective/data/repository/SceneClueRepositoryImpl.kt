@@ -14,7 +14,7 @@ import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.domain.repositories.SceneClueRepository
 import javax.inject.Inject
 
-class SupabaseSceneClueRepository @Inject constructor(
+class SceneClueRepositoryImpl @Inject constructor(
     private val db: AppDatabase,
     private val api: OfflineApi,
     private val connectivity: ConnectivityChecker,

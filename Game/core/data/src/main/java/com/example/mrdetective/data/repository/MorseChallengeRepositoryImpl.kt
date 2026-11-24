@@ -18,7 +18,7 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
 import javax.inject.Inject
 
-class SupabaseMorseChallengeRepository @Inject constructor(
+class MorseChallengeRepositoryImpl @Inject constructor(
     private val auth: AuthRepository,
     private val progress: InvestigationDao,
     private val puzzles: PuzzleDao,

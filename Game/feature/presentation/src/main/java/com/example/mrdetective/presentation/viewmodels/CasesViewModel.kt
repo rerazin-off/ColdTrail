@@ -18,7 +18,7 @@ sealed interface CasesUiState {
     data object Loading : CasesUiState
     data object Empty : CasesUiState
     data class Content(val cases: List<Case>) : CasesUiState
-    data class Error(val unauthorized: Boolean) : CasesUiState
+    data class Error(val unauthorized: Boolean, val message: String = "Не удалось загрузить дела.") : CasesUiState
 }
 
 @HiltViewModel
@@ -56,7 +56,7 @@ class CasesViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                CasesUiState.Error(unauthorized = error is DomainError.Unauthorized)
+                CasesUiState.Error(error is DomainError.Unauthorized, error.uiMessage("Не удалось загрузить дела."))
             }
         }
     }

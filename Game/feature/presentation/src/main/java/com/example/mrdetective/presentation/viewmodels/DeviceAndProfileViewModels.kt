@@ -2,6 +2,7 @@ package com.example.mrdetective.presentation.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mrdetective.domain.hardware.CameraPreferences
 import com.example.mrdetective.domain.hardware.VibrationPreferences
 import com.example.mrdetective.domain.repositories.ProfileStatistics
 import com.example.mrdetective.domain.repositories.ProfileStatisticsRepository
@@ -99,9 +100,64 @@ internal class VibrationViewModel @Inject constructor(
     }
 }
 
+internal data class CameraSettingsState(
+    val enabled: Boolean? = null,
+    val loading: Boolean = true,
+    val saving: Boolean = false,
+    val error: String? = null,
+)
+
+@HiltViewModel
+internal class CameraSettingsViewModel @Inject constructor(
+    private val preferences: CameraPreferences,
+) : ViewModel() {
+    private val mutableState = MutableStateFlow(CameraSettingsState())
+    val state = mutableState.asStateFlow()
+    private var preferenceJob: Job? = null
+
+    init {
+        load()
+    }
+
+    fun load() {
+        if (preferenceJob?.isActive == true) {
+            mutableState.update { it.copy(error = null) }
+            return
+        }
+        mutableState.update { it.copy(loading = true, error = null) }
+        preferenceJob = viewModelScope.launch {
+            try {
+                preferences.cameraEnabled.collect { enabled ->
+                    mutableState.update { it.copy(enabled = enabled, loading = false) }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                mutableState.update { it.copy(loading = false, error = "Не удалось прочитать настройку камеры.") }
+            }
+        }
+    }
+
+    fun setEnabled(enabled: Boolean) {
+        if (state.value.saving) return
+        mutableState.update { it.copy(saving = true, error = null) }
+        viewModelScope.launch {
+            try {
+                preferences.setCameraEnabled(enabled)
+                mutableState.update { it.copy(enabled = enabled, saving = false) }
+                load()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                mutableState.update { it.copy(saving = false, error = "Не удалось сохранить настройку камеры.") }
+            }
+        }
+    }
+}
+
 internal sealed interface ProfileStatisticsState {
     data object Loading : ProfileStatisticsState
-    data object Error : ProfileStatisticsState
+    data class Error(val message: String) : ProfileStatisticsState
     data class Content(val statistics: ProfileStatistics) : ProfileStatisticsState
 }
 
@@ -111,7 +167,23 @@ internal class ProfileStatisticsViewModel @Inject constructor(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<ProfileStatisticsState>(ProfileStatisticsState.Loading)
     val state = mutableState.asStateFlow()
+    private val mutableNickname = MutableStateFlow<String?>(null)
+    val nickname = mutableNickname.asStateFlow()
+    private val mutableNicknameError = MutableStateFlow<String?>(null)
+    val nicknameError = mutableNicknameError.asStateFlow()
     private var loadJob: Job? = null
+    private var nicknameJob: Job? = null
+
+    fun loadNickname() {
+        if (nicknameJob?.isActive == true) return
+        mutableNicknameError.value = null
+        nicknameJob = viewModelScope.launch {
+            repository.loadNickname().fold(
+                { mutableNickname.value = it },
+                { mutableNicknameError.value = it.uiMessage("Не удалось загрузить никнейм.") },
+            )
+        }
+    }
 
     fun load() {
         if (loadJob?.isActive == true) return
@@ -121,8 +193,8 @@ internal class ProfileStatisticsViewModel @Inject constructor(
                 ProfileStatisticsState.Content(repository.load().getOrThrow())
             } catch (error: CancellationException) {
                 throw error
-            } catch (_: Exception) {
-                ProfileStatisticsState.Error
+            } catch (error: Exception) {
+                ProfileStatisticsState.Error(error.uiMessage("Не удалось загрузить статистику."))
             }
         }
     }

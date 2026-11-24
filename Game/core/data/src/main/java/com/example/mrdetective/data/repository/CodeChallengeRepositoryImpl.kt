@@ -17,7 +17,7 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.CodeChallengeRepository
 import javax.inject.Inject
 
-class SupabaseCodeChallengeRepository @Inject constructor(
+class CodeChallengeRepositoryImpl @Inject constructor(
     private val auth: AuthRepository,
     private val db: AppDatabase,
     private val api: OfflineApi,

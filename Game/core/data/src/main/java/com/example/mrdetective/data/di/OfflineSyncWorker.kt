@@ -5,7 +5,7 @@ import androidx.room3.withWriteTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.mrdetective.data.local.AppDatabase
-import com.example.mrdetective.data.local.datastore.SettingsData
+
 import com.example.mrdetective.data.local.entity.CollectedClueEntity
 import com.example.mrdetective.data.local.entity.DialogueMessageEntity
 import com.example.mrdetective.data.local.entity.NoteEntity
@@ -19,12 +19,13 @@ import com.example.mrdetective.data.remote.dto.CameraCaptureDto
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
+import com.example.mrdetective.domain.repositories.AuthRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -40,7 +41,7 @@ interface SyncWorkerEntryPoint {
     fun database(): AppDatabase
     fun offlineApi(): OfflineApi
     fun restApi(): SupabaseRestApi
-    fun settings(): SettingsData
+    fun auth(): AuthRepository
 }
 
 /** WorkManager retries transient errors and only runs with a validated network connection. */
@@ -50,8 +51,8 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
         val db = entry.database()
         val api = entry.offlineApi()
         val restApi = entry.restApi()
-        val userId = entry.settings().userId.first()
         try {
+            val userId = entry.auth().currentUser() ?: return@withContext Result.success()
             val deferredOps = mutableSetOf<Long>()
             while (true) {
                 val op = db.syncQueueDao().pending().firstOrNull { it.id !in deferredOps } ?: break
@@ -142,6 +143,11 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
 
                         "puzzle_answer" -> {
                             val request = GsonHolder.gson.fromJson(op.payload, CheckPuzzleDto::class.java)
+                            val investigation = db.investigationDao().getInvestigation(request.investigationId)
+                            if (investigation?.userId != userId || request.investigationId <= 0) {
+                                deferredOps.add(op.id)
+                                continue
+                            }
                             val correct = api.checkPuzzle(request)
                             if (correct) {
                                 db.investigationDao().markPuzzleSolved(
@@ -167,7 +173,7 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         "camera_capture" -> {
                             val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
                             val investigation = db.investigationDao().getInvestigation(request.investigationId)
-                            if (userId == null || investigation?.userId != userId) {
+                            if (investigation?.userId != userId) {
                                 deferredOps.add(op.id)
                                 continue
                             }
@@ -206,6 +212,8 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         else -> throw IllegalStateException("Неизвестная операция очереди: ${op.entityType}")
                     }
                     db.syncQueueDao().remove(op.id)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     if (e is HttpException && e.code() in 400..499 && e.code() !in listOf(408, 429)) {
                         // Ошибка данных не исправится повтором. Операция остаётся локально видимой, но снимается с автоповтора.
@@ -216,7 +224,11 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         }
                         db.syncQueueDao().remove(op.id)
                     } else {
-                        db.syncQueueDao().recordFailure(op.id, e.message ?: "network error")
+                        val message = when {
+                            e is HttpException && e.code() >= 500 -> "Сервер временно недоступен. Попробуйте ещё раз позже."
+                            else -> "Не удалось отправить данные. Проверьте подключение и повторите."
+                        }
+                        db.syncQueueDao().recordFailure(op.id, message)
                         throw e
                     }
                 }
@@ -229,19 +241,23 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         db.pendingPhotoDao().remove(photo.id)
                         continue
                     }
-                    val owner = userId ?: throw IllegalStateException("Нет авторизованного пользователя для загрузки фото")
+
                     val extension = file.extension.lowercase().ifBlank { "webp" }
                     val mime = when (extension) { "jpg", "jpeg" -> "image/jpeg"; "png" -> "image/png"; else -> "image/webp" }
-                    val storagePath = "$owner/${photo.clueId}.$extension"
+                    val storagePath = "$userId/${photo.clueId}.$extension"
                     api.uploadPhoto("clue-photos", storagePath, file.readBytes().toRequestBody(mime.toMediaType())).close()
                     db.pendingPhotoDao().remove(photo.id)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     db.pendingPhotoDao().incrementAttempts(photo.id)
                     throw e
                 }
             }
-            if (userId != null) refreshLocalSnapshot(db, api, restApi, userId)
+            refreshLocalSnapshot(db, api, restApi, userId)
             Result.success()
+        } catch (error: CancellationException) {
+            throw error
         } catch (_: Exception) {
             Result.retry()
         }

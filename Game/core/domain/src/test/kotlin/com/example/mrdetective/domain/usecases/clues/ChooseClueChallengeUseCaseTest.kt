@@ -40,6 +40,8 @@ class ChooseClueChallengeUseCaseTest {
                 ) = Result.success(Unit)
 
                 override fun observeSubmission(challenge: CameraChallenge) = emptyFlow<CameraSubmission>()
+
+                override fun observeSubmissionError(challenge: CameraChallenge) = emptyFlow<String?>()
             },
             code = object : CodeChallengeRepository {
                 override suspend fun load(caseId: Int) = Result.success(CodeChallenges(1, codes))

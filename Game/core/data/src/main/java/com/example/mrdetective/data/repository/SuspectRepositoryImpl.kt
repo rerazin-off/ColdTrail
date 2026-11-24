@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SupabaseSuspectRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : SuspectRepository {
+class SuspectRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : SuspectRepository {
     override suspend fun getSuspects(caseId: Int): Result<List<Suspect>> = apiCall {
         api.getSuspects("eq.$caseId").map { it.toDomain() }
     }

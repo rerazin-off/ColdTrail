@@ -37,9 +37,8 @@ class AccusationRepositoryImpl @Inject constructor(
         val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
         val investigation = progress.getByCaseForUser(caseId, userId)
             ?: throw DomainError.NotFound("Сначала начните расследование.")
-        if (investigation.id <= 0 || !connectivity.isNetworkAvailable()) {
-            throw DomainError.Network()
-        }
+        if (!connectivity.isNetworkAvailable()) throw DomainError.Network(kind = DomainError.Network.Kind.Offline)
+        if (investigation.id <= 0) throw DomainError.SyncPending()
         return investigation
     }
 

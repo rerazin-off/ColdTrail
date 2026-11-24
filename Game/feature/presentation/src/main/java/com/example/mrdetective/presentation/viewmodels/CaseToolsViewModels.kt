@@ -110,9 +110,9 @@ internal class AccusationViewModel @Inject constructor(
                     loading = false,
                     suspects = suspects,
                     closed = closed,
-                    error = if (closed) "Не удалось загрузить итог расследования."
+                    error = if (closed) error.uiMessage("Не удалось загрузить итог расследования.")
                     else if (error is DomainError.NotFound) "Сначала начните расследование."
-                    else "Не удалось открыть обвинение.",
+                    else error.uiMessage("Не удалось открыть обвинение."),
                 )
             }
         }
@@ -135,11 +135,7 @@ internal class AccusationViewModel @Inject constructor(
                 throw error
             } catch (error: Exception) {
                 current.copy(
-                    error = if (error is DomainError.Network) {
-                        "Для обвинения нужно подключение к сети и синхронизированное расследование."
-                    } else {
-                        "Не удалось отправить обвинение. Попробуйте ещё раз."
-                    },
+                    error = error.uiMessage("Не удалось отправить обвинение."),
                 )
             }
         }

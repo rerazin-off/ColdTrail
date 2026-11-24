@@ -27,7 +27,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.map
 
 
-class SupabaseCameraChallengeRepository @Inject constructor(
+class CameraChallengeRepositoryImpl @Inject constructor(
     private val auth: AuthRepository,
     private val db: AppDatabase,
     private val api: OfflineApi,
@@ -105,6 +105,9 @@ class SupabaseCameraChallengeRepository @Inject constructor(
                 else -> CameraSubmission.Failed
             }
         }
+
+    override fun observeSubmissionError(challenge: CameraChallenge) =
+        db.syncQueueDao().observeCameraCaptureError(challenge.queueKey)
 
     private fun PuzzleEntity.toChallenge(
         investigationId: Int,

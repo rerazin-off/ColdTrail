@@ -8,6 +8,7 @@ import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.MorseChallenge
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
+import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
 import com.example.mrdetective.domain.usecases.puzzles.PlayPuzzleUseCase
 import com.example.mrdetective.domain.usecases.puzzles.chooseMorseChallenge
@@ -30,6 +31,8 @@ internal data class MorseGameState(
     val reward: Clue? = null,
     val loadError: String? = null,
     val answerError: String? = null,
+    val retrySync: Boolean = false,
+    val retryAnswer: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,6 +41,7 @@ internal class MorseChallengeViewModel @Inject constructor(
     private val challenges: MorseChallengeRepository,
     private val playPuzzle: PlayPuzzleUseCase,
     private val loadInventory: LoadInventoryUseCase,
+    private val progress: ProgressRepository,
 ) : ViewModel() {
     private val route = savedState.toRoute<MorseRoute>()
     private val mutableState = MutableStateFlow(MorseGameState())
@@ -74,8 +78,7 @@ internal class MorseChallengeViewModel @Inject constructor(
                     loading = false,
                     loadError = when (error) {
                         is DomainError.Validation -> error.message
-                        is DomainError.Network -> "Для выбора загадки нужно подключение к сети."
-                        else -> "Не удалось загрузить загадку. Попробуйте ещё раз."
+                        else -> error.uiMessage("Не удалось загрузить загадку.")
                     },
                 )
             }
@@ -87,13 +90,13 @@ internal class MorseChallengeViewModel @Inject constructor(
         val challenge = current.challenge ?: return
         if (current.submitting || current.solved) return
         savedState["morseAnswer"] = value.take(challenge.answerLength)
-        mutableState.update { it.copy(answerError = null) }
+        mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
     }
 
     fun submit() {
         val current = state.value
         val challenge = current.challenge ?: return
-        if (current.solved || current.submitting) return
+        if (current.solved || current.submitting || current.retrySync) return
         val submittedAnswer = answer.value.trim()
         if (!validateMorseChallengeAnswer(challenge, submittedAnswer)) {
             mutableState.update { it.copy(answerError = "Введите ${challenge.answerLength} знаков ответа.") }
@@ -115,13 +118,22 @@ internal class MorseChallengeViewModel @Inject constructor(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                val message = if (error is DomainError.Network) {
-                    "Ответ пока не подтверждён сервером. Проверьте подключение."
-                } else {
-                    "Не удалось проверить ответ. Попробуйте ещё раз."
+                mutableState.update {
+                    it.copy(
+                        submitting = false,
+                        answerError = error.uiMessage("Не удалось проверить ответ."),
+                        retrySync = error is DomainError.SyncPending,
+                        retryAnswer = error !is DomainError.SyncPending,
+                    )
                 }
-                mutableState.update { it.copy(submitting = false, answerError = message) }
             }
+        }
+    }
+
+    fun retrySync() {
+        viewModelScope.launch {
+            val result = progress.syncProgress()
+            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage("Не удалось запустить синхронизацию.")) }
         }
     }
 

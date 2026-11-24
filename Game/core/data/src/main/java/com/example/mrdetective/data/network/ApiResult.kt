@@ -2,7 +2,7 @@ package com.example.mrdetective.data.network
 
 import com.example.mrdetective.domain.models.DomainError
 import kotlinx.coroutines.CancellationException
-import java.io.IOException
+
 
 suspend inline fun <T> apiCall(crossinline block: suspend () -> T): Result<T> = try {
     Result.success(block())
@@ -23,7 +23,7 @@ suspend fun <T : Any> remoteOrCache(
                 Result.success(localValue)
             } else {
                 Result.failure(
-                    NetworkErrorHandler.map(IOException("Нет подключения к интернету и локального кеша нет"))
+                    DomainError.Network(kind = DomainError.Network.Kind.Offline)
                 )
             }
         } else {

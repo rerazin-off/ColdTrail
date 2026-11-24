@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mrdetective.domain.usecases.puzzles.CODE_CHALLENGE_LENGTH
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.NumericPuzzleKeypad
 import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.theme.AppTheme
@@ -50,7 +51,11 @@ internal fun CodeChallengeScreen(viewModel: CodeChallengeViewModel, onBack: () -
                         Text("Введите четырёхзначный код", style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         NumericPuzzleSlots(CODE_CHALLENGE_LENGTH, code, state.solved, state.answerError != null)
                         if (state.submitting) Text("Проверяем код…", color = colors.text2)
-                        state.answerError?.let { Text(it, color = colors.error) }
+                        ErrorNotice(state.answerError, when {
+                            state.retrySync -> viewModel::retrySync
+                            state.retryAnswer -> viewModel::submit
+                            else -> null
+                        })
                     }
                 }
                 if (!state.solved) {

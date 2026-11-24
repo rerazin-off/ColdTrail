@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.SuspectCard
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
@@ -61,6 +62,9 @@ internal fun InvestigationScreen(
             if (case == null) {
                 ScreenRetry(state.error ?: "Дело недоступно.", viewModel::load)
             } else {
+                if (state.suspectsUnavailable && state.error == null) {
+                    ScreenRetry(state.suspectsError ?: "Не удалось загрузить подозреваемых.", viewModel::load)
+                }
                 LazyColumn(
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -91,9 +95,7 @@ internal fun InvestigationScreen(
                         }
                     }
                     item { Text("Персонажи", style = MaterialTheme.typography.bodySmall, color = colors.text2) }
-                    if (state.suspectsUnavailable) {
-                        item { ScreenRetry("Не удалось загрузить подозреваемых.", viewModel::load) }
-                    } else if (state.suspects.isEmpty()) {
+                    if (state.suspects.isEmpty() && !state.suspectsUnavailable) {
                         item { Text("Подозреваемых пока нет.", color = AppTheme.colors.text2) }
                     } else {
                         items(state.suspects, key = { it.id }) { suspect ->
@@ -106,7 +108,7 @@ internal fun InvestigationScreen(
                         }
                     }
                     item {
-                        state.error?.let { Text(it, color = AppTheme.colors.error) }
+                        ErrorNotice(state.error, viewModel::start)
                         if (!state.started) {
                             AppButton(
                                 text = if (state.starting) "Открываем дело…" else "Начать расследование",
@@ -156,8 +158,5 @@ internal fun ScreenProgress() {
 
 @Composable
 internal fun ScreenRetry(message: String, onRetry: () -> Unit) {
-    Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(message, color = AppTheme.colors.error)
-        AppButton("Повторить", onRetry, style = AppButtonStyle.Outlined)
-    }
+    ErrorNotice(message, onRetry)
 }

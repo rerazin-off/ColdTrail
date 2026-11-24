@@ -119,6 +119,9 @@ interface CaseDao {
         END
     """)
     fun observeCameraCapture(investigationId: Int, puzzleId: Int, key: String): Flow<Int>
+
+    @Query("SELECT lastError FROM sync_queue WHERE entityType = 'camera_capture' AND entityId = :key ORDER BY id DESC LIMIT 1")
+    fun observeCameraCaptureError(key: String): Flow<String?>
     @Query("UPDATE sync_queue SET payload = replace(payload, :oldValue, :newValue) WHERE payload LIKE '%' || :oldValue || '%'")
     suspend fun replacePayload(oldValue: String, newValue: String)
 }

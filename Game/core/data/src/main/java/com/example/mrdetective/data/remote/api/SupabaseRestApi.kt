@@ -13,7 +13,11 @@ import retrofit2.http.DELETE
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+data class ProfileNicknameDto(val nickname: String)
+
 interface SupabaseRestApi {
+    @GET("rest/v1/profiles?select=nickname")
+    suspend fun getNickname(@Query("id") userFilter: String): List<ProfileNicknameDto>
     @GET("rest/v1/cases?select=*")
     suspend fun getCases(): List<CaseDto>
 

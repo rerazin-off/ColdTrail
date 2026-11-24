@@ -6,12 +6,16 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.example.mrdetective.domain.hardware.CameraPreferences
 import com.example.mrdetective.domain.hardware.ClueCamera
 import com.example.mrdetective.domain.hardware.ClueCameraState
+import com.example.mrdetective.domain.hardware.PuzzlePermissionsPreferences
 import com.example.mrdetective.domain.models.CameraChallenge
 import com.example.mrdetective.domain.models.DomainError
+import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.CameraChallengeRepository
 import com.example.mrdetective.domain.repositories.CameraSubmission
+import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.domain.repositories.SceneClueRepository
 import com.example.mrdetective.domain.usecases.clues.CaptureCameraClueUseCase
@@ -30,6 +34,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,6 +50,7 @@ internal data class CameraClueRoute(val caseId: Int, val puzzleId: Int)
 internal data class ClueChoiceState(
     val loading: Boolean = true,
     val choice: ClueChallengeChoice? = null,
+    val permissionsRequired: Boolean = false,
     val error: String? = null,
 )
 
@@ -51,6 +58,9 @@ internal data class ClueChoiceState(
 internal class ClueChallengePickerViewModel @Inject constructor(
     savedState: SavedStateHandle,
     private val chooseChallenge: ChooseClueChallengeUseCase,
+    private val auth: AuthRepository,
+    private val permissions: PuzzlePermissionsPreferences,
+    private val cameraPreferences: CameraPreferences,
 ) : ViewModel() {
     val caseId = savedState.toRoute<ChooseClueChallengeRoute>().caseId
     private val mutableState = MutableStateFlow(ClueChoiceState())
@@ -61,14 +71,32 @@ internal class ClueChallengePickerViewModel @Inject constructor(
         load()
     }
 
-    fun load() {
+    fun load() = prepareChallenge(cameraGranted = null)
+
+    fun continueWithPermissions(cameraGranted: Boolean) = prepareChallenge(cameraGranted)
+
+    private fun prepareChallenge(cameraGranted: Boolean?) {
         if (loadJob?.isActive == true) return
         mutableState.value = ClueChoiceState()
         loadJob = viewModelScope.launch {
-            mutableState.value = chooseChallenge(caseId).fold(
-                { ClueChoiceState(loading = false, choice = it) },
-                { ClueChoiceState(loading = false, error = it.challengeLoadMessage()) },
-            )
+            mutableState.value = try {
+                val user = auth.currentUser() ?: throw DomainError.Unauthorized()
+                if (cameraGranted != null) {
+                    if (!cameraGranted && cameraPreferences.cameraEnabled.first() == null) {
+                        cameraPreferences.setCameraEnabled(false)
+                    }
+                    permissions.markPuzzlePermissionsSeen(user)
+                }
+                if (!permissions.hasSeenPuzzlePermissions(user)) {
+                    ClueChoiceState(loading = false, permissionsRequired = true)
+                } else {
+                    ClueChoiceState(loading = false, choice = chooseChallenge(caseId).getOrThrow())
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                ClueChoiceState(loading = false, error = error.challengeLoadMessage())
+            }
         }
     }
 }
@@ -80,8 +108,10 @@ internal data class CameraClueUiState(
     val submission: CameraSubmission? = null,
     val loadMessage: String? = null,
     val captureMessage: String? = null,
+    val syncError: String? = null,
     val sceneItems: List<SceneClueImage>? = null,
     val sceneMessage: String? = null,
+    val sceneRetry: Boolean = false,
 )
 
 @HiltViewModel
@@ -91,6 +121,7 @@ internal class CameraClueViewModel @Inject constructor(
     private val camera: ClueCamera<Pair<LifecycleOwner, PreviewView>>,
     private val captureClue: CaptureCameraClueUseCase,
     private val scene: SceneClueRepository,
+    private val progress: ProgressRepository,
 ) : ViewModel() {
     private val route = savedState.toRoute<CameraClueRoute>()
     private val mutableState = MutableStateFlow(CameraClueUiState())
@@ -140,6 +171,11 @@ internal class CameraClueViewModel @Inject constructor(
         savedState["searchingScene"] = enabled
     }
 
+    fun fallbackAfterCameraError(message: String) {
+        useScene(true)
+        mutableState.update { it.copy(sceneMessage = message, sceneRetry = false) }
+    }
+
     fun loadScene() {
         val current = state.value
         val challenge = current.challenge ?: return
@@ -157,7 +193,7 @@ internal class CameraClueViewModel @Inject constructor(
         val selected = current.sceneItems?.getOrNull(index) ?: return
         if (current.capturing || current.submission in setOf(CameraSubmission.Pending, CameraSubmission.Awarded)) return
         if (selected.clueId != challenge.clueId) {
-            mutableState.update { it.copy(sceneMessage = "Это другой предмет. Продолжайте поиск.") }
+            mutableState.update { it.copy(sceneMessage = "Это другой предмет. Продолжайте поиск.", sceneRetry = false) }
             return
         }
 
@@ -167,12 +203,8 @@ internal class CameraClueViewModel @Inject constructor(
                 onSuccess = { mutableState.update { it.copy(capturing = false, submission = CameraSubmission.Awarded) } },
                 onFailure = { error ->
                     if (error is CancellationException) throw error
-                    val message = if (error is DomainError.Network) {
-                        "Подключитесь к интернету и нажмите на улику ещё раз."
-                    } else {
-                        "Не удалось подтвердить улику. Попробуйте ещё раз."
-                    }
-                    mutableState.update { it.copy(capturing = false, sceneMessage = message) }
+                    val message = error.uiMessage("Не удалось подтвердить улику.")
+                    mutableState.update { it.copy(capturing = false, sceneMessage = message, sceneRetry = true) }
                 },
             )
         }
@@ -237,11 +269,20 @@ internal class CameraClueViewModel @Inject constructor(
         }
     }
 
+    fun retrySync() {
+        viewModelScope.launch {
+            val result = progress.syncProgress()
+            mutableState.update { it.copy(syncError = result.exceptionOrNull()?.uiMessage("Не удалось запустить синхронизацию.")) }
+        }
+    }
+
     private fun observe(challenge: CameraChallenge) {
         observation?.cancel()
         observation = viewModelScope.launch {
-            repository.observeSubmission(challenge).collect { submission ->
-                mutableState.update { it.copy(submission = submission) }
+            combine(repository.observeSubmission(challenge), repository.observeSubmissionError(challenge)) { submission, error ->
+                submission to error
+            }.collect { (submission, error) ->
+                mutableState.update { it.copy(submission = submission, syncError = error) }
             }
         }
     }
@@ -249,6 +290,5 @@ internal class CameraClueViewModel @Inject constructor(
 
 private fun Throwable.challengeLoadMessage(): String = when (this) {
     is DomainError.Validation -> message ?: "Эта загадка пока недоступна."
-    is DomainError.Network -> "Не удалось загрузить загадки. Проверьте подключение."
-    else -> "Не удалось загрузить загадки. Попробуйте ещё раз."
+    else -> uiMessage("Не удалось загрузить загадки.")
 }

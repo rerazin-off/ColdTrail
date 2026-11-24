@@ -12,7 +12,14 @@ sealed class DomainError(
 
     class Unauthorized(message: String = "Нет доступа") : DomainError(message)
 
-    class Network(cause: Throwable? = null) : DomainError("Ошибка сети", cause)
+    class Network(
+        cause: Throwable? = null,
+        val kind: Kind = Kind.Connection,
+    ) : DomainError("Ошибка сети", cause) {
+        enum class Kind { Offline, Server, Connection }
+    }
+
+    class SyncPending : DomainError("Данные ожидают синхронизации")
 
     class HardwareUnavailable : DomainError("Вибрация недоступна на этом устройстве")
 

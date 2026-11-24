@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.mrdetective.domain.hardware.CameraPreferences
+import com.example.mrdetective.domain.hardware.PuzzlePermissionsPreferences
 import com.example.mrdetective.domain.hardware.VibrationPreferences
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,7 +20,7 @@ private val Context.settingsDataStore by preferencesDataStore(name = "coldtrail_
 @Singleton
 class SettingsData @Inject constructor(
     @ApplicationContext private val context: Context,
-) : VibrationPreferences {
+) : VibrationPreferences, CameraPreferences, PuzzlePermissionsPreferences {
     private object Keys {
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
@@ -26,6 +28,7 @@ class SettingsData @Inject constructor(
         val LAST_OPENED_CASE = androidx.datastore.preferences.core.intPreferencesKey("last_opened_case")
         val USER_ID = stringPreferencesKey("user_id")
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
+        val CAMERA_ENABLED = booleanPreferencesKey("camera_enabled")
     }
 
     val darkTheme: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.DARK_THEME] ?: false }
@@ -33,6 +36,26 @@ class SettingsData @Inject constructor(
     val language: Flow<String> = context.settingsDataStore.data.map { it[Keys.LANGUAGE] ?: "ru" }
     val lastOpenedCaseId: Flow<Int?> = context.settingsDataStore.data.map { it[Keys.LAST_OPENED_CASE] }
     val userId: Flow<String?> = context.settingsDataStore.data.map { it[Keys.USER_ID] }
+    override val cameraEnabled: Flow<Boolean?> = context.settingsDataStore.data.map { it[Keys.CAMERA_ENABLED] }
+
+    override suspend fun setCameraEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.CAMERA_ENABLED] = enabled }
+    }
+
+    override suspend fun hasSeenPuzzlePermissions(userId: String): Boolean =
+        context.settingsDataStore.data.first()[booleanPreferencesKey("puzzle_permissions_seen_$userId")] == true
+
+    override suspend fun markPuzzlePermissionsSeen(userId: String) {
+        context.settingsDataStore.edit { it[booleanPreferencesKey("puzzle_permissions_seen_$userId")] = true }
+    }
+
+    suspend fun getNickname(userId: String): String? =
+        context.settingsDataStore.data.first()[stringPreferencesKey("nickname_$userId")]
+
+    suspend fun setNickname(userId: String, nickname: String) {
+        context.settingsDataStore.edit { it[stringPreferencesKey("nickname_$userId")] = nickname }
+    }
+
     override suspend fun getVibrationEnabled(): Boolean? =
         context.settingsDataStore.data.first()[Keys.VIBRATION_ENABLED]
 

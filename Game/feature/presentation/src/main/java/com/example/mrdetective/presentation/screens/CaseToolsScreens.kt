@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,7 +56,10 @@ import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
+import com.example.mrdetective.presentation.ui.components.CameraAccess
 import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
+import com.example.mrdetective.presentation.ui.components.rememberCameraAccess
 import com.example.mrdetective.presentation.ui.components.NumericPuzzleKeypad
 import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.components.AppCard
@@ -86,7 +90,12 @@ internal fun ProfileScreen(
     onSignOut: () -> Unit,
 ) {
     val statisticsState by viewModel.state.collectAsStateWithLifecycle()
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
+    val nickname by viewModel.nickname.collectAsStateWithLifecycle()
+    val nicknameError by viewModel.nicknameError.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.load()
+        viewModel.loadNickname()
+    }
     val colors = AppTheme.colors
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
@@ -106,16 +115,24 @@ internal fun ProfileScreen(
             border = BorderStroke(1.dp, colors.outline),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("СД", style = MaterialTheme.typography.displayLarge, color = colors.accent)
+                Text(nickname?.take(2)?.uppercase().orEmpty(), style = MaterialTheme.typography.displayLarge, color = colors.accent)
             }
         }
         Spacer(Modifier.height(20.dp))
-        Text("Следователь", style = MaterialTheme.typography.headlineLarge)
+        nickname?.let { Text(it, style = MaterialTheme.typography.headlineLarge) }
+        if (auth.message != null) {
+            ErrorNotice(auth.message, onSignOut)
+        } else {
+            ErrorNotice(nicknameError ?: (statisticsState as? ProfileStatisticsState.Error)?.message) {
+                viewModel.loadNickname()
+                viewModel.load()
+            }
+        }
         Text("Ваш прогресс в расследованиях", style = MaterialTheme.typography.bodySmall, color = colors.text2)
         Spacer(Modifier.height(32.dp))
         when (val current = statisticsState) {
             ProfileStatisticsState.Loading -> CircularProgressIndicator(color = colors.accent)
-            ProfileStatisticsState.Error -> ScreenRetry("Не удалось загрузить статистику.", viewModel::load)
+            is ProfileStatisticsState.Error -> Unit
             is ProfileStatisticsState.Content -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val stats = current.statistics
                 listOf(stats.total to "Всего дел", stats.active to "Активных", stats.solved to "Раскрыто").forEach { (value, label) ->
@@ -132,7 +149,6 @@ internal fun ProfileScreen(
             }
         }
         Spacer(Modifier.height(24.dp))
-        auth.message?.let { Text(it, color = colors.error) }
         AppButton(
             text = if (auth.busy) "Выходим…" else "Выйти из аккаунта",
             onClick = onSignOut,
@@ -228,11 +244,7 @@ internal fun MorseScreen(
     var showVibrationOptions by rememberSaveable { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { viewModel.stopPlayback() }
-    LaunchedEffect(challenge?.id, vibration.loading, vibration.enabled, vibration.settingsError) {
-        if (challenge != null && !vibration.loading && vibration.enabled == null && vibration.settingsError == null) {
-            showVibrationOptions = true
-        }
-    }
+
     val colors = AppTheme.colors
     val solved = puzzle.solved
     if (solved) {
@@ -282,12 +294,12 @@ internal fun MorseScreen(
                                 style = AppButtonStyle.Outlined,
                                 enabled = !vibration.playing && !vibration.saving && !solved && !puzzle.submitting,
                             )
-                            vibration.enabled != null || vibration.settingsError != null -> Text(
+                            else -> Text(
                                 challenge.signal.replace(" ", " / "),
                                 style = MaterialTheme.typography.headlineMedium,
                             )
                         }
-                        vibration.playbackError?.let { Text(it, color = colors.text2, style = MaterialTheme.typography.bodySmall) }
+                        ErrorNotice(vibration.playbackError)
                         if (challenge.numericOnly) {
                             NumericPuzzleSlots(challenge.answerLength, answer, solved, puzzle.answerError != null)
                         } else if (!solved) {
@@ -302,7 +314,11 @@ internal fun MorseScreen(
                         if (solved) {
                             Text("Улика добавлена в инвентарь.", color = colors.success, style = MaterialTheme.typography.bodyMedium)
                         }
-                        puzzle.answerError?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
+                        ErrorNotice(puzzle.answerError, when {
+                            puzzle.retrySync -> game::retrySync
+                            puzzle.retryAnswer -> ::checkCode
+                            else -> null
+                        })
                     }
                 }
 
@@ -347,43 +363,91 @@ internal fun MorseScreen(
 }
 
 @Composable
-internal fun DeviceSettingsScreen(viewModel: VibrationViewModel, onBack: () -> Unit) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val colors = AppTheme.colors
+internal fun DeviceSettingsScreen(
+    viewModel: VibrationViewModel,
+    cameraSettings: CameraSettingsViewModel,
+    onBack: () -> Unit,
+) {
+    val access = rememberCameraAccess(cameraSettings::setEnabled)
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         CaseToolHeader("Настройки", onBack)
-        Text("Возможности устройства", style = MaterialTheme.typography.headlineLarge, color = colors.text)
+        Text("Возможности устройства", style = MaterialTheme.typography.headlineLarge, color = AppTheme.colors.text)
+        DevicePermissionOptions(viewModel, cameraSettings, access)
+    }
+}
+
+@Composable
+internal fun DevicePermissionOptions(
+    viewModel: VibrationViewModel,
+    cameraSettings: CameraSettingsViewModel,
+    access: CameraAccess,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val camera by cameraSettings.state.collectAsStateWithLifecycle()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AppCard(outlined = true) { VibrationSettingRow(state, viewModel::setEnabled, viewModel::load) }
+        AppCard(outlined = true) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DeviceSwitchRow(
+                    title = "Камера для поиска улик",
+                    description = if (access.available) {
+                        "Камера нужна для поиска улик в комнате. Если выключить, поиск откроется на картинке склада."
+                    } else {
+                        "На устройстве нет задней камеры. Улики можно искать на картинке склада."
+                    },
+                    checked = access.available && access.granted && camera.enabled != false && !camera.loading,
+                    enabled = access.available && !camera.loading && !camera.saving && camera.error == null,
+                    onChange = { enabled ->
+                        if (enabled) access.requestOrOpenSettings(camera.enabled != null)
+                        else cameraSettings.setEnabled(false)
+                    },
+                )
+                if (access.available) {
+                    TextButton(onClick = { access.openSettings(!access.granted) }, enabled = !camera.saving) {
+                        Text("Разрешение в Android")
+                    }
+                }
+                camera.error?.let { ScreenRetry(it, cameraSettings::load) }
+            }
+        }
     }
 }
 
 @Composable
 private fun VibrationSettingRow(state: VibrationState, onChange: (Boolean) -> Unit, onRetry: () -> Unit) {
-    val colors = AppTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Вибрация для Морзе", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    if (state.available) "Телефон передаёт точки и тире вибрацией. Если выключить, сигнал будет показан на экране."
-                    else "На устройстве нет доступного вибромотора. Сигнал будет показан на экране.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.text2,
-                )
-            }
-            Switch(
-                checked = state.enabled == true && state.available,
-                onCheckedChange = onChange,
-                enabled = state.available && !state.loading && !state.saving,
-            )
-        }
+        DeviceSwitchRow(
+            title = "Вибрация для Морзе",
+            description = if (state.available) {
+                "Телефон передаёт точки и тире вибрацией. Если выключить, сигнал будет показан на экране."
+            } else {
+                "На устройстве нет доступного вибромотора. Сигнал будет показан на экране."
+            },
+            checked = state.enabled == true && state.available,
+            enabled = state.available && !state.loading && !state.saving,
+            onChange = onChange,
+        )
         state.settingsError?.let { ScreenRetry(it, onRetry) }
+    }
+}
+
+@Composable
+private fun DeviceSwitchRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.text2)
+        }
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 
@@ -442,7 +506,7 @@ internal fun AccusationScreen(
                         }
                     }
                 }
-                state.error?.let { Text(it, color = colors.error) }
+                ErrorNotice(state.error, viewModel::accuse)
                 AppButton(
                     text = if (state.submitting) "Проверяем обвинение…" else "Обвинить",
                     onClick = { confirming = true },

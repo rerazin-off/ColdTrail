@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SupabaseClueRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : ClueRepository {
+class ClueRepositoryImpl @Inject constructor(private val api: SupabaseRestApi) : ClueRepository {
     override suspend fun getClue(id: Int): Result<Clue> = apiCall {
         api.getClue("eq.$id").firstOrNull()?.toDomain() ?: throw DomainError.NotFound("Улика не найдена")
     }

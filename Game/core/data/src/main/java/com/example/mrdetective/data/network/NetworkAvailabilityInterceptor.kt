@@ -4,7 +4,7 @@ import android.Manifest
 import androidx.annotation.RequiresPermission
 import okhttp3.Interceptor
 import okhttp3.Response
-import java.io.IOException
+
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +15,7 @@ class NetworkAvailabilityInterceptor @Inject constructor(
     @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
     override fun intercept(chain: Interceptor.Chain): Response {
         if (!connectivityChecker.isNetworkAvailable()) {
-            throw IOException("Нет подключения к интернету")
+            throw NoConnectionException()
         }
         return chain.proceed(chain.request())
     }

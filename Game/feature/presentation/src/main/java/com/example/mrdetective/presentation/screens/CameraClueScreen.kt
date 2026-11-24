@@ -1,12 +1,6 @@
 package com.example.mrdetective.presentation.ui
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -23,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,10 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,12 +36,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.mrdetective.domain.hardware.ClueSearchMode
+import com.example.mrdetective.domain.hardware.chooseClueSearchMode
 import com.example.mrdetective.domain.models.CameraChallenge
 import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
@@ -57,6 +49,8 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
+import com.example.mrdetective.presentation.ui.components.rememberCameraAccess
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import kotlin.math.roundToInt
@@ -64,10 +58,15 @@ import kotlin.math.roundToInt
 @Composable
 internal fun ChooseClueChallengeScreen(
     viewModel: ClueChallengePickerViewModel,
+    vibration: VibrationViewModel,
+    cameraSettings: CameraSettingsViewModel,
     onChoice: (ClueChallengeChoice) -> Unit,
     onBack: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val vibrationState by vibration.state.collectAsStateWithLifecycle()
+    val cameraState by cameraSettings.state.collectAsStateWithLifecycle()
+    val access = rememberCameraAccess(cameraSettings::setEnabled)
     LaunchedEffect(state.choice) {
         state.choice?.let(onChoice)
     }
@@ -75,36 +74,48 @@ internal fun ChooseClueChallengeScreen(
         CaseToolHeader("Добыть улику", onBack)
         when {
             state.loading || state.choice != null -> CameraClueLoading("Ищем доступную загадку…")
-            state.error != null -> CameraClueMessage(state.error.orEmpty(), "Повторить", viewModel::load)
+            state.error != null -> ScreenRetry(state.error.orEmpty(), viewModel::load)
+            state.permissionsRequired -> AlertDialog(
+                onDismissRequest = onBack,
+                title = { Text("Камера и вибрация") },
+                text = {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        DevicePermissionOptions(vibration, cameraSettings, access)
+                    }
+                },
+                confirmButton = {
+                    AppButton(
+                        "Продолжить",
+                        { viewModel.continueWithPermissions(access.granted) },
+                        enabled = !cameraState.loading && !cameraState.saving && !vibrationState.loading && !vibrationState.saving,
+                    )
+                },
+                containerColor = AppTheme.colors.surface,
+                titleContentColor = AppTheme.colors.text,
+                textContentColor = AppTheme.colors.text,
+            )
             else -> CameraClueMessage("В этом деле больше нет доступных загадок.", "К делу", onBack)
         }
     }
 }
 
 @Composable
-internal fun CameraClueScreen(viewModel: CameraClueViewModel, onBack: () -> Unit) {
+internal fun CameraClueScreen(
+    viewModel: CameraClueViewModel,
+    cameraSettings: CameraSettingsViewModel,
+    onBack: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val settings by cameraSettings.state.collectAsStateWithLifecycle()
     val searchingScene by viewModel.searchingScene.collectAsStateWithLifecycle()
     val hardware by viewModel.hardware.collectAsStateWithLifecycle()
-    val hasRearCamera = remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
-    fun hasPermission() =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-    var permitted by remember(context) { mutableStateOf(hasPermission()) }
-    var openingSettings by rememberSaveable { mutableStateOf(false) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        permitted = it
-        viewModel.useScene(!it)
+    val access = rememberCameraAccess { granted ->
+        cameraSettings.setEnabled(granted)
+        viewModel.useScene(!granted)
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        val hadPermission = permitted
-        permitted = hasPermission()
-        if (openingSettings && permitted) viewModel.useScene(false)
-        if (hadPermission && !permitted) viewModel.useScene(true)
-        openingSettings = false
-    }
+    val searchMode = chooseClueSearchMode(settings.enabled, access.available, access.granted, access.showRationale)
     LaunchedEffect(hardware.error) {
-        if (hardware.error != null) viewModel.useScene(true)
+        hardware.error?.let(viewModel::fallbackAfterCameraError)
     }
 
     Column(
@@ -115,30 +126,28 @@ internal fun CameraClueScreen(viewModel: CameraClueViewModel, onBack: () -> Unit
         CaseToolHeader(challenge?.title ?: "Поиск улики", onBack)
         when {
             state.loading -> CameraClueLoading("Загружаем улику…")
-            challenge == null -> CameraClueMessage(state.loadMessage.orEmpty(), "Повторить", viewModel::load)
+            challenge == null -> ScreenRetry(state.loadMessage.orEmpty(), viewModel::load)
             state.submission == CameraSubmission.Awarded ->
                 ClueRewardDialog(challenge.clueTitle, challenge.clueDescription, onBack)
-            state.submission == CameraSubmission.Pending ->
+            state.submission == CameraSubmission.Pending -> {
                 CameraClueMessage("Снимок сохранён. Улика появится в инвентаре после отправки снимка.", "К делу", onBack)
-            searchingScene || !hasRearCamera -> SceneClueSearch(
+                ErrorNotice(state.syncError, viewModel::retrySync)
+            }
+            settings.loading || settings.saving -> CameraClueLoading("Загружаем настройку камеры…")
+            searchingScene || searchMode == ClueSearchMode.Picture -> SceneClueSearch(
                 challenge = challenge,
                 state = state,
                 onLoad = viewModel::loadScene,
                 onSelect = viewModel::selectSceneItem,
-                onCameraSettings = if (hasRearCamera && !permitted) {
-                    {
-                        openingSettings = true
-                        context.startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-                        )
-                    }
+                onCameraSettings = if (access.available && !access.granted) {
+                    { access.openSettings(true) }
                 } else {
                     null
                 },
             )
-            !permitted -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            searchMode == ClueSearchMode.AskPermission -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Разрешите доступ к камере, чтобы осмотреть комнату и сфотографировать улику.")
-                AppButton("Разрешить доступ", { permission.launch(Manifest.permission.CAMERA) }, style = AppButtonStyle.Accent)
+                AppButton("Разрешить доступ", { access.requestOrOpenSettings(false) }, style = AppButtonStyle.Accent)
                 AppButton("Искать на картинке", { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
             }
             else -> CameraViewfinder(challenge, state, viewModel, Modifier.weight(1f))
@@ -168,9 +177,7 @@ private fun CameraViewfinder(
     val visiblePosition = position
     val instruction = when {
         hardware.error != null -> hardware.error.orEmpty()
-        state.submission == CameraSubmission.Failed -> "Не удалось подтвердить снимок. Сфотографируйте улику ещё раз."
-        state.captureMessage != null && position == null -> state.captureMessage
-        state.captureMessage != null && state.captureMessage.startsWith("Не удалось") -> state.captureMessage
+
         position != null -> "Улика в кадре. Сделайте снимок."
         !hardware.previewReady -> "Открываем камеру…"
         hardware.direction == null || targetAzimuth == null -> "Держите телефон перед собой, чтобы начать поиск."
@@ -178,6 +185,8 @@ private fun CameraViewfinder(
             ?: "Держите телефон перед собой и медленно поворачивайтесь."
     }
 
+    ErrorNotice(state.captureMessage)
+    ErrorNotice(if (state.submission == CameraSubmission.Failed) "Не удалось подтвердить снимок. Сфотографируйте улику ещё раз." else null)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Keep the viewfinder size stable when the instruction changes.
         Text(

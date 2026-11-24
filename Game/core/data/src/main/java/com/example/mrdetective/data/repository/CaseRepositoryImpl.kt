@@ -33,7 +33,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SupabaseCaseRepositoryImpl @Inject constructor(
+class CaseRepositoryImpl @Inject constructor(
     private val db: AppDatabase,
     private val api: SupabaseRestApi,
     private val offlineApi: OfflineApi,

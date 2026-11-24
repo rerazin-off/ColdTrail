@@ -174,6 +174,8 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                 val picker: ClueChallengePickerViewModel = hiltViewModel()
                 ChooseClueChallengeScreen(
                     picker,
+                    hiltViewModel(),
+                    hiltViewModel(),
                     onChoice = { choice ->
                         if (navController.currentBackStackEntry == pickEntry) {
                             val options = navOptions {
@@ -190,7 +192,7 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                 )
             }
             composable<CameraClueRoute> { cameraEntry ->
-                CameraClueScreen(hiltViewModel()) {
+                CameraClueScreen(hiltViewModel(), hiltViewModel()) {
                     if (navController.currentBackStackEntry == cameraEntry) navController.popBackStack()
                 }
             }
@@ -205,7 +207,7 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                 }
             }
             composable<DeviceSettingsRoute> {
-                DeviceSettingsScreen(hiltViewModel()) { navController.popBackStack() }
+                DeviceSettingsScreen(hiltViewModel(), hiltViewModel()) { navController.popBackStack() }
             }
             composable<AccusationRoute> {
                 AccusationScreen(hiltViewModel(), { navController.popBackStack() }, viewModel::updateCaseStatus)

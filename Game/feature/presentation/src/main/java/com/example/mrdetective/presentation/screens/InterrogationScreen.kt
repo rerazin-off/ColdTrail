@@ -52,6 +52,7 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
@@ -118,7 +119,9 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                 }
             }
 
-            if (state.historyUnavailable) ScreenRetry("Не удалось обновить историю.", viewModel::load)
+            if (state.historyUnavailable && state.feedback == null) {
+                ScreenRetry(state.historyError ?: "Не удалось обновить историю.", viewModel::load)
+            }
             Surface(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp),
                 color = colors.surface,
@@ -156,7 +159,7 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                 Modifier.padding(bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                state.feedback?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.text2) }
+                ErrorNotice(state.feedback, if (state.pendingFeedback) viewModel::retryPendingMessage else viewModel::send)
                 if (attachment == null) {
                     Text("Скрепка — прикрепить улику к сообщению", style = MaterialTheme.typography.bodySmall, color = colors.text2)
                 }
