@@ -150,7 +150,9 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
         Row(Modifier.fillMaxSize().padding(padding)) {
             if (showNavigation && sideNavigation) {
                 Surface(
-                    modifier = Modifier.widthIn(min = 100.dp, max = 144.dp).padding(8.dp),
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                        .widthIn(min = 100.dp, max = 144.dp)
+                        .padding(8.dp),
                     shape = AppShapes.control,
                     color = colors.surface,
                     border = BorderStroke(1.dp, colors.outline),
