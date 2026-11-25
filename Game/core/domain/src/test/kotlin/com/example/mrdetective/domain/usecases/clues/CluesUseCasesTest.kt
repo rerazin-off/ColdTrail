@@ -11,10 +11,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Проверяет [AddToInventoryUseCase] на заданных входных данных с тестовыми зависимостями. */
 class AddToInventoryUseCaseTest {
     private val repository = FakeInventoryRepository()
     private val useCase = AddToInventoryUseCase(repository)
 
+    /** Проверяет сценарий «добавляет улику в инвентарь расследования». */
     @Test
     fun `добавляет улику в инвентарь расследования`() =
         runTest {
@@ -24,6 +26,7 @@ class AddToInventoryUseCaseTest {
             assertEquals(listOf<Any?>(TestData.progress.id, TestData.clue.id), repository.addCalls.single())
         }
 
+    /** Проверяет сценарий «улика с некорректным id возвращает ошибку валидации». */
     @Test
     fun `улика с некорректным id возвращает ошибку валидации`() =
         runTest {
@@ -32,10 +35,12 @@ class AddToInventoryUseCaseTest {
         }
 }
 
+/** Проверяет [CollectClueUseCase] на заданных входных данных с тестовыми зависимостями. */
 class CollectClueUseCaseTest {
     private val repository = FakeClueRepository()
     private val useCase = CollectClueUseCase(repository)
 
+    /** Проверяет сценарий «собирает улику». */
     @Test
     fun `собирает улику`() =
         runTest {
@@ -43,6 +48,7 @@ class CollectClueUseCaseTest {
             assertEquals(listOf(7), repository.collectCalls)
         }
 
+    /** Проверяет сценарий «некорректный id улики возвращает ошибку валидации». */
     @Test
     fun `некорректный id улики возвращает ошибку валидации`() =
         runTest {
@@ -51,24 +57,29 @@ class CollectClueUseCaseTest {
         }
 }
 
+/** Проверяет [ConfirmClueApproachUseCase] на заданных входных данных с тестовыми зависимостями. */
 class ConfirmClueApproachUseCaseTest {
     private val useCase = ConfirmClueApproachUseCase()
 
+    /** Проверяет сценарий «расстояние меньше требуемого — подтверждено». */
     @Test
     fun `расстояние меньше требуемого — подтверждено`() {
         assertTrue(useCase(5f, 10f))
     }
 
+    /** Проверяет сценарий «расстояние больше требуемого — не подтверждено». */
     @Test
     fun `расстояние больше требуемого — не подтверждено`() {
         assertFalse(useCase(10.1f, 10f))
     }
 }
 
+/** Проверяет [SaveCluePhotoUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SaveCluePhotoUseCaseTest {
     private val repository = FakePhotoRepository()
     private val useCase = SaveCluePhotoUseCase(repository)
 
+    /** Проверяет сценарий «сохраняет фото улики». */
     @Test
     fun `сохраняет фото улики`() =
         runTest {
@@ -76,6 +87,7 @@ class SaveCluePhotoUseCaseTest {
             assertEquals(listOf<Any?>(2, "/photos/a.jpg"), repository.saveCalls.single())
         }
 
+    /** Проверяет сценарий «некорректные данные возвращают ошибку валидации». */
     @Test
     fun `некорректные данные возвращают ошибку валидации`() =
         runTest {

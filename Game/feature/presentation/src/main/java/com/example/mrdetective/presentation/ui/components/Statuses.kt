@@ -9,23 +9,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-enum class ChipStatus(val label: String) {
-    ClueFound("Улика найдена"),
-    Available("Доступно"),
-    Done("Выполнено"),
-    Error("Ошибка"),
+/**
+ * Связывает статус расследования с локализованной подписью.
+ *
+ * @property label Ресурс локализованной подписи.
+ */
+enum class ChipStatus(val label: Int) {
+    ClueFound(R.string.clue_found),
+    Available(R.string.available),
+    Done(R.string.done),
+    Error(R.string.error),
 }
 
-
+/** Отображает статус в оформленной плашке. */
 @Composable
 fun Statuses(
     status: ChipStatus,
     modifier: Modifier = Modifier,
-    text: String = status.label,
+    text: String = stringResource(status.label),
 ) {
     val c = AppTheme.colors
     val color: Color =
@@ -39,7 +46,7 @@ fun Statuses(
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
-        color = color,
+        color = if (status == ChipStatus.ClueFound) c.text else color,
         modifier =
             modifier
                 .background(color.copy(alpha = 0.16f), shape)

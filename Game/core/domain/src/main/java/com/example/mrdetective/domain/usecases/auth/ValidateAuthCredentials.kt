@@ -2,6 +2,7 @@ package com.example.mrdetective.domain.usecases.auth
 
 private val EmailPattern = Regex("[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+")
 
+/** Проверяет общие учётные данные форм входа и регистрации. */
 fun validateAuthCredentials(
     email: String,
     password: String,

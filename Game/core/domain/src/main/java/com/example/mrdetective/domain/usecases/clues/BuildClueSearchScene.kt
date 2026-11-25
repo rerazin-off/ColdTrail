@@ -1,0 +1,21 @@
+package com.example.mrdetective.domain.usecases.clues
+
+import com.example.mrdetective.domain.repositories.SceneClueImage
+import kotlin.random.Random
+
+/** Формирует перемешанный набор предметов для сцены из искомой улики и разных отвлекающих предметов. */
+fun buildClueSearchScene(
+    target: SceneClueImage,
+    candidates: List<SceneClueImage>,
+    random: Random,
+): List<SceneClueImage> {
+    val decoys =
+        candidates
+            .filter { it.clueId != target.clueId && it.imageUrl != null && it.imageUrl != target.imageUrl }
+            .distinctBy { it.clueId }
+            .distinctBy { it.imageUrl }
+            .shuffled(random)
+            .take(2)
+    val missing = List(2 - decoys.size) { SceneClueImage(clueId = null, imageUrl = null) }
+    return (decoys + missing + target).shuffled(random)
+}

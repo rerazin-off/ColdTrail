@@ -10,6 +10,7 @@ import com.example.mrdetective.domain.models.MessageAuthor
 import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.models.Suspect
 
+/** Предоставляет данные дел, улик и расследований для юнит-тестов домена. */
 object TestData {
     val case = Case(id = 1, title = "Дело", introduction = "Вступление")
     val suspect = Suspect(id = 1, caseId = 1, name = "Иван", profile = "Садовник")

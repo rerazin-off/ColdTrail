@@ -9,11 +9,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Проверяет [InspectItemUseCase] на заданных входных данных с тестовыми зависимостями. */
 class InspectItemUseCaseTest {
     private val clues = FakeClueRepository()
     private val inventory = FakeInventoryRepository()
     private val useCase = InspectItemUseCase(clues, inventory)
 
+    /** Проверяет сценарий «возвращает улику по id предмета». */
     @Test
     fun `возвращает улику по id предмета`() =
         runTest {
@@ -23,6 +25,7 @@ class InspectItemUseCaseTest {
             assertEquals(listOf(1), clues.getClueCalls)
         }
 
+    /** Проверяет сценарий «некорректный id возвращает ошибку валидации». */
     @Test
     fun `некорректный id возвращает ошибку валидации`() =
         runTest {
@@ -31,10 +34,12 @@ class InspectItemUseCaseTest {
         }
 }
 
+/** Проверяет [LoadInventoryUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadInventoryUseCaseTest {
     private val repository = FakeInventoryRepository()
     private val useCase = LoadInventoryUseCase(repository)
 
+    /** Проверяет сценарий «возвращает инвентарь». */
     @Test
     fun `возвращает инвентарь`() =
         runTest {
@@ -44,6 +49,7 @@ class LoadInventoryUseCaseTest {
             assertEquals(listOf(4), repository.inventoryCalls)
         }
 
+    /** Проверяет сценарий «некорректный id возвращает ошибку валидации». */
     @Test
     fun `некорректный id возвращает ошибку валидации`() =
         runTest {

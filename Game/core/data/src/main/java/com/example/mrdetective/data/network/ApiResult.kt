@@ -2,15 +2,18 @@ package com.example.mrdetective.data.network
 
 import com.example.mrdetective.domain.models.DomainError
 import kotlinx.coroutines.CancellationException
-import java.io.IOException
 
-suspend inline fun <T> apiCall(crossinline block: suspend () -> T): Result<T> = try {
-    Result.success(block())
-} catch (e: CancellationException) {
-    throw e
-} catch (e: Throwable) {
-    Result.failure(NetworkErrorHandler.map(e))
-}
+/** Преобразует сетевые сбои в ошибки домена и сохраняет отмену корутины. */
+suspend inline fun <T> apiCall(crossinline block: suspend () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        Result.failure(NetworkErrorHandler.map(e))
+    }
+
+/** Использует локальный кеш без сети или при неудачном чтении с сервера. */
 suspend fun <T : Any> remoteOrCache(
     connectivity: ConnectivityChecker,
     cached: suspend () -> T?,
@@ -23,7 +26,7 @@ suspend fun <T : Any> remoteOrCache(
                 Result.success(localValue)
             } else {
                 Result.failure(
-                    NetworkErrorHandler.map(IOException("Нет подключения к интернету и локального кеша нет"))
+                    DomainError.Network(kind = DomainError.Network.Kind.Offline),
                 )
             }
         } else {
@@ -33,8 +36,11 @@ suspend fun <T : Any> remoteOrCache(
                 throw cancelled
             } catch (remoteError: Throwable) {
                 val localValue = cached()
-                if (localValue != null) Result.success(localValue)
-                else Result.failure(NetworkErrorHandler.map(remoteError))
+                if (localValue != null) {
+                    Result.success(localValue)
+                } else {
+                    Result.failure(NetworkErrorHandler.map(remoteError))
+                }
             }
         }
     } catch (cancelled: CancellationException) {
@@ -43,4 +49,3 @@ suspend fun <T : Any> remoteOrCache(
         Result.failure(NetworkErrorHandler.map(error))
     }
 }
-

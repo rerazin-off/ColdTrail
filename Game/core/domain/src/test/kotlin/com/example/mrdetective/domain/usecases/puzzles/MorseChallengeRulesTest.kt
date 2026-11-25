@@ -7,9 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Проверяет отбор головоломок Морзе и локальную проверку ввода. */
 class MorseChallengeRulesTest {
     private val puzzle = MorseChallenge(1, "Морзе", null, ".- .-. -", 10, solved = false, rewardClaimed = false)
 
+    /** Проверяет, что при выборе пропускаются решённые головоломки и уже полученные награды. */
     @Test
     fun `new game skips solved puzzles and rewards already collected`() {
         val solved = puzzle.copy(id = 2, solved = true)
@@ -19,6 +21,7 @@ class MorseChallengeRulesTest {
         assertEquals(solved, chooseMorseChallenge(listOf(solved, puzzle), restoredId = solved.id))
     }
 
+    /** Проверяет, что клиент валидирует формат, а правильность ответа определяет сервер. */
     @Test
     fun `local validation checks shape but leaves correctness to the server`() {
         assertTrue(validateMorseChallengeAnswer(puzzle, "ART"))

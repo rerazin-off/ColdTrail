@@ -14,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import kotlinx.coroutines.delay
 
+/** Показывает текст постепенно, сохраняя место под весь текст. */
 @Composable
 fun TypewriterText(
     text: String,
@@ -35,11 +36,12 @@ fun TypewriterText(
         }
     }
 
-    val displayed = buildAnnotatedString {
-        append(text)
-        if (animate && visibleEnd < text.length) {
-            addStyle(SpanStyle(color = Color.Transparent), visibleEnd, text.length)
+    val displayed =
+        buildAnnotatedString {
+            append(text)
+            if (animate && visibleEnd < text.length) {
+                addStyle(SpanStyle(color = Color.Transparent), visibleEnd, text.length)
+            }
         }
-    }
     Text(displayed, modifier = modifier, style = style)
 }

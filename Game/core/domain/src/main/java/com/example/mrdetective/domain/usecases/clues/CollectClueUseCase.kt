@@ -4,11 +4,22 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.ClueRepository
 import javax.inject.Inject
 
+/**
+ * Регистрирует улику, найденную при расследовании.
+ *
+ * @param repository Репозиторий описаний улик и уже собранных находок.
+ */
 class CollectClueUseCase
     @Inject
     constructor(
         private val repository: ClueRepository,
     ) {
+        /**
+         * Регистрирует выбранную улику в указанном расследовании.
+         *
+         * @param clueId Идентификатор найденной или предъявляемой улики.
+         * @return Подтверждение записи находки или ошибка.
+         */
         suspend operator fun invoke(clueId: Int): Result<Unit> {
             if (clueId <= 0) {
                 return Result.failure(

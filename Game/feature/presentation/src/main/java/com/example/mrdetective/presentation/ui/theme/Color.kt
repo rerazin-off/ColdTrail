@@ -1,14 +1,34 @@
 package com.example.mrdetective.presentation.ui.theme
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
 
+/**
+ * Хранит палитру ColdTrail для экранов и общих компонентов.
+ *
+ * @property bg Цвет фона экранов.
+ * @property surface Основной цвет поверхности карточек и диалогов.
+ * @property surface2 Цвет выделенной или вторичной поверхности.
+ * @property primary Основной цвет палитры.
+ * @property onPrimary Цвет содержимого поверх основного цвета темы.
+ * @property accent Акцентный цвет для выделенных элементов.
+ * @property onAccent Цвет текста и значков на акцентном фоне.
+ * @property text Основной цвет текста.
+ * @property text2 Цвет второстепенного текста и подписей.
+ * @property error Цвет текста и индикаторов ошибки.
+ * @property success Цвет подтверждённого результата или успешного действия.
+ * @property outline Цвет рамок и контуров компонентов.
+ * @property button Цвет фона основной кнопки.
+ * @property onButton Цвет текста и значков на фоне основной кнопки.
+ * @property isDark Используется ли тёмная палитра.
+ */
 @Immutable
 data class AppColors(
     val bg: Color,
     val surface: Color,
     val surface2: Color,
     val primary: Color,
+    val onPrimary: Color,
     val accent: Color,
     val onAccent: Color,
     val text: Color,
@@ -27,6 +47,7 @@ val LightAppColors =
         surface = Color(0xFFFFFCF5),
         surface2 = Color(0xFFE6DAC3),
         primary = Color(0xFF34291F),
+        onPrimary = Color(0xFFF4F0E6),
         accent = Color(0xFFE0B570),
         onAccent = Color(0xFF2A1A00),
         text = Color(0xFF34291F),
@@ -45,6 +66,7 @@ val DarkAppColors =
         surface = Color(0xFF30271F),
         surface2 = Color(0xFF403428),
         primary = Color(0xFF7F6B53),
+        onPrimary = Color(0xFFFFF8EC),
         accent = Color(0xFF8A6833),
         onAccent = Color(0xFFFFF0D8),
         text = Color(0xFFF1E6CF),

@@ -17,52 +17,54 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/** Предоставляет общий экземпляр базы Room и её DAO. */
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
+    /** Создаёт базу Room с зарегистрированными миграциями схемы. */
     @Provides
     @Singleton
     fun provideDatabase(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): AppDatabase {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "coldtrail.db"
+            "coldtrail.db",
         )
             .addMigrations(
                 AppDatabase.MIGRATION_1_2,
-                AppDatabase.MIGRATION_2_3
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4,
             )
             .build()
     }
 
+    /** Предоставляет DAO для кеша дел. */
     @Provides
-    fun provideCaseDao(database: AppDatabase): CaseDao =
-        database.caseDao()
+    fun provideCaseDao(database: AppDatabase): CaseDao = database.caseDao()
 
+    /** Предоставляет DAO для кеша профилей подозреваемых. */
     @Provides
-    fun provideSuspectDao(database: AppDatabase): SuspectDao =
-        database.suspectDao()
+    fun provideSuspectDao(database: AppDatabase): SuspectDao = database.suspectDao()
 
+    /** Предоставляет DAO для кеша улик и записей инвентаря. */
     @Provides
-    fun provideClueDao(database: AppDatabase): ClueDao =
-        database.clueDao()
+    fun provideClueDao(database: AppDatabase): ClueDao = database.clueDao()
 
+    /** Предоставляет DAO для локальных расследований и их прогресса. */
     @Provides
-    fun provideInvestigationDao(database: AppDatabase): InvestigationDao =
-        database.investigationDao()
+    fun provideInvestigationDao(database: AppDatabase): InvestigationDao = database.investigationDao()
 
+    /** Предоставляет DAO для кеша диалогов. */
     @Provides
-    fun provideDialogueDao(database: AppDatabase): DialogueDao =
-        database.dialogueDao()
+    fun provideDialogueDao(database: AppDatabase): DialogueDao = database.dialogueDao()
 
+    /** Предоставляет DAO для локальных заметок расследования. */
     @Provides
-    fun provideNoteDao(database: AppDatabase): NoteDao =
-        database.noteDao()
+    fun provideNoteDao(database: AppDatabase): NoteDao = database.noteDao()
 
+    /** Предоставляет DAO для операций, ожидающих синхронизации. */
     @Provides
-    fun provideSyncQueueDao(database: AppDatabase): SyncQueueDao =
-        database.syncQueueDao()
+    fun provideSyncQueueDao(database: AppDatabase): SyncQueueDao = database.syncQueueDao()
 }

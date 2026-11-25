@@ -4,112 +4,194 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.MorseChallenge
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
+import com.example.mrdetective.domain.repositories.ProgressRepository
+import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
 import com.example.mrdetective.domain.usecases.puzzles.PlayPuzzleUseCase
 import com.example.mrdetective.domain.usecases.puzzles.chooseMorseChallenge
 import com.example.mrdetective.domain.usecases.puzzles.validateMorseChallengeAnswer
+import com.example.mrdetective.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Описывает активную головоломку Морзе, введённый ответ и состояние отправки.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property challenge Текущая головоломка после успешной загрузки.
+ * @property investigationId Идентификатор расследования. Для локально начатого дела до синхронизации он может
+ *   быть отрицательным.
+ * @property submitting Выполняется ли отправка результата на проверку.
+ * @property solved Подтверждено ли правильное решение головоломки.
+ * @property reward Полученная улика, если награда подтверждена.
+ * @property loadError Сообщение об ошибке загрузки, если она произошла.
+ * @property answerError Сообщение об ошибке проверки ответа, если она произошла.
+ * @property retrySync Нужно ли повторить синхронизацию сохранённого решения.
+ * @property retryAnswer Можно ли повторно отправить введённый ответ.
+ */
 internal data class MorseGameState(
     val loading: Boolean = true,
     val challenge: MorseChallenge? = null,
     val investigationId: Int = 0,
     val submitting: Boolean = false,
     val solved: Boolean = false,
+    val reward: Clue? = null,
     val loadError: String? = null,
     val answerError: String? = null,
+    val retrySync: Boolean = false,
+    val retryAnswer: Boolean = false,
 )
 
+/**
+ * Загружает головоломку Морзе, управляет проверкой ответа и показом награды.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param challenges Источник сигналов Морзе и прогресса по головоломкам дела.
+ * @param playPuzzle Сценарий передачи ответа в репозиторий головоломок.
+ * @param loadInventory Сценарий чтения инвентаря расследования.
+ * @param progress Репозиторий прогресса, через который запрашивается синхронизация.
+ */
 @HiltViewModel
-internal class MorseChallengeViewModel @Inject constructor(
-    private val savedState: SavedStateHandle,
-    private val challenges: MorseChallengeRepository,
-    private val playPuzzle: PlayPuzzleUseCase,
-) : ViewModel() {
-    private val caseId = savedState.toRoute<MorseRoute>().caseId
-    private val mutableState = MutableStateFlow(MorseGameState())
-    val state = mutableState.asStateFlow()
-    val answer = savedState.getStateFlow("morseAnswer", "")
-    private var loadJob: Job? = null
+internal class MorseChallengeViewModel
+    @Inject
+    constructor(
+        private val strings: UiStrings,
+        private val savedState: SavedStateHandle,
+        private val challenges: MorseChallengeRepository,
+        private val playPuzzle: PlayPuzzleUseCase,
+        private val loadInventory: LoadInventoryUseCase,
+        private val progress: ProgressRepository,
+    ) : ViewModel() {
+        private val route = savedState.toRoute<MorseRoute>()
+        private val mutableState = MutableStateFlow(MorseGameState())
+        val state = mutableState.asStateFlow()
+        val answer = savedState.getStateFlow("morseAnswer", "")
+        private var loadJob: Job? = null
 
-    init {
-        load()
-    }
+        init {
+            load()
+        }
 
-    fun load() {
-        if (loadJob?.isActive == true || state.value.submitting) return
-        mutableState.value = MorseGameState()
-        loadJob = viewModelScope.launch {
-            mutableState.value = try {
-                val available = challenges.load(caseId).getOrThrow()
-                val restoredId = savedState.get<Int>("morsePuzzle")
-                val challenge = chooseMorseChallenge(available.puzzles, restoredId)
-                if (challenge?.id != restoredId) savedState["morseAnswer"] = ""
-                savedState["morsePuzzle"] = challenge?.id
-                MorseGameState(
-                    loading = false,
-                    challenge = challenge,
-                    investigationId = available.investigationId,
-                    solved = challenge?.solved == true,
-                )
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                MorseGameState(
-                    loading = false,
-                    loadError = when (error) {
-                        is DomainError.Validation -> error.message
-                        is DomainError.Network -> "Для выбора загадки нужно подключение к сети."
-                        else -> "Не удалось загрузить загадку. Попробуйте ещё раз."
-                    },
-                )
+        /** Загружает выбранную головоломку Морзе и состояние её награды. */
+        fun load() {
+            if (loadJob?.isActive == true || state.value.submitting) return
+            mutableState.value = MorseGameState()
+            loadJob =
+                viewModelScope.launch {
+                    mutableState.value =
+                        try {
+                            val available = challenges.load(route.caseId).getOrThrow()
+                            val restoredId = savedState.get<Int>("morsePuzzle")
+                            val candidates = route.puzzleId?.let { id -> available.puzzles.filter { it.id == id } } ?: available.puzzles
+                            val challenge = chooseMorseChallenge(candidates, restoredId ?: route.puzzleId)
+                            if (challenge?.id != restoredId) savedState["morseAnswer"] = ""
+                            savedState["morsePuzzle"] = challenge?.id
+                            MorseGameState(
+                                loading = false,
+                                challenge = challenge,
+                                investigationId = available.investigationId,
+                                solved = challenge?.solved == true,
+                                reward =
+                                    if (challenge?.solved == true) {
+                                        findReward(available.investigationId, challenge.rewardClueId)
+                                    } else {
+                                        null
+                                    },
+                            )
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            MorseGameState(
+                                loading = false,
+                                loadError =
+                                    when (error) {
+                                        is DomainError.Validation ->
+                                            strings.domainMessage(
+                                                error.message,
+                                                strings.get(R.string.puzzle_not_ready),
+                                            )
+                                        else -> error.uiMessage(strings, strings.get(R.string.puzzle_load_error))
+                                    },
+                            )
+                        }
+                }
+        }
+
+        /** Обновляет ответ, введённый игроком. */
+        fun updateAnswer(value: String) {
+            val current = state.value
+            val challenge = current.challenge ?: return
+            if (current.submitting || current.solved) return
+            savedState["morseAnswer"] = value.take(challenge.answerLength)
+            mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
+        }
+
+        /** Проверяет и отправляет текущий ответ на головоломку Морзе. */
+        fun submit() {
+            val current = state.value
+            val challenge = current.challenge ?: return
+            if (current.solved || current.submitting || current.retrySync) return
+            val submittedAnswer = answer.value.trim()
+            if (!validateMorseChallengeAnswer(challenge, submittedAnswer)) {
+                mutableState.update { it.copy(answerError = strings.get(R.string.answer_required_length, challenge.answerLength)) }
+                return
+            }
+            mutableState.update { it.copy(submitting = true, answerError = null) }
+            viewModelScope.launch {
+                try {
+                    val correct = playPuzzle(current.investigationId, challenge.id, submittedAnswer).getOrThrow()
+                    val reward = if (correct) findReward(current.investigationId, challenge.rewardClueId) else null
+                    mutableState.update {
+                        it.copy(
+                            submitting = false,
+                            solved = correct,
+                            reward = reward,
+                            answerError = if (correct) null else strings.get(R.string.incorrect_morse),
+                        )
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    mutableState.update {
+                        it.copy(
+                            submitting = false,
+                            answerError = error.uiMessage(strings, strings.get(R.string.answer_check_error)),
+                            retrySync = error is DomainError.SyncPending,
+                            retryAnswer = error !is DomainError.SyncPending,
+                        )
+                    }
+                }
             }
         }
-    }
 
-    fun updateAnswer(value: String) {
-        val current = state.value
-        val challenge = current.challenge ?: return
-        if (current.submitting || current.solved) return
-        savedState["morseAnswer"] = value.take(challenge.answerLength)
-        mutableState.update { it.copy(answerError = null) }
-    }
-
-    fun submit() {
-        val current = state.value
-        val challenge = current.challenge ?: return
-        if (current.solved || current.submitting) return
-        val submittedAnswer = answer.value.trim()
-        if (!validateMorseChallengeAnswer(challenge, submittedAnswer)) {
-            mutableState.update { it.copy(answerError = "Введите ${challenge.answerLength} знаков ответа.") }
-            return
-        }
-        mutableState.update { it.copy(submitting = true, answerError = null) }
-        viewModelScope.launch {
-            try {
-                val correct = playPuzzle(current.investigationId, challenge.id, submittedAnswer).getOrThrow()
+        /** Повторно запрашивает синхронизацию и обновляет состояние головоломки Морзе. */
+        fun retrySync() {
+            viewModelScope.launch {
+                val result = progress.syncProgress()
                 mutableState.update {
-                    it.copy(submitting = false, solved = correct, answerError = if (correct) null else "Неверный ответ. Проверьте сигнал.")
+                    it.copy(
+                        answerError = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error)),
+                    )
                 }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                val message = if (error is DomainError.Network) {
-                    "Ответ пока не подтверждён сервером. Проверьте подключение."
-                } else {
-                    "Не удалось проверить ответ. Попробуйте ещё раз."
-                }
-                mutableState.update { it.copy(submitting = false, answerError = message) }
             }
         }
+
+        private suspend fun findReward(
+            investigationId: Int,
+            clueId: Int,
+        ): Clue? =
+            loadInventory(investigationId).getOrElse {
+                if (it is CancellationException) throw it
+                emptyList()
+            }.firstOrNull { it.id == clueId }
     }
-}

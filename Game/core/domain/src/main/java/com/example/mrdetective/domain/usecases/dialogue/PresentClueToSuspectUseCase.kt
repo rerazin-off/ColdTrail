@@ -5,11 +5,25 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.DialogueRepository
 import javax.inject.Inject
 
+/**
+ * Предъявляет подозреваемому улику из инвентаря и запрашивает его ответ.
+ *
+ * @param repository Репозиторий истории и обмена репликами.
+ */
 class PresentClueToSuspectUseCase
     @Inject
     constructor(
         private val repository: DialogueRepository,
     ) {
+        /**
+         * Отправляет выбранную улику подозреваемому через репозиторий диалогов.
+         *
+         * @param caseId Идентификатор выбранного дела.
+         * @param suspectId Идентификатор подозреваемого в выбранном деле.
+         * @param clueId Идентификатор найденной или предъявляемой улики.
+         * @param message Текст реплики игрока.
+         * @return Реплика подозреваемого или запись об отправке, ожидающей сети. При сбое возвращает ошибку.
+         */
         suspend operator fun invoke(
             caseId: Int,
             suspectId: Int,

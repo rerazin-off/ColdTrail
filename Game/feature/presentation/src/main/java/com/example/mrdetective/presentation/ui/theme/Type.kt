@@ -20,7 +20,6 @@ val Inter =
         Font(R.font.inter_semibold, FontWeight.SemiBold),
     )
 
-
 val AppTypography =
     Typography(
         displayLarge =

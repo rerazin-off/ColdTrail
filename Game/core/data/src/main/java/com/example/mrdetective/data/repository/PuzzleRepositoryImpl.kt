@@ -3,10 +3,16 @@ package com.example.mrdetective.data.repository
 import android.content.Context
 import androidx.room3.withWriteTransaction
 import com.example.mrdetective.data.local.AppDatabase
-import com.example.mrdetective.data.local.dao.*
-import com.example.mrdetective.data.local.entity.*
+import com.example.mrdetective.data.local.dao.InvestigationDao
+import com.example.mrdetective.data.local.dao.PuzzleDao
+import com.example.mrdetective.data.local.dao.SyncQueueDao
+import com.example.mrdetective.data.local.entity.CollectedClueEntity
+import com.example.mrdetective.data.local.entity.PuzzleEntity
+import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
+import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toDomain
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.sync.SyncScheduler
@@ -18,57 +24,100 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Кеширует публичные данные головоломок и проверяет ответы сразу или после подключения.
+ *
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param puzzles DAO кешированных метаданных головоломок.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param db Локальная база Room.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
-class PuzzleRepositoryImpl @Inject constructor(
-    private val api: OfflineApi,
-    private val puzzles: PuzzleDao,
-    private val progress: InvestigationDao,
-    private val outbox: SyncQueueDao,
-    private val db: AppDatabase,
-    private val connectivity: ConnectivityChecker,
-    private val gson: Gson,
-    @ApplicationContext private val context: Context,
-) : PuzzleRepository {
-    override suspend fun getPuzzle(id: Int): Result<Puzzle> = try {
-        var local = puzzles.getById(id)
-        if (local == null && connectivity.isNetworkAvailable()) {
-            val dto = api.getPuzzle("eq.$id").firstOrNull() ?: throw DomainError.NotFound("Головоломка не найдена")
-            local = PuzzleEntity(dto.id, dto.caseId, dto.kind, dto.title, dto.hint, dto.rewardClueId)
-            puzzles.upsertAll(listOf(local))
-        }
-        local?.let { Result.success(it.toDomain()) } ?: Result.failure(DomainError.NotFound("Головоломка не сохранена на устройстве"))
-    } catch (error: Throwable) { Result.failure(error) }
-
-    override suspend fun markSolved(id: Int): Result<Unit> = try {
-        val puzzle = puzzles.getById(id) ?: throw DomainError.NotFound("Головоломка не найдена")
-        val investigation = progress.getByCase(puzzle.caseId) ?: throw DomainError.NotFound("Расследование не начато")
-        db.withWriteTransaction {
-            progress.markPuzzleSolved(SolvedPuzzleEntity(investigation.id, id, System.currentTimeMillis().toString(), synced = false))
-        }
-        Result.success(Unit)
-    } catch (error: Throwable) { Result.failure(error) }
-
-    override suspend fun checkAnswer(investigationId: Int, puzzleId: Int, answer: String): Result<Boolean> = try {
-        require(answer.isNotBlank()) { "Ответ не может быть пустым" }
-        val request = CheckPuzzleDto(investigationId, puzzleId, answer)
-        if (connectivity.isNetworkAvailable()) {
-            val correct = api.checkPuzzle(request)
-            if (correct) {
-                val puzzle = puzzles.getById(puzzleId)
-                db.withWriteTransaction {
-                    progress.markPuzzleSolved(SolvedPuzzleEntity(investigationId, puzzleId, System.currentTimeMillis().toString(), synced = true))
-                    puzzle?.rewardClueId?.let { progress.collectClue(CollectedClueEntity(investigationId, it, System.currentTimeMillis().toString(), synced = true)) }
+class PuzzleRepositoryImpl
+    @Inject
+    constructor(
+        private val api: OfflineApi,
+        private val puzzles: PuzzleDao,
+        private val progress: InvestigationDao,
+        private val outbox: SyncQueueDao,
+        private val db: AppDatabase,
+        private val connectivity: ConnectivityChecker,
+        private val gson: Gson,
+        @ApplicationContext private val context: Context,
+    ) : PuzzleRepository {
+        /** Ищет публичные данные головоломки. */
+        override suspend fun getPuzzle(id: Int): Result<Puzzle> =
+            try {
+                var local = puzzles.getById(id)
+                if (local == null && connectivity.isNetworkAvailable()) {
+                    val dto = api.getPuzzle("eq.$id").firstOrNull() ?: throw DomainError.NotFound("Головоломка не найдена")
+                    local = PuzzleEntity(dto.id, dto.caseId, dto.kind, dto.title, dto.hint, dto.rewardClueId)
+                    puzzles.upsertAll(listOf(local))
                 }
+                local?.let { Result.success(it.toDomain()) }
+                    ?: Result.failure(DomainError.NotFound("Головоломка не сохранена на устройстве"))
+            } catch (error: Throwable) {
+                Result.failure(NetworkErrorHandler.map(error))
             }
-            Result.success(correct)
-        } else {
-            // Keep the submitted answer locally; server remains the only authority that can validate it.
-            outbox.enqueue(SyncQueueEntity(
-                entityType = "puzzle_answer", entityId = "$investigationId:$puzzleId",
-                operation = "check", payload = gson.toJson(request),
-            ))
-            SyncScheduler.enqueue(context)
-            Result.failure(DomainError.Network(IllegalStateException("Ответ сохранён и ожидает серверной проверки после восстановления сети.")))
-        }
-    } catch (error: Throwable) { Result.failure(error) }
-}
+
+        /** Отмечает головоломку решённой в соответствующем расследовании. */
+        override suspend fun markSolved(id: Int): Result<Unit> =
+            try {
+                val puzzle = puzzles.getById(id) ?: throw DomainError.NotFound("Головоломка не найдена")
+                val investigation = progress.getByCase(puzzle.caseId) ?: throw DomainError.NotFound("Расследование не начато")
+                db.withWriteTransaction {
+                    progress.markPuzzleSolved(
+                        SolvedPuzzleEntity(investigation.id, id, System.currentTimeMillis().toString(), synced = false),
+                    )
+                }
+                Result.success(Unit)
+            } catch (error: Throwable) {
+                Result.failure(NetworkErrorHandler.map(error))
+            }
+
+        /** Проверяет ответ на выбранную головоломку. */
+        override suspend fun checkAnswer(
+            investigationId: Int,
+            puzzleId: Int,
+            answer: String,
+        ): Result<Boolean> =
+            try {
+                require(answer.isNotBlank()) { "Ответ не может быть пустым" }
+                val request = CheckPuzzleDto(investigationId, puzzleId, answer)
+                if (investigationId > 0 && connectivity.isNetworkAvailable()) {
+                    val correct = api.checkPuzzle(request)
+                    if (correct) {
+                        val puzzle = puzzles.getById(puzzleId)
+                        db.withWriteTransaction {
+                            progress.markPuzzleSolved(
+                                SolvedPuzzleEntity(investigationId, puzzleId, System.currentTimeMillis().toString(), synced = true),
+                            )
+                            puzzle?.rewardClueId?.let {
+                                progress.collectClue(
+                                    CollectedClueEntity(investigationId, it, System.currentTimeMillis().toString(), synced = true),
+                                )
+                            }
+                        }
+                    }
+                    Result.success(correct)
+                } else {
+                    // Сохраняем ответ на устройстве. Правильность ответа проверяет сервер.
+                    outbox.enqueue(
+                        SyncQueueEntity(
+                            entityType = "puzzle_answer",
+                            entityId = "$investigationId:$puzzleId",
+                            operation = "check",
+                            payload = gson.toJson(request),
+                        ),
+                    )
+                    SyncScheduler.enqueue(context)
+                    Result.failure(DomainError.SyncPending())
+                }
+            } catch (error: Throwable) {
+                Result.failure(com.example.mrdetective.data.network.NetworkErrorHandler.map(error))
+            }
+    }

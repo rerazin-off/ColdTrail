@@ -3,6 +3,7 @@ package com.example.mrdetective.domain.usecases.puzzles
 import com.example.mrdetective.domain.models.MorseChallenge
 import kotlin.random.Random
 
+/** Выбирает головоломку Морзе, за которую можно получить новую улику. */
 fun chooseMorseChallenge(
     puzzles: List<MorseChallenge>,
     restoredId: Int?,
@@ -11,6 +12,7 @@ fun chooseMorseChallenge(
     puzzles.firstOrNull { it.id == restoredId && (it.solved || !it.rewardClaimed) }
         ?: puzzles.filter { !it.solved && !it.rewardClaimed }.randomOrNull(random)
 
+/** Проверяет и нормализует ответ перед отправкой. */
 fun validateMorseChallengeAnswer(
     challenge: MorseChallenge,
     answer: String,

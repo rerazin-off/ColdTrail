@@ -7,14 +7,24 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.usecases.auth.SignInUseCase
 import com.example.mrdetective.domain.usecases.auth.SignUpUseCase
 import com.example.mrdetective.domain.usecases.auth.validateAuthCredentials
+import com.example.mrdetective.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Хранит режим формы авторизации, состояние отправки и обратную связь.
+ *
+ * @property checkingSession Выполняется ли проверка сохранённой сессии при запуске.
+ * @property signedIn Есть ли у игрока активная сессия.
+ * @property busy Выполняется ли сейчас операция авторизации.
+ * @property message Сообщение о результате или ошибке авторизации.
+ * @property confirmationRequired Нужно ли игроку подтвердить адрес электронной почты.
+ */
 data class AuthUiState(
     val checkingSession: Boolean = true,
     val signedIn: Boolean = false,
@@ -23,76 +33,105 @@ data class AuthUiState(
     val confirmationRequired: Boolean = false,
 )
 
+/**
+ * Проверяет и отправляет формы авторизации, предоставляет текущее состояние сессии.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param signIn Сценарий проверки данных и входа в аккаунт.
+ * @param signUp Сценарий проверки данных и регистрации аккаунта.
+ */
 @HiltViewModel
-class AuthViewModel @Inject constructor(
-    private val auth: AuthRepository,
-    private val signIn: SignInUseCase,
-    private val signUp: SignUpUseCase,
-) : ViewModel() {
-    private val mutableState = MutableStateFlow(AuthUiState())
-    val state = mutableState.asStateFlow()
+class AuthViewModel
+    @Inject
+    constructor(
+        private val strings: UiStrings,
+        private val auth: AuthRepository,
+        private val signIn: SignInUseCase,
+        private val signUp: SignUpUseCase,
+    ) : ViewModel() {
+        private val mutableState = MutableStateFlow(AuthUiState())
+        val state = mutableState.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            val restored = try {
-                AuthUiState(checkingSession = false, signedIn = auth.currentUser() != null)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                AuthUiState(checkingSession = false, message = "Не удалось восстановить сеанс. Войдите снова.")
-            }
-            delay(650)
-            mutableState.value = restored
-        }
-    }
-
-    fun clearMessage() {
-        if (!state.value.busy) {
-            mutableState.value = state.value.copy(message = null, confirmationRequired = false)
-        }
-    }
-
-    fun submit(email: String, password: String, register: Boolean) {
-        if (state.value.busy || state.value.signedIn || state.value.checkingSession) return
-        val address = email.trim()
-        validateAuthCredentials(address, password, register)?.let { validationError ->
-            mutableState.value = state.value.copy(message = validationError, confirmationRequired = false)
-            return
-        }
-        mutableState.value = state.value.copy(busy = true, message = null, confirmationRequired = false)
-        viewModelScope.launch {
-            mutableState.value = try {
-                val result = if (register) signUp(address, password) else signIn(address, password)
-                result.getOrThrow()
-                val hasSession = !register || auth.currentUser() != null
-                AuthUiState(checkingSession = false, signedIn = hasSession, confirmationRequired = !hasSession)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                val message = when {
-                    error is DomainError.Network -> "Не удалось связаться с сервером. Проверьте подключение."
-                    error is DomainError.Validation || error is DomainError.Unauthorized ->
-                        if (register) "Не удалось создать аккаунт. Проверьте почту и пароль."
-                        else "Проверьте почту, пароль и подтверждение адреса."
-                    else -> "Не удалось выполнить запрос. Попробуйте ещё раз."
-                }
-                AuthUiState(checkingSession = false, message = message)
+        init {
+            viewModelScope.launch {
+                val restored =
+                    try {
+                        AuthUiState(checkingSession = false, signedIn = auth.currentUser() != null)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        AuthUiState(checkingSession = false, message = strings.get(R.string.session_restore_error))
+                    }
+                delay(650)
+                mutableState.value = restored
             }
         }
-    }
 
-    fun signOut() {
-        if (state.value.busy || !state.value.signedIn) return
-        mutableState.value = state.value.copy(busy = true, message = null)
-        viewModelScope.launch {
-            mutableState.value = try {
-                auth.signOut()
-                AuthUiState(checkingSession = false)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                AuthUiState(checkingSession = false, signedIn = true, message = "Не удалось выйти. Попробуйте ещё раз.")
+        /** Сбрасывает сообщение о текущей попытке авторизации. */
+        fun clearMessage() {
+            if (!state.value.busy) {
+                mutableState.value = state.value.copy(message = null, confirmationRequired = false)
+            }
+        }
+
+        /** Отправляет активную форму входа или регистрации. */
+        fun submit(
+            email: String,
+            password: String,
+            register: Boolean,
+        ) {
+            if (state.value.busy || state.value.signedIn || state.value.checkingSession) return
+            val address = email.trim()
+            validateAuthCredentials(address, password, register)?.let { validationError ->
+                mutableState.value =
+                    state.value.copy(
+                        message = strings.domainMessage(validationError, strings.get(R.string.credentials_error)),
+                        confirmationRequired = false,
+                    )
+                return
+            }
+            mutableState.value = state.value.copy(busy = true, message = null, confirmationRequired = false)
+            viewModelScope.launch {
+                mutableState.value =
+                    try {
+                        val result = if (register) signUp(address, password) else signIn(address, password)
+                        result.getOrThrow()
+                        val hasSession = !register || auth.currentUser() != null
+                        AuthUiState(checkingSession = false, signedIn = hasSession, confirmationRequired = !hasSession)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        val message =
+                            when {
+                                error is DomainError.Network -> error.uiMessage(strings, strings.get(R.string.sign_in_error))
+                                error is DomainError.Validation || error is DomainError.Unauthorized ->
+                                    if (register) {
+                                        strings.get(R.string.sign_up_error)
+                                    } else {
+                                        strings.get(R.string.credentials_error)
+                                    }
+                                else -> strings.get(R.string.request_error)
+                            }
+                        AuthUiState(checkingSession = false, message = message)
+                    }
+            }
+        }
+
+        /** Завершает сессию текущего аккаунта в игре. */
+        fun signOut() {
+            if (state.value.busy || !state.value.signedIn) return
+            mutableState.value = state.value.copy(busy = true, message = null)
+            viewModelScope.launch {
+                mutableState.value =
+                    try {
+                        auth.signOut()
+                        AuthUiState(checkingSession = false)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        AuthUiState(checkingSession = false, signedIn = true, message = strings.get(R.string.sign_out_error))
+                    }
             }
         }
     }
-}

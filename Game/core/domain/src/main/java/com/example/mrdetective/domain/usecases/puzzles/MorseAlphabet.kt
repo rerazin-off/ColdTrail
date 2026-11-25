@@ -1,5 +1,6 @@
 package com.example.mrdetective.domain.usecases.puzzles
 
+/** Предоставляет алфавит для отображения и расшифровки головоломок Морзе. */
 object MorseAlphabet {
     val letters =
         ('A'..'Z').zip(

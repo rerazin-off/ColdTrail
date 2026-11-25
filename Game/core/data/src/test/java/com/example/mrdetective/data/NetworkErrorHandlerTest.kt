@@ -1,0 +1,35 @@
+package com.example.mrdetective.data
+
+import com.example.mrdetective.data.network.NetworkErrorHandler
+import com.example.mrdetective.data.network.NoConnectionException
+import com.example.mrdetective.domain.models.DomainError
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
+import java.net.SocketTimeoutException
+
+/** Проверяет классификацию ошибок соединения и сервера. */
+class NetworkErrorHandlerTest {
+    /** Проверяет, что отсутствие сети отличается от сбоя сервера. */
+    @Test
+    fun distinguishesDisconnectedDevicesFromServerErrors() {
+        val offline = NetworkErrorHandler.map(NoConnectionException()) as DomainError.Network
+        val server = NetworkErrorHandler.map(HttpException(Response.error<Unit>(503, "".toResponseBody()))) as DomainError.Network
+        val timeout = NetworkErrorHandler.map(SocketTimeoutException()) as DomainError.Network
+
+        assertEquals(DomainError.Network.Kind.Offline, offline.kind)
+        assertEquals(DomainError.Network.Kind.Server, server.kind)
+        assertEquals(DomainError.Network.Kind.Timeout, timeout.kind)
+    }
+
+    /** Относит ответы о превышении времени ожидания к таймаутам. */
+    @Test
+    fun mapsHttpTimeouts() {
+        for (code in listOf(408, 504)) {
+            val failure = NetworkErrorHandler.map(HttpException(Response.error<Unit>(code, "".toResponseBody()))) as DomainError.Network
+            assertEquals(DomainError.Network.Kind.Timeout, failure.kind)
+        }
+    }
+}
