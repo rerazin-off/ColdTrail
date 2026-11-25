@@ -1,6 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,8 +54,8 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
-import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.AppTextField
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.TypewriterText
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
@@ -66,9 +65,13 @@ import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
-internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -> Unit) {
+internal fun InterrogationScreen(
+    viewModel: InterrogationViewModel,
+    onBack: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val attachment by viewModel.attachment.collectAsStateWithLifecycle()
@@ -150,7 +153,12 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
                 attachment?.let { clue ->
                     AppCard(outlined = true, padding = 6.dp) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painterResource(R.drawable.ic_chat_attach), null, Modifier.padding(horizontal = 6.dp), tint = colors.outline)
+                            Icon(
+                                painterResource(R.drawable.ic_chat_attach),
+                                null,
+                                Modifier.padding(horizontal = 6.dp),
+                                tint = colors.outline,
+                            )
                             Text(
                                 clue.title,
                                 modifier = Modifier.weight(1f),
@@ -216,7 +224,10 @@ internal fun InterrogationScreen(viewModel: InterrogationViewModel, onBack: () -
 }
 
 @Composable
-private fun InterrogationSuspect(suspect: Suspect, compact: Boolean) {
+private fun InterrogationSuspect(
+    suspect: Suspect,
+    compact: Boolean,
+) {
     val colors = AppTheme.colors
     AppCard(outlined = true, padding = 8.dp) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -245,10 +256,21 @@ private fun InterrogationSuspect(suspect: Suspect, compact: Boolean) {
 }
 
 @Composable
-private fun DialogueBubble(message: DialogueMessage, suspectName: String, animateText: Boolean) {
+private fun DialogueBubble(
+    message: DialogueMessage,
+    suspectName: String,
+    animateText: Boolean,
+) {
     val colors = AppTheme.colors
     val player = message.author == MessageAuthor.PLAYER
-    val background = if (player) colors.surface2 else if (colors.isDark) colors.primary else colors.bg
+    val background =
+        if (player) {
+            colors.surface2
+        } else if (colors.isDark) {
+            colors.primary
+        } else {
+            colors.bg
+        }
     val foreground = if (!player && colors.isDark) colors.onPrimary else colors.text
     Box(Modifier.fillMaxWidth(), contentAlignment = if (player) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
@@ -271,11 +293,13 @@ private fun DialogueBubble(message: DialogueMessage, suspectName: String, animat
 
 private val dialogueTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 
-private fun messageTime(createdAt: String): String? = runCatching {
-    val instant = createdAt.toLongOrNull()?.let(Instant::ofEpochMilli)
-        ?: OffsetDateTime.parse(createdAt).toInstant()
-    dialogueTimeFormat.format(instant.atZone(ZoneId.systemDefault()))
-}.getOrNull()
+private fun messageTime(createdAt: String): String? =
+    runCatching {
+        val instant =
+            createdAt.toLongOrNull()?.let(Instant::ofEpochMilli)
+                ?: OffsetDateTime.parse(createdAt).toInstant()
+        dialogueTimeFormat.format(instant.atZone(ZoneId.systemDefault()))
+    }.getOrNull()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -308,32 +332,49 @@ private fun CluePickerSheet(
             when (state) {
                 CluePickerState.Loading -> CircularProgressIndicator(color = colors.outline)
                 CluePickerState.Error -> ScreenRetry(stringResource(R.string.clues_load_error), onRetry)
-                is CluePickerState.Content -> if (state.clues.isEmpty()) {
-                    Text(stringResource(R.string.no_collected_clues), color = colors.text2)
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(230.dp),
-                        modifier = Modifier.heightIn(max = 330.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        gridItems(state.clues, key = { it.id }) { clue ->
-                            AppCard(outlined = true, padding = 8.dp) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Box(Modifier.size(32.dp).background(colors.surface2, AppShapes.control))
-                                        Column {
-                                            Text(clue.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                            Text(clue.description, style = MaterialTheme.typography.bodySmall, color = colors.text2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                is CluePickerState.Content ->
+                    if (state.clues.isEmpty()) {
+                        Text(stringResource(R.string.no_collected_clues), color = colors.text2)
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(230.dp),
+                            modifier = Modifier.heightIn(max = 330.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            gridItems(state.clues, key = { it.id }) { clue ->
+                                AppCard(outlined = true, padding = 8.dp) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Box(Modifier.size(32.dp).background(colors.surface2, AppShapes.control))
+                                            Column {
+                                                Text(
+                                                    clue.title,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                                Text(
+                                                    clue.description,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = colors.text2,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
                                         }
+                                        AppButton(
+                                            stringResource(R.string.choose),
+                                            { onSelect(clue) },
+                                            style = AppButtonStyle.Outlined,
+                                            compact = true,
+                                        )
                                     }
-                                    AppButton(stringResource(R.string.choose), { onSelect(clue) }, style = AppButtonStyle.Outlined, compact = true)
                                 }
                             }
                         }
+                        Text(stringResource(R.string.selected_clue_info), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                     }
-                    Text(stringResource(R.string.selected_clue_info), style = MaterialTheme.typography.bodySmall, color = colors.text2)
-                }
             }
         }
     }

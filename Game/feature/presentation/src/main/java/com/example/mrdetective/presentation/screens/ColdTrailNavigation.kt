@@ -3,7 +3,6 @@ package com.example.mrdetective.presentation.ui
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,10 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
@@ -40,32 +39,35 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.navOptions
-import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
+import androidx.navigation.toRoute
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeKind
 import com.example.mrdetective.presentation.R
+import com.example.mrdetective.presentation.ui.theme.AppShapes
+import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.AppWindow
 import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
 import com.example.mrdetective.presentation.ui.theme.isMediumWidth
-import com.example.mrdetective.presentation.ui.theme.AppShapes
-import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.usesWideLayout
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-
-
+/** Defines the top-level destinations shown in the main navigation. */
 private enum class Tab(val route: String, val label: Int, val icon: Int) {
     Cases("cases", R.string.cases, R.drawable.ic_cases),
     Profile("profile", R.string.profile, R.drawable.ic_profile),
 }
 
+/** Selects the splash, authentication, or signed-in navigation flow based on session state. */
 @Composable
-fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) = AppWindow {
+fun ColdTrailNavigation(
+    auth: AuthViewModel,
+    cases: () -> CasesViewModel,
+) = AppWindow {
     val state by auth.state.collectAsStateWithLifecycle()
     val colors = AppTheme.colors
     if (state.signedIn) {
@@ -88,28 +90,34 @@ fun ColdTrailNavigation(auth: AuthViewModel, cases: () -> CasesViewModel) = AppW
 }
 
 @Composable
-private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onSignOut: () -> Unit) {
+private fun SignedInNavigation(
+    viewModel: CasesViewModel,
+    auth: AuthUiState,
+    onSignOut: () -> Unit,
+) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val showingInventory = entry?.destination?.hasRoute<InventoryRoute>() == true
     val showingMorse = entry?.destination?.hasRoute<MorseRoute>() == true
-    val caseId = entry?.let { current ->
-        when {
-            current.destination.hasRoute<InvestigationRoute>() -> current.toRoute<InvestigationRoute>().caseId
-            showingInventory -> current.toRoute<InventoryRoute>().caseId
-            showingMorse -> current.toRoute<MorseRoute>().caseId
-            current.destination.hasRoute<CodeChallengeRoute>() -> current.toRoute<CodeChallengeRoute>().caseId
-            else -> null
+    val caseId =
+        entry?.let { current ->
+            when {
+                current.destination.hasRoute<InvestigationRoute>() -> current.toRoute<InvestigationRoute>().caseId
+                showingInventory -> current.toRoute<InventoryRoute>().caseId
+                showingMorse -> current.toRoute<MorseRoute>().caseId
+                current.destination.hasRoute<CodeChallengeRoute>() -> current.toRoute<CodeChallengeRoute>().caseId
+                else -> null
+            }
         }
-    }
     LaunchedEffect(route, viewModel) {
         if (route == Tab.Cases.route) viewModel.reload()
     }
     val colors = AppTheme.colors
     val sideNavigation = usesWideLayout()
-    val verticalTransitions = LocalAppWindow.current.isMediumWidth ||
-        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val verticalTransitions =
+        LocalAppWindow.current.isMediumWidth ||
+            LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val forwardSlide = if (verticalTransitions) SlideDirection.Up else SlideDirection.Left
     val backSlide = if (verticalTransitions) SlideDirection.Down else SlideDirection.Right
     val showNavigation = caseId != null || Tab.entries.any { it.route == route }
@@ -157,9 +165,10 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
         Row(Modifier.fillMaxSize().padding(padding)) {
             if (showNavigation && sideNavigation) {
                 Surface(
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                        .widthIn(min = 100.dp, max = 144.dp)
-                        .padding(8.dp),
+                    modifier =
+                        Modifier.align(Alignment.CenterVertically)
+                            .widthIn(min = 100.dp, max = 144.dp)
+                            .padding(8.dp),
                     shape = AppShapes.control,
                     color = colors.surface,
                     border = BorderStroke(1.dp, colors.outline),
@@ -210,13 +219,22 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
                         hiltViewModel(),
                         onChoice = { choice ->
                             if (navController.currentBackStackEntry == pickEntry) {
-                                val options = navOptions {
-                                    popUpTo<ChooseClueChallengeRoute> { inclusive = true }
-                                }
+                                val options =
+                                    navOptions {
+                                        popUpTo<ChooseClueChallengeRoute> { inclusive = true }
+                                    }
                                 when (choice.kind) {
-                                    ClueChallengeKind.Camera -> navController.navigate(CameraClueRoute(picker.caseId, choice.puzzleId), options)
+                                    ClueChallengeKind.Camera ->
+                                        navController.navigate(
+                                            CameraClueRoute(picker.caseId, choice.puzzleId),
+                                            options,
+                                        )
                                     ClueChallengeKind.Morse -> navController.navigate(MorseRoute(picker.caseId, choice.puzzleId), options)
-                                    ClueChallengeKind.Code -> navController.navigate(CodeChallengeRoute(picker.caseId, choice.puzzleId), options)
+                                    ClueChallengeKind.Code ->
+                                        navController.navigate(
+                                            CodeChallengeRoute(picker.caseId, choice.puzzleId),
+                                            options,
+                                        )
                                 }
                             }
                         },
@@ -262,7 +280,13 @@ private fun SignedInNavigation(viewModel: CasesViewModel, auth: AuthUiState, onS
 }
 
 @Composable
-private fun NavigationItem(label: String, icon: Int, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun NavigationItem(
+    label: String,
+    icon: Int,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
     val colors = AppTheme.colors
     Surface(
         modifier = modifier,
@@ -270,8 +294,9 @@ private fun NavigationItem(label: String, icon: Int, selected: Boolean, modifier
         color = if (selected) colors.surface2 else colors.surface,
     ) {
         Column(
-            modifier = Modifier.selectable(selected, role = Role.Tab, onClick = onClick)
-                .heightIn(min = 48.dp).padding(4.dp),
+            modifier =
+                Modifier.selectable(selected, role = Role.Tab, onClick = onClick)
+                    .heightIn(min = 48.dp).padding(4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

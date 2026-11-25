@@ -25,6 +25,7 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Sizes
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
+/** Displays a themed input field with a label exposed to accessibility services. */
 @Composable
 fun AppTextField(
     value: String,
@@ -50,9 +51,10 @@ fun AppTextField(
         visualTransformation = visualTransformation,
         textStyle = textStyle.copy(color = c.text),
         cursorBrush = SolidColor(c.accent),
-        modifier = modifier.fillMaxWidth().semantics {
-            if (placeholder.isNotBlank()) contentDescription = placeholder
-        },
+        modifier =
+            modifier.fillMaxWidth().semantics {
+                if (placeholder.isNotBlank()) contentDescription = placeholder
+            },
         decorationBox = { innerTextField ->
             Row(
                 modifier =

@@ -8,10 +8,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Tests accusation submission and validation using a fake repository. */
 class AccusationUseCasesTest {
     private val repository = FakeAccusationRepository()
     private val useCase = SubmitAccusationUseCase(repository)
 
+    /** Проверяет сценарий «отправляет обвинение». */
     @Test
     fun `отправляет обвинение`() =
         runTest {
@@ -21,6 +23,7 @@ class AccusationUseCasesTest {
             assertEquals(listOf<Any?>(1, 2, listOf(3, 4)), repository.calls.single())
         }
 
+    /** Проверяет сценарий «некорректные данные возвращают ошибку валидации». */
     @Test
     fun `некорректные данные возвращают ошибку валидации`() =
         runTest {

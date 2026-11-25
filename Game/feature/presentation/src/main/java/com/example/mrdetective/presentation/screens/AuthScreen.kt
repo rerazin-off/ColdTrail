@@ -1,7 +1,5 @@
 ﻿package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
-import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -25,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -32,10 +31,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
-import com.example.mrdetective.presentation.ui.components.AppErrorDialog
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.AppErrorDialog
 import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
@@ -61,8 +61,9 @@ internal fun AuthScreen(
     BoxWithConstraints(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.TopCenter) {
         val availableHeight = maxHeight
         Column(
-            modifier = Modifier.widthIn(max = 460.dp).verticalScroll(rememberScrollState())
-                .heightIn(min = availableHeight).padding(horizontal = 20.dp, vertical = 24.dp),
+            modifier =
+                Modifier.widthIn(max = 460.dp).verticalScroll(rememberScrollState())
+                    .heightIn(min = availableHeight).padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
             Text(stringResource(R.string.app_title), style = MaterialTheme.typography.displayLarge)
@@ -104,11 +105,19 @@ internal fun AuthScreen(
                         AppErrorDialog(it, onClose = onClearMessage, onRetry = { onSubmit(email, password, register) })
                     }
                     AppButton(
-                        text = when {
-                            state.busy -> if (register) stringResource(R.string.creating_account) else stringResource(R.string.signing_in)
-                            register -> stringResource(R.string.register)
-                            else -> stringResource(R.string.sign_in)
-                        },
+                        text =
+                            when {
+                                state.busy ->
+                                    if (register) {
+                                        stringResource(
+                                            R.string.creating_account,
+                                        )
+                                    } else {
+                                        stringResource(R.string.signing_in)
+                                    }
+                                register -> stringResource(R.string.register)
+                                else -> stringResource(R.string.sign_in)
+                            },
                         onClick = { onSubmit(email, password, register) },
                         enabled = !state.busy,
                     )

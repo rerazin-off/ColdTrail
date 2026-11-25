@@ -1,5 +1,6 @@
 package com.example.mrdetective.domain.models
 
+/** Describes a case and its investigation status for the player. */
 data class Case(
     val id: Int,
     val title: String,

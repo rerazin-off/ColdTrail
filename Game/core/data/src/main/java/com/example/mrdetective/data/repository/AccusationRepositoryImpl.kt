@@ -14,51 +14,63 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Requests verdicts from Supabase and stores the resulting investigation status. */
 @Singleton
-class AccusationRepositoryImpl @Inject constructor(
-    private val api: OfflineApi,
-    private val progress: InvestigationDao,
-    private val auth: AuthRepository,
-    private val connectivity: ConnectivityChecker,
-) : AccusationRepository {
-    override suspend fun getResult(caseId: Int): Result<Accusation> = apiCall {
-        val investigation = syncedInvestigation(caseId)
-        val response = api.getAccusation(investigation.id)
-        saveResult(investigation, response, response.suspectId ?: 0)
-    }
+class AccusationRepositoryImpl
+    @Inject
+    constructor(
+        private val api: OfflineApi,
+        private val progress: InvestigationDao,
+        private val auth: AuthRepository,
+        private val connectivity: ConnectivityChecker,
+    ) : AccusationRepository {
+        /** Looks up the recorded verdict for the specified investigation. */
+        override suspend fun getResult(caseId: Int): Result<Accusation> =
+            apiCall {
+                val investigation = syncedInvestigation(caseId)
+                val response = api.getAccusation(investigation.id)
+                saveResult(investigation, response, response.suspectId ?: 0)
+            }
 
-    override suspend fun submitAccusation(caseId: Int, suspectId: Int, clueIds: List<Int>): Result<Accusation> = apiCall {
-        val investigation = syncedInvestigation(caseId)
-        val response = api.submitAccusation(AccusationRequestDto(investigation.id, suspectId))
-        saveResult(investigation, response, suspectId)
-    }
+        /** Submits a selected suspect and supporting evidence for a verdict. */
+        override suspend fun submitAccusation(
+            caseId: Int,
+            suspectId: Int,
+            clueIds: List<Int>,
+        ): Result<Accusation> =
+            apiCall {
+                val investigation = syncedInvestigation(caseId)
+                val response = api.submitAccusation(AccusationRequestDto(investigation.id, suspectId))
+                saveResult(investigation, response, suspectId)
+            }
 
-    private suspend fun syncedInvestigation(caseId: Int): InvestigationEntity {
-        val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
-        val investigation = progress.getByCaseForUser(caseId, userId)
-            ?: throw DomainError.NotFound("Сначала начните расследование.")
-        if (!connectivity.isNetworkAvailable()) throw DomainError.Network(kind = DomainError.Network.Kind.Offline)
-        if (investigation.id <= 0) throw DomainError.SyncPending()
-        return investigation
-    }
+        private suspend fun syncedInvestigation(caseId: Int): InvestigationEntity {
+            val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
+            val investigation =
+                progress.getByCaseForUser(caseId, userId)
+                    ?: throw DomainError.NotFound("Сначала начните расследование.")
+            if (!connectivity.isNetworkAvailable()) throw DomainError.Network(kind = DomainError.Network.Kind.Offline)
+            if (investigation.id <= 0) throw DomainError.SyncPending()
+            return investigation
+        }
 
-    private suspend fun saveResult(
-        investigation: InvestigationEntity,
-        response: AccusationResponseDto,
-        selectedSuspectId: Int,
-    ): Accusation {
-        val status = if (response.isCorrect) "solved" else "failed"
-        progress.upsertInvestigation(investigation.copy(status = status, updatedAt = System.currentTimeMillis()))
-        val suspectId = response.suspectId ?: selectedSuspectId
-        return Accusation(
-            id = response.id,
-            caseId = investigation.caseId,
-            suspectId = suspectId,
-            isCorrect = response.isCorrect,
-            explanation = response.explanation,
-            culpritId = response.culpritId ?: suspectId.takeIf { response.isCorrect },
-            selectedTruth = response.selectedTruth,
-            culpritTruth = response.culpritTruth,
-        )
+        private suspend fun saveResult(
+            investigation: InvestigationEntity,
+            response: AccusationResponseDto,
+            selectedSuspectId: Int,
+        ): Accusation {
+            val status = if (response.isCorrect) "solved" else "failed"
+            progress.upsertInvestigation(investigation.copy(status = status, updatedAt = System.currentTimeMillis()))
+            val suspectId = response.suspectId ?: selectedSuspectId
+            return Accusation(
+                id = response.id,
+                caseId = investigation.caseId,
+                suspectId = suspectId,
+                isCorrect = response.isCorrect,
+                explanation = response.explanation,
+                culpritId = response.culpritId ?: suspectId.takeIf { response.isCorrect },
+                selectedTruth = response.selectedTruth,
+                culpritTruth = response.culpritTruth,
+            )
+        }
     }
-}

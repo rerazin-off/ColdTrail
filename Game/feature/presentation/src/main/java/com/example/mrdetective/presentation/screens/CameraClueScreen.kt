@@ -1,11 +1,9 @@
 package com.example.mrdetective.presentation.ui
 
-
-import androidx.compose.ui.res.stringResource
+import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -33,11 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -76,25 +74,26 @@ internal fun ChooseClueChallengeScreen(
         when {
             state.loading || state.choice != null -> CameraClueLoading(stringResource(R.string.looking_for_puzzle))
             state.error != null -> ScreenRetry(state.error.orEmpty(), viewModel::load)
-            state.permissionsRequired -> AlertDialog(
-                onDismissRequest = onBack,
-                title = { Text(stringResource(R.string.camera_and_vibration)) },
-                text = {
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        DevicePermissionOptions(vibration, cameraSettings, access)
-                    }
-                },
-                confirmButton = {
-                    AppButton(
-                        stringResource(R.string.continue_action),
-                        { viewModel.continueWithPermissions(access.granted) },
-                        enabled = !cameraState.loading && !cameraState.saving && !vibrationState.loading && !vibrationState.saving,
-                    )
-                },
-                containerColor = AppTheme.colors.surface,
-                titleContentColor = AppTheme.colors.text,
-                textContentColor = AppTheme.colors.text,
-            )
+            state.permissionsRequired ->
+                AlertDialog(
+                    onDismissRequest = onBack,
+                    title = { Text(stringResource(R.string.camera_and_vibration)) },
+                    text = {
+                        Column(Modifier.verticalScroll(rememberScrollState())) {
+                            DevicePermissionOptions(vibration, cameraSettings, access)
+                        }
+                    },
+                    confirmButton = {
+                        AppButton(
+                            stringResource(R.string.continue_action),
+                            { viewModel.continueWithPermissions(access.granted) },
+                            enabled = !cameraState.loading && !cameraState.saving && !vibrationState.loading && !vibrationState.saving,
+                        )
+                    },
+                    containerColor = AppTheme.colors.surface,
+                    titleContentColor = AppTheme.colors.text,
+                    textContentColor = AppTheme.colors.text,
+                )
             else -> CameraClueMessage(stringResource(R.string.no_case_puzzles), stringResource(R.string.back_to_case), onBack)
         }
     }
@@ -110,10 +109,11 @@ internal fun CameraClueScreen(
     val settings by cameraSettings.state.collectAsStateWithLifecycle()
     val searchingScene by viewModel.searchingScene.collectAsStateWithLifecycle()
     val hardware by viewModel.hardware.collectAsStateWithLifecycle()
-    val access = rememberCameraAccess { granted ->
-        cameraSettings.setEnabled(granted)
-        viewModel.useScene(!granted)
-    }
+    val access =
+        rememberCameraAccess { granted ->
+            cameraSettings.setEnabled(granted)
+            viewModel.useScene(!granted)
+        }
     val searchMode = chooseClueSearchMode(settings.enabled, access.available, access.granted, access.showRationale)
     LaunchedEffect(hardware.error) {
         hardware.error?.let(viewModel::fallbackAfterCameraError)
@@ -135,22 +135,25 @@ internal fun CameraClueScreen(
                 ErrorNotice(state.syncError, viewModel::retrySync)
             }
             settings.loading || settings.saving -> CameraClueLoading(stringResource(R.string.loading_camera_settings))
-            searchingScene || searchMode == ClueSearchMode.Picture -> SceneClueSearch(
-                challenge = challenge,
-                state = state,
-                onLoad = viewModel::loadScene,
-                onSelect = viewModel::selectSceneItem,
-                onCameraSettings = if (access.available && !access.granted) {
-                    { access.openSettings(true) }
-                } else {
-                    null
-                },
-            )
-            searchMode == ClueSearchMode.AskPermission -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.camera_permission_rationale))
-                AppButton(stringResource(R.string.allow_access), { access.requestOrOpenSettings(false) }, style = AppButtonStyle.Accent)
-                AppButton(stringResource(R.string.search_picture), { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
-            }
+            searchingScene || searchMode == ClueSearchMode.Picture ->
+                SceneClueSearch(
+                    challenge = challenge,
+                    state = state,
+                    onLoad = viewModel::loadScene,
+                    onSelect = viewModel::selectSceneItem,
+                    onCameraSettings =
+                        if (access.available && !access.granted) {
+                            { access.openSettings(true) }
+                        } else {
+                            null
+                        },
+                )
+            searchMode == ClueSearchMode.AskPermission ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.camera_permission_rationale))
+                    AppButton(stringResource(R.string.allow_access), { access.requestOrOpenSettings(false) }, style = AppButtonStyle.Accent)
+                    AppButton(stringResource(R.string.search_picture), { viewModel.useScene(true) }, style = AppButtonStyle.Outlined)
+                }
             else -> CameraViewfinder(challenge, state, viewModel, Modifier.weight(1f))
         }
     }
@@ -176,15 +179,17 @@ private fun CameraViewfinder(
 
     val position by viewModel.position.collectAsStateWithLifecycle()
     val visiblePosition = position
-    val instruction = when {
-        hardware.error != null -> hardware.error.orEmpty()
+    val instruction =
+        when {
+            hardware.error != null -> hardware.error.orEmpty()
 
-        position != null -> stringResource(R.string.clue_in_frame_hint)
-        !hardware.previewReady -> stringResource(R.string.opening_camera)
-        hardware.direction == null || targetAzimuth == null -> stringResource(R.string.hold_camera)
-        else -> challenge.hint?.takeIf { it.isNotBlank() }
-            ?: stringResource(R.string.turn_camera)
-    }
+            position != null -> stringResource(R.string.clue_in_frame_hint)
+            !hardware.previewReady -> stringResource(R.string.opening_camera)
+            hardware.direction == null || targetAzimuth == null -> stringResource(R.string.hold_camera)
+            else ->
+                challenge.hint?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.turn_camera)
+        }
 
     ErrorNotice(state.captureMessage)
     ErrorNotice(if (state.submission == CameraSubmission.Failed) stringResource(R.string.capture_failed) else null)
@@ -223,11 +228,15 @@ private fun CameraViewfinder(
                     fallback = placeholder,
                     error = placeholder,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.align(Alignment.TopStart)
-                        .offset {
-                            IntOffset((width.toPx() * x - size.toPx() / 2).roundToInt(), (height.toPx() * y - size.toPx() / 2).roundToInt())
-                        }
-                        .size(size),
+                    modifier =
+                        Modifier.align(Alignment.TopStart)
+                            .offset {
+                                IntOffset(
+                                    (width.toPx() * x - size.toPx() / 2).roundToInt(),
+                                    (height.toPx() * y - size.toPx() / 2).roundToInt(),
+                                )
+                            }
+                            .size(size),
                 )
             }
         }
@@ -235,8 +244,9 @@ private fun CameraViewfinder(
             if (state.capturing) stringResource(R.string.saving_photo) else stringResource(R.string.take_photo),
             viewModel::capture,
             style = AppButtonStyle.Accent,
-            enabled = hardware.previewReady && hardware.direction != null && targetAzimuth != null &&
-                hardware.error == null && !state.capturing,
+            enabled =
+                hardware.previewReady && hardware.direction != null && targetAzimuth != null &&
+                    hardware.error == null && !state.capturing,
         )
     }
 }
@@ -254,7 +264,11 @@ private fun CameraClueLoading(message: String) {
 }
 
 @Composable
-private fun CameraClueMessage(message: String, action: String, onAction: () -> Unit) {
+private fun CameraClueMessage(
+    message: String,
+    action: String,
+    onAction: () -> Unit,
+) {
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

@@ -13,10 +13,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Unit tests for the behavior of [LoadAvailableCasesUseCase] using controlled inputs and dependencies. */
 class LoadAvailableCasesUseCaseTest {
     private val repository = FakeCaseRepository()
     private val useCase = LoadAvailableCasesUseCase(repository)
 
+    /** Проверяет сценарий «возвращает список дел из репозитория». */
     @Test
     fun `возвращает список дел из репозитория`() =
         runTest {
@@ -26,6 +28,7 @@ class LoadAvailableCasesUseCaseTest {
             assertEquals(1, repository.availableCalls)
         }
 
+    /** Проверяет сценарий «ошибка репозитория возвращается в результате». */
     @Test
     fun `ошибка репозитория возвращается в результате`() =
         runTest {
@@ -36,10 +39,12 @@ class LoadAvailableCasesUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [LoadSuspectsUseCase] using controlled inputs and dependencies. */
 class LoadSuspectsUseCaseTest {
     private val repository = FakeSuspectRepository()
     private val useCase = LoadSuspectsUseCase(repository)
 
+    /** Проверяет сценарий «возвращает подозреваемых дела». */
     @Test
     fun `возвращает подозреваемых дела`() =
         runTest {
@@ -49,6 +54,7 @@ class LoadSuspectsUseCaseTest {
             assertEquals(listOf(5), repository.calls)
         }
 
+    /** Проверяет сценарий «некорректный id дела возвращает ошибку валидации». */
     @Test
     fun `некорректный id дела возвращает ошибку валидации`() =
         runTest {
@@ -58,10 +64,15 @@ class LoadSuspectsUseCaseTest {
         }
 }
 
+/**
+ * Unit tests for the behavior of [RestoreInvestigationProgressUseCase] using controlled inputs and
+ * dependencies.
+ */
 class RestoreInvestigationProgressUseCaseTest {
     private val repository = FakeProgressRepository()
     private val useCase = RestoreInvestigationProgressUseCase(repository)
 
+    /** Проверяет сценарий «возвращает прогресс расследования». */
     @Test
     fun `возвращает прогресс расследования`() =
         runTest {
@@ -71,6 +82,7 @@ class RestoreInvestigationProgressUseCaseTest {
             assertEquals(listOf(1), repository.getCalls)
         }
 
+    /** Проверяет сценарий «некорректный id дела возвращает ошибку валидации». */
     @Test
     fun `некорректный id дела возвращает ошибку валидации`() =
         runTest {
@@ -79,10 +91,12 @@ class RestoreInvestigationProgressUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [StartInvestigationUseCase] using controlled inputs and dependencies. */
 class StartInvestigationUseCaseTest {
     private val repository = FakeCaseRepository()
     private val useCase = StartInvestigationUseCase(repository)
 
+    /** Проверяет сценарий «запускает дело в репозитории». */
     @Test
     fun `запускает дело в репозитории`() =
         runTest {
@@ -92,6 +106,7 @@ class StartInvestigationUseCaseTest {
             assertEquals(listOf(3), repository.startCalls)
         }
 
+    /** Проверяет сценарий «некорректный id дела возвращает ошибку валидации». */
     @Test
     fun `некорректный id дела возвращает ошибку валидации`() =
         runTest {
@@ -100,11 +115,13 @@ class StartInvestigationUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [SyncProgressUseCase] using controlled inputs and dependencies. */
 class SyncProgressUseCaseTest {
     private val progress = FakeProgressRepository()
     private val photos = FakePhotoRepository()
     private val useCase = SyncProgressUseCase(progress, photos)
 
+    /** Проверяет сценарий «синхронизирует прогресс и загружает фото». */
     @Test
     fun `синхронизирует прогресс и загружает фото`() =
         runTest {
@@ -115,6 +132,7 @@ class SyncProgressUseCaseTest {
             assertEquals(1, photos.uploadCalls)
         }
 
+    /** Проверяет сценарий «при ошибке синхронизации прогресса фото не загружаются». */
     @Test
     fun `при ошибке синхронизации прогресса фото не загружаются`() =
         runTest {

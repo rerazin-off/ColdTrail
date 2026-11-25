@@ -10,7 +10,12 @@ import javax.inject.Singleton
  * Keep the interface bound, but fail explicitly instead of inventing server data.
  */
 @Singleton
-class SceneRepositoryImpl @Inject constructor() : SceneRepository {
-    override suspend fun getScene(caseId: Int, sceneId: Int): Result<String> =
-        Result.failure(DomainError.NotFound("В текущей SQL-схеме и API нет таблицы/эндпоинта сцен."))
-}
+class SceneRepositoryImpl
+    @Inject
+    constructor() : SceneRepository {
+        /** Returns a not-found error because the current API has no scene resource. */
+        override suspend fun getScene(
+            caseId: Int,
+            sceneId: Int,
+        ): Result<String> = Result.failure(DomainError.NotFound("В текущей SQL-схеме и API нет таблицы/эндпоинта сцен."))
+    }

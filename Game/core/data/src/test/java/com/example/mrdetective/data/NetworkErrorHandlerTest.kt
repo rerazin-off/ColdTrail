@@ -10,7 +10,9 @@ import retrofit2.HttpException
 import retrofit2.Response
 import java.net.SocketTimeoutException
 
+/** Tests classification of unavailable connections and server failures. */
 class NetworkErrorHandlerTest {
+    /** Distinguishes disconnected devices from server errors. */
     @Test
     fun distinguishesDisconnectedDevicesFromServerErrors() {
         val offline = NetworkErrorHandler.map(NoConnectionException()) as DomainError.Network

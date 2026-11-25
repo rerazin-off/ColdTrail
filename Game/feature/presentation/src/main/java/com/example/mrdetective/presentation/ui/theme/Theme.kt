@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 
 val LocalAppColors = staticCompositionLocalOf { LightAppColors }
 
+/** Exposes the active ColdTrail palette to composables. */
 object AppTheme {
     val colors: AppColors
         @Composable

@@ -1,8 +1,8 @@
 package com.example.mrdetective.presentation.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -18,9 +18,10 @@ import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Sizes
 
+/** Selects the appearance of an action button. */
 enum class AppButtonStyle { Primary, Accent, Outlined }
 
-
+/** Displays a themed button whose touch area meets the minimum target size. */
 @Composable
 fun AppButton(
     text: String,

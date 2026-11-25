@@ -1,7 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
-import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,16 +21,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.mrdetective.domain.models.Case
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.SuspectCard
-import com.example.mrdetective.domain.models.Case
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
@@ -100,7 +100,10 @@ internal fun InvestigationScreen(
 }
 
 @Composable
-private fun InvestigationPane(modifier: Modifier, content: LazyListScope.() -> Unit) {
+private fun InvestigationPane(
+    modifier: Modifier,
+    content: LazyListScope.() -> Unit,
+) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -109,7 +112,10 @@ private fun InvestigationPane(modifier: Modifier, content: LazyListScope.() -> U
     )
 }
 
-private fun LazyListScope.investigationDetails(case: Case, state: InvestigationState) {
+private fun LazyListScope.investigationDetails(
+    case: Case,
+    state: InvestigationState,
+) {
     item {
         Text(case.title, style = MaterialTheme.typography.headlineLarge)
     }
@@ -122,12 +128,21 @@ private fun LazyListScope.investigationDetails(case: Case, state: InvestigationS
     item {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.investigation_steps), style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.text2)
-            InvestigationStep(1, stringResource(R.string.start_investigation), if (state.started) stringResource(R.string.done) else stringResource(R.string.available))
+            InvestigationStep(
+                1,
+                stringResource(R.string.start_investigation),
+                if (state.started) stringResource(R.string.done) else stringResource(R.string.available),
+            )
             InvestigationStep(
                 2,
                 stringResource(R.string.collect_clues),
                 when {
-                    state.totalClueCount != null -> stringResource(R.string.clues_progress, state.collectedClueCount, state.totalClueCount ?: 0)
+                    state.totalClueCount != null ->
+                        stringResource(
+                            R.string.clues_progress,
+                            state.collectedClueCount,
+                            state.totalClueCount ?: 0,
+                        )
                     state.collectedClueCount > 0 -> stringResource(R.string.clues_count, state.collectedClueCount)
                     state.started -> stringResource(R.string.available)
                     else -> stringResource(R.string.after_investigation_start)
@@ -159,7 +174,13 @@ private fun LazyListScope.investigationActions(
                     AppButton(stringResource(R.string.find_clue), { onFindClue(caseId) }, style = AppButtonStyle.Accent)
                 }
                 AppButton(
-                    if (state.status in setOf("solved", "failed", "closed")) stringResource(R.string.investigation_result) else stringResource(R.string.make_accusation),
+                    if (state.status in setOf("solved", "failed", "closed")) {
+                        stringResource(
+                            R.string.investigation_result,
+                        )
+                    } else {
+                        stringResource(R.string.make_accusation)
+                    },
                     { onAccusation(caseId) },
                     style = AppButtonStyle.Outlined,
                 )
@@ -189,7 +210,11 @@ private fun LazyListScope.investigationSuspects(
 }
 
 @Composable
-private fun InvestigationStep(number: Int, title: String, progress: String) {
+private fun InvestigationStep(
+    number: Int,
+    title: String,
+    progress: String,
+) {
     val colors = AppTheme.colors
     AppCard(outlined = true, padding = 8.dp) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -210,6 +235,9 @@ internal fun ScreenProgress() {
 }
 
 @Composable
-internal fun ScreenRetry(message: String, onRetry: () -> Unit) {
+internal fun ScreenRetry(
+    message: String,
+    onRetry: () -> Unit,
+) {
     ErrorNotice(message, onRetry)
 }

@@ -1,6 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import com.example.mrdetective.presentation.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +12,7 @@ import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
 import com.example.mrdetective.domain.usecases.puzzles.CODE_CHALLENGE_LENGTH
 import com.example.mrdetective.domain.usecases.puzzles.PlayCodeChallengeUseCase
+import com.example.mrdetective.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -23,9 +23,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
+/** Carries the case and puzzle identifiers for a numeric challenge. */
 @Serializable
 internal data class CodeChallengeRoute(val caseId: Int, val puzzleId: Int)
 
+/** Stores the numeric puzzle, entered digits, and submission result. */
 internal data class CodeChallengeState(
     val loading: Boolean = true,
     val investigationId: Int = 0,
@@ -39,108 +41,139 @@ internal data class CodeChallengeState(
     val retryAnswer: Boolean = false,
 )
 
+/** Manages numeric input and the corresponding clue reward. */
 @HiltViewModel
-internal class CodeChallengeViewModel @Inject constructor(
-    private val strings: UiStrings,
-    private val savedState: SavedStateHandle,
-    private val challenges: CodeChallengeRepository,
-    private val playCode: PlayCodeChallengeUseCase,
-    private val loadInventory: LoadInventoryUseCase,
-    private val progress: ProgressRepository,
-) : ViewModel() {
-    private val route = savedState.toRoute<CodeChallengeRoute>()
-    private val mutableState = MutableStateFlow(CodeChallengeState())
-    val state = mutableState.asStateFlow()
-    val answer = savedState.getStateFlow("codeAnswer", "")
-    private var loadJob: Job? = null
+internal class CodeChallengeViewModel
+    @Inject
+    constructor(
+        private val strings: UiStrings,
+        private val savedState: SavedStateHandle,
+        private val challenges: CodeChallengeRepository,
+        private val playCode: PlayCodeChallengeUseCase,
+        private val loadInventory: LoadInventoryUseCase,
+        private val progress: ProgressRepository,
+    ) : ViewModel() {
+        private val route = savedState.toRoute<CodeChallengeRoute>()
+        private val mutableState = MutableStateFlow(CodeChallengeState())
+        val state = mutableState.asStateFlow()
+        val answer = savedState.getStateFlow("codeAnswer", "")
+        private var loadJob: Job? = null
 
-    init {
-        load()
-    }
+        init {
+            load()
+        }
 
-    fun load() {
-        if (loadJob?.isActive == true || state.value.submitting) return
-        mutableState.value = CodeChallengeState()
-        loadJob = viewModelScope.launch {
-            challenges.load(route.caseId).fold(
-                { available ->
-                    val puzzle = available.puzzles.firstOrNull { it.id == route.puzzleId && (it.solved || !it.rewardClaimed) }
-                    val solved = puzzle?.solved == true
-                    mutableState.value = CodeChallengeState(
-                        loading = false,
-                        investigationId = available.investigationId,
-                        challenge = puzzle,
-                        solved = solved,
-                        reward = if (puzzle != null && solved) findReward(available.investigationId, puzzle.rewardClueId) else null,
+        /** Loads the numeric puzzle selected by the navigation arguments. */
+        fun load() {
+            if (loadJob?.isActive == true || state.value.submitting) return
+            mutableState.value = CodeChallengeState()
+            loadJob =
+                viewModelScope.launch {
+                    challenges.load(route.caseId).fold(
+                        { available ->
+                            val puzzle = available.puzzles.firstOrNull { it.id == route.puzzleId && (it.solved || !it.rewardClaimed) }
+                            val solved = puzzle?.solved == true
+                            mutableState.value =
+                                CodeChallengeState(
+                                    loading = false,
+                                    investigationId = available.investigationId,
+                                    challenge = puzzle,
+                                    solved = solved,
+                                    reward =
+                                        if (puzzle != null && solved) {
+                                            findReward(available.investigationId, puzzle.rewardClueId)
+                                        } else {
+                                            null
+                                        },
+                                )
+                        },
+                        { error ->
+                            if (error is CancellationException) throw error
+                            mutableState.value =
+                                CodeChallengeState(
+                                    loading = false,
+                                    loadError =
+                                        if (error is DomainError.Validation) {
+                                            strings.domainMessage(error.message, strings.get(R.string.puzzle_load_error))
+                                        } else {
+                                            error.uiMessage(strings, strings.get(R.string.puzzle_load_error))
+                                        },
+                                )
+                        },
                     )
-                },
-                { error ->
-                    if (error is CancellationException) throw error
-                    mutableState.value = CodeChallengeState(
-                        loading = false,
-                        loadError = if (error is DomainError.Validation) strings.domainMessage(error.message, strings.get(R.string.puzzle_load_error))
-                        else error.uiMessage(strings, strings.get(R.string.puzzle_load_error)),
+                }
+        }
+
+        /** Updates the numeric answer shown on the keypad screen. */
+        fun updateAnswer(value: String) {
+            val current = state.value
+            if (current.challenge == null || current.submitting || current.solved) return
+            savedState["codeAnswer"] = value.filter { it in '0'..'9' }.take(CODE_CHALLENGE_LENGTH)
+            mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
+        }
+
+        /** Validates the entered code and updates the state with the clue reward. */
+        fun submit() {
+            val current = state.value
+            val puzzle = current.challenge ?: return
+            if (current.submitting || current.solved || current.retrySync) return
+            val submitted = answer.value
+            mutableState.update { it.copy(submitting = true, answerError = null) }
+            viewModelScope.launch {
+                playCode(current.investigationId, puzzle.id, submitted).fold(
+                    { correct ->
+                        val reward = if (correct) findReward(current.investigationId, puzzle.rewardClueId) else null
+                        mutableState.update {
+                            it.copy(
+                                submitting = false,
+                                solved = correct,
+                                reward = reward,
+                                answerError = if (correct) null else strings.get(R.string.incorrect_code),
+                            )
+                        }
+                    },
+                    { error ->
+                        if (error is CancellationException) throw error
+                        val message =
+                            when (error) {
+                                is DomainError.Validation ->
+                                    strings.domainMessage(
+                                        error.message,
+                                        strings.get(R.string.four_digits_required),
+                                    )
+                                else -> error.uiMessage(strings, strings.get(R.string.code_check_error))
+                            }
+                        mutableState.update {
+                            it.copy(
+                                submitting = false,
+                                answerError = message,
+                                retrySync = error is DomainError.SyncPending,
+                                retryAnswer = error !is DomainError.Validation && error !is DomainError.SyncPending,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+
+        /** Requests synchronization again and refreshes the numeric puzzle state. */
+        fun retrySync() {
+            viewModelScope.launch {
+                val result = progress.syncProgress()
+                mutableState.update {
+                    it.copy(
+                        answerError = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error)),
                     )
-                },
-            )
+                }
+            }
         }
-    }
 
-    fun updateAnswer(value: String) {
-        val current = state.value
-        if (current.challenge == null || current.submitting || current.solved) return
-        savedState["codeAnswer"] = value.filter { it in '0'..'9' }.take(CODE_CHALLENGE_LENGTH)
-        mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
+        private suspend fun findReward(
+            investigationId: Int,
+            clueId: Int,
+        ): Clue? =
+            loadInventory(investigationId).getOrElse {
+                if (it is CancellationException) throw it
+                emptyList()
+            }.firstOrNull { it.id == clueId }
     }
-
-    fun submit() {
-        val current = state.value
-        val puzzle = current.challenge ?: return
-        if (current.submitting || current.solved || current.retrySync) return
-        val submitted = answer.value
-        mutableState.update { it.copy(submitting = true, answerError = null) }
-        viewModelScope.launch {
-            playCode(current.investigationId, puzzle.id, submitted).fold(
-                { correct ->
-                    val reward = if (correct) findReward(current.investigationId, puzzle.rewardClueId) else null
-                    mutableState.update {
-                        it.copy(
-                            submitting = false,
-                            solved = correct,
-                            reward = reward,
-                            answerError = if (correct) null else strings.get(R.string.incorrect_code),
-                        )
-                    }
-                },
-                { error ->
-                    if (error is CancellationException) throw error
-                    val message = when (error) {
-                        is DomainError.Validation -> strings.domainMessage(error.message, strings.get(R.string.four_digits_required))
-                        else -> error.uiMessage(strings, strings.get(R.string.code_check_error))
-                    }
-                    mutableState.update {
-                        it.copy(
-                            submitting = false,
-                            answerError = message,
-                            retrySync = error is DomainError.SyncPending,
-                            retryAnswer = error !is DomainError.Validation && error !is DomainError.SyncPending,
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun retrySync() {
-        viewModelScope.launch {
-            val result = progress.syncProgress()
-            mutableState.update { it.copy(answerError = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.sync_start_error))) }
-        }
-    }
-
-    private suspend fun findReward(investigationId: Int, clueId: Int): Clue? =
-        loadInventory(investigationId).getOrElse {
-            if (it is CancellationException) throw it
-            emptyList()
-        }.firstOrNull { it.id == clueId }
-}

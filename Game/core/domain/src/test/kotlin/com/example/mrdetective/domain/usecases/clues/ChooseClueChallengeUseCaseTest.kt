@@ -14,9 +14,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+/** Unit tests for the behavior of [ChooseClueChallengeUseCase] using controlled inputs and dependencies. */
 class ChooseClueChallengeUseCaseTest {
     private val code = CodeChallenge(7, "Код", "Подсказка", 19, solved = false, rewardClaimed = false)
 
+    /** Chooses an available code and skips already resolved ones. */
     @Test
     fun choosesAnAvailableCodeAndSkipsAlreadyResolvedOnes() =
         runTest {

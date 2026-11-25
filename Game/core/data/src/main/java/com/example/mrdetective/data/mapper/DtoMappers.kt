@@ -9,30 +9,36 @@ import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.models.Suspect
 
-// Domain.Case has no difficulty/createdAt fields; objective/status are app-side fields, not SQL columns.
-fun CaseDto.toDomain() = Case(
-    id = id,
-    title = title,
-    introduction = introduction,
-    objective = "",
-    status = "available",
-)
+/** Maps a case record, with app-side defaults for objective and status and no difficulty or creation date. */
+fun CaseDto.toDomain() =
+    Case(
+        id = id,
+        title = title,
+        introduction = introduction,
+        objective = "",
+        status = "available",
+    )
 
+/** Maps the public fields of a suspect record to the domain model. */
 fun SuspectDto.toDomain() = Suspect(id = id, caseId = caseId, name = name, profile = profile)
 
-fun ClueDto.toDomain() = Clue(
-    id = id,
-    caseId = caseId,
-    title = title,
-    description = description,
-    image = image,
-    createdAt = createdAt.orEmpty(),
-)
+/** Maps a clue and its image reference, using an empty timestamp if the API omits it. */
+fun ClueDto.toDomain() =
+    Clue(
+        id = id,
+        caseId = caseId,
+        title = title,
+        description = description,
+        image = image,
+        createdAt = createdAt.orEmpty(),
+    )
 
-fun NoteDto.toDomain() = Note(
-    id = id,
-    investigationId = investigationId,
-    text = text,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
+/** Maps the note identifier, investigation, text, and timestamps. */
+fun NoteDto.toDomain() =
+    Note(
+        id = id,
+        investigationId = investigationId,
+        text = text,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )

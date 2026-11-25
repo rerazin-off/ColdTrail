@@ -16,18 +16,25 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
+/** Binds Android camera, vibration, and stored device preferences to domain interfaces. */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class HardwareModule {
+    /** Binds the Android vibrator implementation to the domain signal player. */
     @Binds abstract fun bindMorseSignalPlayer(player: AndroidMorseSignalPlayer): MorseSignalPlayer
 
+    /** Binds DataStore as the persistence source for the vibration preference. */
     @Binds abstract fun bindVibrationPreferences(settings: SettingsData): VibrationPreferences
 
+    /** Binds DataStore as the persistence source for the camera preference. */
     @Binds abstract fun bindCameraPreferences(settings: SettingsData): CameraPreferences
 
+    /** Binds DataStore as the persistence source for the permissions introduction state. */
     @Binds abstract fun bindPuzzlePermissionsPreferences(settings: SettingsData): PuzzlePermissionsPreferences
 
+    /** Supplies the Android camera implementation through Hilt. */
     companion object {
+        /** Provides the CameraX implementation for Android preview hosts. */
         @Provides
         fun provideClueCamera(camera: AndroidClueCamera): ClueCamera<Pair<LifecycleOwner, PreviewView>> = camera
     }

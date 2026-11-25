@@ -14,34 +14,50 @@ import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.domain.repositories.SceneClueRepository
 import javax.inject.Inject
 
-class SceneClueRepositoryImpl @Inject constructor(
-    private val db: AppDatabase,
-    private val api: OfflineApi,
-    private val connectivity: ConnectivityChecker,
-) : SceneClueRepository {
-    override suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage> {
-        val remote = if (connectivity.isNetworkAvailable()) {
-            apiCall { api.getClueImages("neq.$targetClueId") }.getOrNull().orEmpty()
-                .mapNotNull { row -> row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) } }
-        } else {
-            emptyList()
+/** Loads clue imagery for scene search and submits the selected reward clue. */
+class SceneClueRepositoryImpl
+    @Inject
+    constructor(
+        private val db: AppDatabase,
+        private val api: OfflineApi,
+        private val connectivity: ConnectivityChecker,
+    ) : SceneClueRepository {
+        /** Loads alternative clue images while excluding the target clue. */
+        override suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage> {
+            val remote =
+                if (connectivity.isNetworkAvailable()) {
+                    apiCall { api.getClueImages("neq.$targetClueId") }.getOrNull().orEmpty()
+                        .mapNotNull { row -> row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) } }
+                } else {
+                    emptyList()
+                }
+            val cached =
+                apiCall { db.clueDao().getClueImages() }.getOrNull().orEmpty().mapNotNull { row ->
+                    row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) }
+                }
+            return remote + cached
         }
-        val cached = apiCall { db.clueDao().getClueImages() }.getOrNull().orEmpty().mapNotNull { row ->
-            row.image.toClueImageUrl()?.let { SceneClueImage(row.id, it, row.title) }
-        }
-        return remote + cached
-    }
 
-    override suspend fun submit(challenge: CameraChallenge, selectedClueId: Int): Result<Unit> = apiCall {
-        val reward = api.completeSceneCameraPuzzle(
-            mapOf("p_investigation" to challenge.investigationId, "p_puzzle" to challenge.id, "p_selected_clue" to selectedClueId),
-        )
-        if (reward != challenge.clueId) throw DomainError.Validation("Не удалось подтвердить улику.")
-        val now = System.currentTimeMillis().toString()
-        val progress = db.investigationDao()
-        db.withWriteTransaction {
-            progress.markPuzzleSolved(SolvedPuzzleEntity(challenge.investigationId, challenge.id, now, synced = true))
-            progress.collectClue(CollectedClueEntity(challenge.investigationId, reward, now, synced = true))
-        }
+        /** Submits the target clue found in the fallback scene. */
+        override suspend fun submit(
+            challenge: CameraChallenge,
+            selectedClueId: Int,
+        ): Result<Unit> =
+            apiCall {
+                val reward =
+                    api.completeSceneCameraPuzzle(
+                        mapOf(
+                            "p_investigation" to challenge.investigationId,
+                            "p_puzzle" to challenge.id,
+                            "p_selected_clue" to selectedClueId,
+                        ),
+                    )
+                if (reward != challenge.clueId) throw DomainError.Validation("Не удалось подтвердить улику.")
+                val now = System.currentTimeMillis().toString()
+                val progress = db.investigationDao()
+                db.withWriteTransaction {
+                    progress.markPuzzleSolved(SolvedPuzzleEntity(challenge.investigationId, challenge.id, now, synced = true))
+                    progress.collectClue(CollectedClueEntity(challenge.investigationId, reward, now, synced = true))
+                }
+            }
     }
-}

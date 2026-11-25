@@ -1,7 +1,5 @@
 package com.example.mrdetective.presentation.ui.components
 
-import androidx.compose.ui.res.stringResource
-import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
@@ -29,11 +29,12 @@ internal fun NumericPuzzleSlots(
     invalid: Boolean,
 ) {
     val colors = AppTheme.colors
-    val border = when {
-        solved -> colors.success
-        invalid -> colors.error
-        else -> colors.outline
-    }
+    val border =
+        when {
+            solved -> colors.success
+            invalid -> colors.error
+            else -> colors.outline
+        }
     (0 until count).toList().chunked(6).forEach { slots ->
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             slots.forEach { index ->
@@ -69,14 +70,22 @@ internal fun NumericPuzzleKeypad(
                 row.forEach { key ->
                     val keyModifier = Modifier.weight(1f)
                     when (key) {
-                        "⌫" -> AppButton(
-                            key, onDelete, keyModifier.semantics { contentDescription = deleteLabel },
-                            style = AppButtonStyle.Outlined, enabled = enabled,
-                        )
-                        "✓" -> AppButton(
-                            key, onSubmit, keyModifier.semantics { contentDescription = submitLabel },
-                            style = AppButtonStyle.Primary, enabled = canSubmit,
-                        )
+                        "⌫" ->
+                            AppButton(
+                                key,
+                                onDelete,
+                                keyModifier.semantics { contentDescription = deleteLabel },
+                                style = AppButtonStyle.Outlined,
+                                enabled = enabled,
+                            )
+                        "✓" ->
+                            AppButton(
+                                key,
+                                onSubmit,
+                                keyModifier.semantics { contentDescription = submitLabel },
+                                style = AppButtonStyle.Primary,
+                                enabled = canSubmit,
+                            )
                         else -> AppButton(key, { onDigit(key) }, keyModifier, style = AppButtonStyle.Outlined, enabled = enabled)
                     }
                 }

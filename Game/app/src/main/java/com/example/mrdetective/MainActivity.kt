@@ -14,11 +14,13 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.ColdTrailTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/** Hosts the Compose game interface inside the Android activity. */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
     private val casesViewModel: CasesViewModel by viewModels()
 
+    /** Sets up the themed Compose content and navigation for ColdTrail. */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

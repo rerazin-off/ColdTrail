@@ -9,16 +9,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/** Unit tests for the behavior of [LoadNotebookUseCase] using controlled inputs and dependencies. */
 class LoadNotebookUseCaseTest {
     private lateinit var repository: FakeNotebookRepository
     private lateinit var useCase: LoadNotebookUseCase
 
+    /** Recreates the fake repository and use case before each test. */
     @Before
     fun setUp() {
         repository = FakeNotebookRepository()
         useCase = LoadNotebookUseCase(repository)
     }
 
+    /** Проверяет сценарий «загрузка записки возвращает заметку». */
     @Test
     fun `загрузка записки возвращает заметку`() =
         runTest {
@@ -29,6 +32,7 @@ class LoadNotebookUseCaseTest {
             assertEquals(listOf(1), repository.getCalls)
         }
 
+    /** Проверяет сценарий «некорректный ID возвращает ошибку». */
     @Test
     fun `некорректный ID возвращает ошибку`() =
         runTest {
@@ -37,10 +41,12 @@ class LoadNotebookUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [SaveNoteUseCase] using controlled inputs and dependencies. */
 class SaveNoteUseCaseTest {
     private val repository = FakeNotebookRepository()
     private val useCase = SaveNoteUseCase(repository)
 
+    /** Проверяет сценарий «сохраняет заметку». */
     @Test
     fun `сохраняет заметку`() =
         runTest {
@@ -50,6 +56,7 @@ class SaveNoteUseCaseTest {
             assertEquals(listOf<Any?>(10, "Текст"), repository.saveCalls.single())
         }
 
+    /** Проверяет сценарий «некорректные данные возвращают ошибку валидации». */
     @Test
     fun `некорректные данные возвращают ошибку валидации`() =
         runTest {
@@ -59,10 +66,12 @@ class SaveNoteUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [DeleteNoteUseCase] using controlled inputs and dependencies. */
 class DeleteNoteUseCaseTest {
     private val repository = FakeNotebookRepository()
     private val useCase = DeleteNoteUseCase(repository)
 
+    /** Проверяет сценарий «удаляет заметку». */
     @Test
     fun `удаляет заметку`() =
         runTest {
@@ -70,6 +79,7 @@ class DeleteNoteUseCaseTest {
             assertEquals(listOf(3), repository.deleteCalls)
         }
 
+    /** Проверяет сценарий «некорректный id возвращает ошибку валидации». */
     @Test
     fun `некорректный id возвращает ошибку валидации`() =
         runTest {

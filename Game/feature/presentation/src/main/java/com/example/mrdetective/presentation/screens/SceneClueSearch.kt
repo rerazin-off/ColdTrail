@@ -1,6 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -37,11 +37,12 @@ import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
 private val hidingPlaces = listOf(0.24f to 0.72f, 0.62f to 0.72f, 0.88f to 0.56f)
-private val scenePlaceholders = listOf(
-    R.drawable.ic_camera_clue_placeholder,
-    R.drawable.ic_scene_clue_note,
-    R.drawable.ic_scene_clue_photo,
-)
+private val scenePlaceholders =
+    listOf(
+        R.drawable.ic_camera_clue_placeholder,
+        R.drawable.ic_scene_clue_note,
+        R.drawable.ic_scene_clue_photo,
+    )
 private val placeholderLabels = listOf(R.string.warehouse_key, R.string.warehouse_note, R.string.warehouse_photo)
 
 @Composable
@@ -113,7 +114,12 @@ internal fun SceneClueSearch(
 }
 
 @Composable
-private fun SceneArtwork(item: SceneClueImage, index: Int, label: String, modifier: Modifier) {
+private fun SceneArtwork(
+    item: SceneClueImage,
+    index: Int,
+    label: String,
+    modifier: Modifier,
+) {
     val placeholder = painterResource(scenePlaceholders[index])
     AsyncImage(
         model = item.imageUrl,

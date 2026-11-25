@@ -1,7 +1,5 @@
 package com.example.mrdetective.presentation.ui.components
 
-import androidx.compose.ui.res.stringResource
-import com.example.mrdetective.presentation.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,12 +18,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.example.mrdetective.domain.usecases.puzzles.MorseAlphabet
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
 @Composable
@@ -36,10 +36,11 @@ internal fun MorseAlphabetPanel() {
     AppCard(outlined = true, padding = 0.dp) {
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth()
-                    .semantics { stateDescription = stateLabel }
-                    .clickable(role = Role.Button) { expanded = !expanded }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .semantics { stateDescription = stateLabel }
+                        .clickable(role = Role.Button) { expanded = !expanded }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {

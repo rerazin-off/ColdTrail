@@ -10,10 +10,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Unit tests for the behavior of [LoadDialogueHistoryUseCase] using controlled inputs and dependencies. */
 class LoadDialogueHistoryUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = LoadDialogueHistoryUseCase(repository)
 
+    /** Проверяет сценарий «возвращает историю диалога». */
     @Test
     fun `возвращает историю диалога`() =
         runTest {
@@ -23,6 +25,7 @@ class LoadDialogueHistoryUseCaseTest {
             assertEquals(listOf<Any?>(1, 2), repository.historyCalls.single())
         }
 
+    /** Проверяет сценарий «ошибка репозитория возвращается в результате». */
     @Test
     fun `ошибка репозитория возвращается в результате`() =
         runTest {
@@ -33,10 +36,12 @@ class LoadDialogueHistoryUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [PresentClueToSuspectUseCase] using controlled inputs and dependencies. */
 class PresentClueToSuspectUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = PresentClueToSuspectUseCase(repository)
 
+    /** Проверяет сценарий «предъявляет улику подозреваемому». */
     @Test
     fun `предъявляет улику подозреваемому`() =
         runTest {
@@ -46,6 +51,7 @@ class PresentClueToSuspectUseCaseTest {
             assertEquals(listOf<Any?>(1, 2, 3), repository.presentCalls.single())
         }
 
+    /** Проверяет сценарий «некорректные идентификаторы возвращают ошибку валидации». */
     @Test
     fun `некорректные идентификаторы возвращают ошибку валидации`() =
         runTest {
@@ -56,10 +62,12 @@ class PresentClueToSuspectUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [SendSuspectMessageUseCase] using controlled inputs and dependencies. */
 class SendSuspectMessageUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = SendSuspectMessageUseCase(repository)
 
+    /** Проверяет сценарий «отправляет сообщение подозреваемому». */
     @Test
     fun `отправляет сообщение подозреваемому`() =
         runTest {
@@ -69,6 +77,7 @@ class SendSuspectMessageUseCaseTest {
             assertEquals(listOf<Any?>(1, 2, "Где вы были?"), repository.sendCalls.single())
         }
 
+    /** Проверяет сценарий «пустое сообщение возвращает ошибку валидации». */
     @Test
     fun `пустое сообщение возвращает ошибку валидации`() =
         runTest {

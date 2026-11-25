@@ -23,6 +23,7 @@ import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
+/** Provides the themed card container with an optional outline. */
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
@@ -42,6 +43,7 @@ fun AppCard(
     }
 }
 
+/** Displays the title, introduction, and progress of an investigation. */
 @Composable
 fun CaseCard(
     title: String,
@@ -58,7 +60,7 @@ fun CaseCard(
     }
 }
 
-//Карточка подозреваемого: аватар (слот), имя, описание, кнопка перехода к допросу.
+/** Displays the avatar slot, name, description, and dialogue action for a suspect. */
 @Composable
 fun SuspectCard(
     name: String,
@@ -89,8 +91,9 @@ fun SuspectCard(
     }
 }
 
-//Карточка улики: изображение (слот), название, описание.
+// Карточка улики: изображение (слот), название, описание.
 
+/** Displays the title and description of an evidence item. */
 @Composable
 fun ClueCard(
     title: String,

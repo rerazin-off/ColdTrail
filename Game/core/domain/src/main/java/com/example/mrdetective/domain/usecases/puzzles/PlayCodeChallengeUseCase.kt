@@ -5,11 +5,13 @@ import javax.inject.Inject
 
 const val CODE_CHALLENGE_LENGTH = 4
 
+/** Validates the format of a numeric answer and submits it for checking. */
 class PlayCodeChallengeUseCase
     @Inject
     constructor(
         private val playPuzzle: PlayPuzzleUseCase,
     ) {
+        /** Rejects answers without four digits before asking the repository to check the puzzle. */
         suspend operator fun invoke(
             investigationId: Int,
             puzzleId: Int,

@@ -7,9 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Tests the eligibility rules and local input validation for Morse puzzles. */
 class MorseChallengeRulesTest {
     private val puzzle = MorseChallenge(1, "Морзе", null, ".- .-. -", 10, solved = false, rewardClaimed = false)
 
+    /** New game skips solved puzzles and rewards already collected. */
     @Test
     fun `new game skips solved puzzles and rewards already collected`() {
         val solved = puzzle.copy(id = 2, solved = true)
@@ -19,6 +21,7 @@ class MorseChallengeRulesTest {
         assertEquals(solved, chooseMorseChallenge(listOf(solved, puzzle), restoredId = solved.id))
     }
 
+    /** Local validation checks shape but leaves correctness to the server. */
     @Test
     fun `local validation checks shape but leaves correctness to the server`() {
         assertTrue(validateMorseChallengeAnswer(puzzle, "ART"))

@@ -23,160 +23,181 @@ import com.example.mrdetective.domain.hardware.CameraDirectionFilter
 import com.example.mrdetective.domain.hardware.ClueCamera
 import com.example.mrdetective.domain.hardware.ClueCameraState
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import kotlin.coroutines.resumeWithException
 import kotlin.math.asin
 import kotlin.math.atan2
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 
-class AndroidClueCamera @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-) : ClueCamera<Pair<LifecycleOwner, PreviewView>> {
-    private val main = ContextCompat.getMainExecutor(context)
-    private var controller: LifecycleCameraController? = null
+/** Implements clue preview, photo capture, and orientation tracking with Android hardware. */
+class AndroidClueCamera
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : ClueCamera<Pair<LifecycleOwner, PreviewView>> {
+        private val main = ContextCompat.getMainExecutor(context)
+        private var controller: LifecycleCameraController? = null
 
-    override fun attach(
-        host: Pair<LifecycleOwner, PreviewView>,
-        onState: (ClueCameraState) -> Unit,
-    ): AutoCloseable {
-        val (owner, preview) = host
-        val sensors = context.getSystemService(SensorManager::class.java)
-        val rotationSensor = sensors?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        if (sensors == null || rotationSensor == null) {
-            onState(ClueCameraState(error = "На устройстве недоступен датчик направления."))
-            return AutoCloseable {}
-        }
-
-        val camera = LifecycleCameraController(context).apply {
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
-        }
-        var active = true
-        var state = ClueCameraState()
-        val directionFilter = CameraDirectionFilter()
-        fun publish(next: ClueCameraState) {
-            state = next
-            onState(next)
-        }
-
-        val sensorListener = object : SensorEventListener {
-            private val matrix = FloatArray(9)
-
-            override fun onSensorChanged(event: SensorEvent) {
-                SensorManager.getRotationMatrixFromVector(matrix, event.values)
-                // The rear lens points along the negative device Z axis.
-                val east = -matrix[2]
-                val north = -matrix[5]
-                val up = -matrix[8]
-                val heading = Math.toDegrees(atan2(east.toDouble(), north.toDouble())).toFloat()
-                val elevation = Math.toDegrees(asin(up.coerceIn(-1f, 1f).toDouble())).toFloat()
-                val direction = directionFilter.update(CameraDirection((heading + 360f) % 360f, elevation), event.timestamp)
-                publish(state.copy(direction = direction))
+        /** Starts preview and orientation updates for the given host and returns a handle for releasing both. */
+        override fun attach(
+            host: Pair<LifecycleOwner, PreviewView>,
+            onState: (ClueCameraState) -> Unit,
+        ): AutoCloseable {
+            val (owner, preview) = host
+            val sensors = context.getSystemService(SensorManager::class.java)
+            val rotationSensor = sensors?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            if (sensors == null || rotationSensor == null) {
+                onState(ClueCameraState(error = "На устройстве недоступен датчик направления."))
+                return AutoCloseable {}
             }
 
-            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) = Unit
-        }
-        val lifecycle = object : DefaultLifecycleObserver {
-            override fun onResume(owner: LifecycleOwner) {
-                publish(state.copy(previewReady = preview.previewStreamState.value == PreviewView.StreamState.STREAMING))
-                if (!sensors.registerListener(sensorListener, rotationSensor, SensorManager.SENSOR_DELAY_UI)) {
-                    publish(state.copy(error = "Не удалось запустить датчик направления."))
+            val camera =
+                LifecycleCameraController(context).apply {
+                    cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                    setEnabledUseCases(CameraController.IMAGE_CAPTURE)
                 }
+            var active = true
+            var state = ClueCameraState()
+            val directionFilter = CameraDirectionFilter()
+
+            fun publish(next: ClueCameraState) {
+                state = next
+                onState(next)
             }
 
-            override fun onPause(owner: LifecycleOwner) {
+            val sensorListener =
+                object : SensorEventListener {
+                    private val matrix = FloatArray(9)
+
+                    override fun onSensorChanged(event: SensorEvent) {
+                        SensorManager.getRotationMatrixFromVector(matrix, event.values)
+                        // The rear lens points along the negative device Z axis.
+                        val east = -matrix[2]
+                        val north = -matrix[5]
+                        val up = -matrix[8]
+                        val heading = Math.toDegrees(atan2(east.toDouble(), north.toDouble())).toFloat()
+                        val elevation = Math.toDegrees(asin(up.coerceIn(-1f, 1f).toDouble())).toFloat()
+                        val direction = directionFilter.update(CameraDirection((heading + 360f) % 360f, elevation), event.timestamp)
+                        publish(state.copy(direction = direction))
+                    }
+
+                    override fun onAccuracyChanged(
+                        sensor: Sensor,
+                        accuracy: Int,
+                    ) = Unit
+                }
+            val lifecycle =
+                object : DefaultLifecycleObserver {
+                    override fun onResume(owner: LifecycleOwner) {
+                        publish(state.copy(previewReady = preview.previewStreamState.value == PreviewView.StreamState.STREAMING))
+                        if (!sensors.registerListener(sensorListener, rotationSensor, SensorManager.SENSOR_DELAY_UI)) {
+                            publish(state.copy(error = "Не удалось запустить датчик направления."))
+                        }
+                    }
+
+                    override fun onPause(owner: LifecycleOwner) {
+                        sensors.unregisterListener(sensorListener)
+                        directionFilter.reset()
+                        publish(state.copy(previewReady = false, direction = null))
+                    }
+                }
+            val stream =
+                Observer<PreviewView.StreamState> {
+                    publish(state.copy(previewReady = it == PreviewView.StreamState.STREAMING))
+                }
+
+            preview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            onState(state)
+            val initialized = camera.initializationFuture
+            initialized.addListener({
+                if (active) {
+                    try {
+                        initialized.get()
+                        check(camera.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA))
+                        camera.bindToLifecycle(owner)
+                        preview.controller = camera
+                        controller = camera
+                        preview.previewStreamState.observe(owner, stream)
+                        owner.lifecycle.addObserver(lifecycle)
+                    } catch (_: Exception) {
+                        publish(ClueCameraState(error = "Не удалось открыть заднюю камеру."))
+                    }
+                }
+            }, main)
+
+            return AutoCloseable {
+                active = false
+                owner.lifecycle.removeObserver(lifecycle)
                 sensors.unregisterListener(sensorListener)
-                directionFilter.reset()
-                publish(state.copy(previewReady = false, direction = null))
+                preview.previewStreamState.removeObserver(stream)
+                preview.controller = null
+                camera.unbind()
+                if (controller === camera) controller = null
             }
         }
-        val stream = Observer<PreviewView.StreamState> {
-            publish(state.copy(previewReady = it == PreviewView.StreamState.STREAMING))
-        }
 
-        preview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-        onState(state)
-        val initialized = camera.initializationFuture
-        initialized.addListener({
-            if (active) {
-                try {
-                    initialized.get()
-                    check(camera.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA))
-                    camera.bindToLifecycle(owner)
-                    preview.controller = camera
-                    controller = camera
-                    preview.previewStreamState.observe(owner, stream)
-                    owner.lifecycle.addObserver(lifecycle)
-                } catch (_: Exception) {
-                    publish(ClueCameraState(error = "Не удалось открыть заднюю камеру."))
+        /** Captures a photo with the bound camera and returns its local file path. */
+        override suspend fun takePhoto(): String {
+            val camera = checkNotNull(controller) { "Камера ещё не готова." }
+            val image =
+                suspendCancellableCoroutine<ImageProxy> { continuation ->
+                    camera.takePicture(
+                        main,
+                        object : ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(image: ImageProxy) {
+                                continuation.resume(image) { _, captured, _ -> captured.close() }
+                            }
+
+                            override fun onError(exception: ImageCaptureException) {
+                                continuation.resumeWithException(exception)
+                            }
+                        },
+                    )
                 }
-            }
-        }, main)
-
-        return AutoCloseable {
-            active = false
-            owner.lifecycle.removeObserver(lifecycle)
-            sensors.unregisterListener(sensorListener)
-            preview.previewStreamState.removeObserver(stream)
-            preview.controller = null
-            camera.unbind()
-            if (controller === camera) controller = null
-        }
-    }
-
-    override suspend fun takePhoto(): String {
-        val camera = checkNotNull(controller) { "Камера ещё не готова." }
-        val image = suspendCancellableCoroutine<ImageProxy> { continuation ->
-            camera.takePicture(main, object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    continuation.resume(image) { _, captured, _ -> captured.close() }
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    continuation.resumeWithException(exception)
-                }
-            })
-        }
-        var file: File? = null
-        try {
-            return image.use { captured ->
-                withContext(Dispatchers.IO) {
-                    val folder = File(context.noBackupFilesDir, "camera-clues").apply { mkdirs() }
-                    val target = File.createTempFile("capture-", ".jpg", folder).also { file = it }
-                    writePhoto(captured, target)
-                    target.absolutePath
-                }
-            }
-        } catch (error: Throwable) {
-            file?.delete()
-            throw error
-        }
-    }
-
-    private fun writePhoto(image: ImageProxy, target: File) {
-        val original = image.toBitmap()
-        try {
-            val crop = image.cropRect
-            val scale = (1024f / maxOf(crop.width(), crop.height())).coerceAtMost(1f)
-            val transform = Matrix().apply {
-                postScale(scale, scale)
-                postRotate(image.imageInfo.rotationDegrees.toFloat())
-            }
-            val photo = Bitmap.createBitmap(original, crop.left, crop.top, crop.width(), crop.height(), transform, true)
+            var file: File? = null
             try {
-                for (quality in listOf(86, 67, 48)) {
-                    check(target.outputStream().use { photo.compress(Bitmap.CompressFormat.JPEG, quality, it) })
-                    if (target.length() in 1..1_048_576L) return
+                return image.use { captured ->
+                    withContext(Dispatchers.IO) {
+                        val folder = File(context.noBackupFilesDir, "camera-clues").apply { mkdirs() }
+                        val target = File.createTempFile("capture-", ".jpg", folder).also { file = it }
+                        writePhoto(captured, target)
+                        target.absolutePath
+                    }
                 }
-                error("JPEG exceeds the Storage size limit.")
-            } finally {
-                if (photo !== original) photo.recycle()
+            } catch (error: Throwable) {
+                file?.delete()
+                throw error
             }
-        } finally {
-            original.recycle()
+        }
+
+        private fun writePhoto(
+            image: ImageProxy,
+            target: File,
+        ) {
+            val original = image.toBitmap()
+            try {
+                val crop = image.cropRect
+                val scale = (1024f / maxOf(crop.width(), crop.height())).coerceAtMost(1f)
+                val transform =
+                    Matrix().apply {
+                        postScale(scale, scale)
+                        postRotate(image.imageInfo.rotationDegrees.toFloat())
+                    }
+                val photo = Bitmap.createBitmap(original, crop.left, crop.top, crop.width(), crop.height(), transform, true)
+                try {
+                    for (quality in listOf(86, 67, 48)) {
+                        check(target.outputStream().use { photo.compress(Bitmap.CompressFormat.JPEG, quality, it) })
+                        if (target.length() in 1..1_048_576L) return
+                    }
+                    error("JPEG exceeds the Storage size limit.")
+                } finally {
+                    if (photo !== original) photo.recycle()
+                }
+            } finally {
+                original.recycle()
+            }
         }
     }
-}

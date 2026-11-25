@@ -1,5 +1,6 @@
 package com.example.mrdetective.domain.models
 
+/** Describes a Morse puzzle and the current reward state. */
 data class MorseChallenge(
     val id: Int,
     val title: String,
@@ -14,4 +15,5 @@ data class MorseChallenge(
     val numericOnly: Boolean get() = letters.all { it.length == 5 }
 }
 
+/** Groups Morse puzzles by investigation. */
 data class MorseChallenges(val investigationId: Int, val puzzles: List<MorseChallenge>)

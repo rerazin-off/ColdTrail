@@ -6,12 +6,14 @@ import com.example.mrdetective.domain.repositories.ClueRepository
 import com.example.mrdetective.domain.repositories.InventoryRepository
 import javax.inject.Inject
 
+/** Retrieves the description of an inventory clue. */
 class InspectItemUseCase
     @Inject
     constructor(
         private val clueRepository: ClueRepository,
         private val inventoryRepository: InventoryRepository,
     ) {
+        /** Returns the clue's metadata by its identifier. */
         suspend operator fun invoke(itemId: Int): Result<Clue> {
             if (itemId <= 0) {
                 return Result.failure(

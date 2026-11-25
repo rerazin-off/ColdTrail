@@ -11,10 +11,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Unit tests for the behavior of [InspectSceneUseCase] using controlled inputs and dependencies. */
 class InspectSceneUseCaseTest {
     private val repository = FakeSceneRepository()
     private val useCase = InspectSceneUseCase(repository)
 
+    /** Проверяет сценарий «возвращает описание сцены». */
     @Test
     fun `возвращает описание сцены`() =
         runTest {
@@ -24,6 +26,7 @@ class InspectSceneUseCaseTest {
             assertEquals(listOf<Any?>(1, 2), repository.calls.single())
         }
 
+    /** Проверяет сценарий «некорректные идентификаторы возвращают ошибку валидации». */
     @Test
     fun `некорректные идентификаторы возвращают ошибку валидации`() =
         runTest {
@@ -33,24 +36,29 @@ class InspectSceneUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [MatchFingerprintUseCase] using controlled inputs and dependencies. */
 class MatchFingerprintUseCaseTest {
     private val useCase = MatchFingerprintUseCase()
 
+    /** Проверяет сценарий «одинаковые отпечатки совпадают». */
     @Test
     fun `одинаковые отпечатки совпадают`() {
         assertTrue(useCase("A1", "A1"))
     }
 
+    /** Проверяет сценарий «разные отпечатки не совпадают». */
     @Test
     fun `разные отпечатки не совпадают`() {
         assertFalse(useCase("A1", "B2"))
     }
 }
 
+/** Unit tests for the behavior of [PlayMorseSignalUseCase] using controlled inputs and dependencies. */
 class PlayMorseSignalUseCaseTest {
     private val player = FakeMorseSignalPlayer()
     private val useCase = PlayMorseSignalUseCase(player)
 
+    /** Проверяет сценарий «проигрывает сигнал». */
     @Test
     fun `проигрывает сигнал`() =
         runTest {
@@ -58,6 +66,7 @@ class PlayMorseSignalUseCaseTest {
             assertEquals(listOf("... --- ..."), player.played)
         }
 
+    /** Проверяет сценарий «пустой сигнал возвращает ошибку валидации». */
     @Test
     fun `пустой сигнал возвращает ошибку валидации`() =
         runTest {
@@ -65,6 +74,7 @@ class PlayMorseSignalUseCaseTest {
             assertTrue(player.played.isEmpty())
         }
 
+    /** Проверяет сценарий «символы вне Морзе не передаются устройству». */
     @Test
     fun `символы вне Морзе не передаются устройству`() =
         runTest {
@@ -72,6 +82,7 @@ class PlayMorseSignalUseCaseTest {
             assertTrue(player.played.isEmpty())
         }
 
+    /** Проверяет сценарий «без вибромотора воспроизведение недоступно». */
     @Test
     fun `без вибромотора воспроизведение недоступно`() =
         runTest {
@@ -82,10 +93,12 @@ class PlayMorseSignalUseCaseTest {
         }
 }
 
+/** Unit tests for the behavior of [PlayPuzzleUseCase] using controlled inputs and dependencies. */
 class PlayPuzzleUseCaseTest {
     private val repository = FakePuzzleRepository()
     private val useCase = PlayPuzzleUseCase(repository)
 
+    /** Проверяет сценарий «проверяет ответ через репозиторий». */
     @Test
     fun `проверяет ответ через репозиторий`() =
         runTest {
@@ -95,6 +108,7 @@ class PlayPuzzleUseCaseTest {
             assertEquals(listOf<Any?>(1, 2, "SOS"), repository.answerCalls.single())
         }
 
+    /** Проверяет сценарий «некорректные данные возвращают ошибку валидации». */
     @Test
     fun `некорректные данные возвращают ошибку валидации`() =
         runTest {

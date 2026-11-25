@@ -18,43 +18,51 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
 import javax.inject.Inject
 
-class MorseChallengeRepositoryImpl @Inject constructor(
-    private val auth: AuthRepository,
-    private val progress: InvestigationDao,
-    private val puzzles: PuzzleDao,
-    private val clues: ClueDao,
-    private val api: OfflineApi,
-    private val db: AppDatabase,
-) : MorseChallengeRepository {
-    override suspend fun load(caseId: Int): Result<MorseChallenges> = apiCall {
-        val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
-        val investigation = progress.getByCaseForUser(caseId, userId)
-            ?: throw DomainError.NotFound("Сначала начните расследование.")
-        if (investigation.id <= 0) {
-            throw DomainError.Validation("Дождитесь синхронизации расследования с сервером.")
-        }
-        val rows = api.getMorseChallenges(mapOf("p_investigation" to investigation.id))
-        if (rows.isNotEmpty()) {
-            val knownClueIds = clues.getByCase(caseId).mapTo(hashSetOf()) { it.id }
-            if (rows.any { it.rewardClueId !in knownClueIds }) {
-                clues.upsertAll(api.getCluesByCase("eq.$caseId").map { it.toEntity() })
-            }
-            val now = System.currentTimeMillis().toString()
-            db.withWriteTransaction {
-                puzzles.upsertAll(rows.map {
-                    PuzzleEntity(it.id, caseId, "morse", it.title, it.hint, it.rewardClueId)
-                })
-                rows.filter { it.solved }.forEach {
-                    progress.markPuzzleSolved(SolvedPuzzleEntity(investigation.id, it.id, now, synced = true))
+/** Combines server-provided Morse challenges with locally recorded completion state. */
+class MorseChallengeRepositoryImpl
+    @Inject
+    constructor(
+        private val auth: AuthRepository,
+        private val progress: InvestigationDao,
+        private val puzzles: PuzzleDao,
+        private val clues: ClueDao,
+        private val api: OfflineApi,
+        private val db: AppDatabase,
+    ) : MorseChallengeRepository {
+        /** Returns Morse puzzles for the given case and its investigation. */
+        override suspend fun load(caseId: Int): Result<MorseChallenges> =
+            apiCall {
+                val userId = auth.currentUser() ?: throw DomainError.Unauthorized()
+                val investigation =
+                    progress.getByCaseForUser(caseId, userId)
+                        ?: throw DomainError.NotFound("Сначала начните расследование.")
+                if (investigation.id <= 0) {
+                    throw DomainError.Validation("Дождитесь синхронизации расследования с сервером.")
                 }
-                rows.filter { it.rewardClaimed }.forEach {
-                    progress.collectClue(CollectedClueEntity(investigation.id, it.rewardClueId, now, synced = true))
+                val rows = api.getMorseChallenges(mapOf("p_investigation" to investigation.id))
+                if (rows.isNotEmpty()) {
+                    val knownClueIds = clues.getByCase(caseId).mapTo(hashSetOf()) { it.id }
+                    if (rows.any { it.rewardClueId !in knownClueIds }) {
+                        clues.upsertAll(api.getCluesByCase("eq.$caseId").map { it.toEntity() })
+                    }
+                    val now = System.currentTimeMillis().toString()
+                    db.withWriteTransaction {
+                        puzzles.upsertAll(
+                            rows.map {
+                                PuzzleEntity(it.id, caseId, "morse", it.title, it.hint, it.rewardClueId)
+                            },
+                        )
+                        rows.filter { it.solved }.forEach {
+                            progress.markPuzzleSolved(SolvedPuzzleEntity(investigation.id, it.id, now, synced = true))
+                        }
+                        rows.filter { it.rewardClaimed }.forEach {
+                            progress.collectClue(CollectedClueEntity(investigation.id, it.rewardClueId, now, synced = true))
+                        }
+                    }
                 }
+                MorseChallenges(
+                    investigation.id,
+                    rows.map { MorseChallenge(it.id, it.title, it.hint, it.signal, it.rewardClueId, it.solved, it.rewardClaimed) },
+                )
             }
-        }
-        MorseChallenges(
-            investigation.id,
-            rows.map { MorseChallenge(it.id, it.title, it.hint, it.signal, it.rewardClueId, it.solved, it.rewardClaimed) },
-        )
     }
-}

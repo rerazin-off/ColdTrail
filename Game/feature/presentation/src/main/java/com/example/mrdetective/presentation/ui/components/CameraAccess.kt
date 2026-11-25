@@ -21,6 +21,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 
+/**
+ * Holds the camera capability and permission state along with actions for requesting access and opening system
+ * settings.
+ */
 internal class CameraAccess(
     val available: Boolean,
     val granted: Boolean,
@@ -34,8 +38,8 @@ internal fun rememberCameraAccess(onPermissionChoice: (Boolean) -> Unit): Camera
     val context = LocalContext.current
     val activity = LocalActivity.current
     val available = remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
-    fun hasPermission() =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
     fun shouldShowRationale() =
         activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, Manifest.permission.CAMERA) } == true
@@ -43,11 +47,12 @@ internal fun rememberCameraAccess(onPermissionChoice: (Boolean) -> Unit): Camera
     var granted by remember(context) { mutableStateOf(hasPermission()) }
     var rationale by remember(activity) { mutableStateOf(shouldShowRationale()) }
     var enableAfterSettings by rememberSaveable { mutableStateOf(false) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = it
-        rationale = shouldShowRationale()
-        onPermissionChoice(it)
-    }
+    val permission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            granted = it
+            rationale = shouldShowRationale()
+            onPermissionChoice(it)
+        }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         granted = hasPermission()
         rationale = shouldShowRationale()
@@ -71,9 +76,13 @@ internal fun rememberCameraAccess(onPermissionChoice: (Boolean) -> Unit): Camera
         granted,
         rationale,
         requestOrOpenSettings = { configured ->
-            if (hasPermission()) onPermissionChoice(true)
-            else if (configured && !shouldShowRationale()) openSettings(true)
-            else permission.launch(Manifest.permission.CAMERA)
+            if (hasPermission()) {
+                onPermissionChoice(true)
+            } else if (configured && !shouldShowRationale()) {
+                openSettings(true)
+            } else {
+                permission.launch(Manifest.permission.CAMERA)
+            }
         },
         openSettings = ::openSettings,
     )

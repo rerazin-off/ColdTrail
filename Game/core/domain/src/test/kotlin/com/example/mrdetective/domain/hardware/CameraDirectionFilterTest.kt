@@ -4,7 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** Tests smoothing and heading wraparound at north. */
 class CameraDirectionFilterTest {
+    /** Suppresses small sensor fluctuations. */
     @Test
     fun suppressesSmallSensorFluctuations() {
         val filter = CameraDirectionFilter()
@@ -14,6 +16,7 @@ class CameraDirectionFilterTest {
         assertEquals(initial, filter.update(CameraDirection(90.3f, 1.7f), 60_000_000L))
     }
 
+    /** Follows turns across north without jumping. */
     @Test
     fun followsTurnsAcrossNorthWithoutJumping() {
         val filter = CameraDirectionFilter()

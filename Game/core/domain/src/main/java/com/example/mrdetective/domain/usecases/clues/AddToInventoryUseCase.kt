@@ -7,11 +7,13 @@ import com.example.mrdetective.domain.models.InvestigationProgress
 import com.example.mrdetective.domain.repositories.InventoryRepository
 import javax.inject.Inject
 
+/** Adds a collected item to the investigation inventory. */
 class AddToInventoryUseCase
     @Inject
     constructor(
         private val repository: InventoryRepository,
     ) {
+        /** Stores the selected clue in the investigation inventory. */
         suspend operator fun invoke(
             item: Clue,
             investigation: InvestigationProgress,

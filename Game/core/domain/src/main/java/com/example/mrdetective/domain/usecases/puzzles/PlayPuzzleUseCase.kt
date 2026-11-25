@@ -4,11 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.PuzzleRepository
 import javax.inject.Inject
 
+/** Submits a puzzle answer through the puzzle repository. */
 class PlayPuzzleUseCase
     @Inject
     constructor(
         private val repository: PuzzleRepository,
     ) {
+        /** Passes an answer to the puzzle repository for validation. */
         suspend operator fun invoke(
             investigationId: Int,
             puzzleId: Int,

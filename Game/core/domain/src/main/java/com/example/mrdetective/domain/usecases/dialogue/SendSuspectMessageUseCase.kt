@@ -5,11 +5,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.DialogueRepository
 import javax.inject.Inject
 
+/** Validates a player's question and sends it to a suspect. */
 class SendSuspectMessageUseCase
     @Inject
     constructor(
         private val repository: DialogueRepository,
     ) {
+        /** Rejects a blank question before sending it to the suspect. */
         suspend operator fun invoke(
             caseId: Int,
             suspectId: Int,

@@ -5,16 +5,15 @@ import androidx.room3.withWriteTransaction
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.mrdetective.data.local.AppDatabase
-
 import com.example.mrdetective.data.local.entity.CollectedClueEntity
 import com.example.mrdetective.data.local.entity.DialogueMessageEntity
 import com.example.mrdetective.data.local.entity.NoteEntity
 import com.example.mrdetective.data.local.entity.PuzzleEntity
 import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
-import com.example.mrdetective.data.remote.api.OfflineApi
-import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.network.SupabaseConfig
+import com.example.mrdetective.data.remote.api.OfflineApi
+import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import com.example.mrdetective.data.remote.dto.CameraCaptureDto
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
@@ -30,240 +29,270 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
-import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.File
 import kotlin.collections.map
 
+/** Exposes Hilt dependencies to the WorkManager synchronization worker. */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface SyncWorkerEntryPoint {
+    /** Returns the local database to the background worker. */
     fun database(): AppDatabase
+
+    /** Returns the investigation and synchronization API to the background worker. */
     fun offlineApi(): OfflineApi
+
+    /** Returns the table REST API to the background worker. */
     fun restApi(): SupabaseRestApi
+
+    /** Returns the source of the current player session to the background worker. */
     fun auth(): AuthRepository
 }
 
 /** WorkManager retries transient errors and only runs with a validated network connection. */
 class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val entry = EntryPointAccessors.fromApplication(applicationContext, SyncWorkerEntryPoint::class.java)
-        val db = entry.database()
-        val api = entry.offlineApi()
-        val restApi = entry.restApi()
-        try {
-            val userId = entry.auth().currentUser() ?: return@withContext Result.success()
-            val deferredOps = mutableSetOf<Long>()
-            while (true) {
-                val op = db.syncQueueDao().pending().firstOrNull { it.id !in deferredOps } ?: break
-                try {
-                    when (op.entityType) {
-                        "collected_clue" -> api.postQueued(
-                            SupabaseConfig.baseUrl + "rest/v1/collected_clues",
-                            "resolution=ignore-duplicates,return=minimal",
-                            op.payload.toRequestBody("application/json".toMediaType()),
-                        ).close()
-
-                        "note" -> when (op.operation) {
-                            "delete" -> api.deleteQueued(SupabaseConfig.baseUrl + "rest/v1/notes?id=eq.${op.entityId}").close()
-                            else -> {
-                                val response = api.postQueued(
-                                    SupabaseConfig.baseUrl + "rest/v1/notes", "return=representation",
+    /** Sends eligible queued operations and pending photos for the active account. */
+    override suspend fun doWork(): Result =
+        withContext(Dispatchers.IO) {
+            val entry = EntryPointAccessors.fromApplication(applicationContext, SyncWorkerEntryPoint::class.java)
+            val db = entry.database()
+            val api = entry.offlineApi()
+            val restApi = entry.restApi()
+            try {
+                val userId = entry.auth().currentUser() ?: return@withContext Result.success()
+                val deferredOps = mutableSetOf<Long>()
+                while (true) {
+                    val op = db.syncQueueDao().pending().firstOrNull { it.id !in deferredOps } ?: break
+                    try {
+                        when (op.entityType) {
+                            "collected_clue" ->
+                                api.postQueued(
+                                    SupabaseConfig.baseUrl + "rest/v1/collected_clues",
+                                    "resolution=ignore-duplicates,return=minimal",
                                     op.payload.toRequestBody("application/json".toMediaType()),
-                                )
-                                val rows = JSONArray(response.string())
-                                if (rows.length() > 0 && op.entityId.toIntOrNull() != null) {
-                                    db.noteDao().delete(op.entityId.toInt())
-                                    val dto = rows.getJSONObject(0)
-                                    db.noteDao().upsert(
-                                        NoteEntity(
-                                            dto.getInt("id"),
-                                            dto.getInt("investigation_id"),
-                                            dto.getString("text"),
-                                            dto.getString("create_at"),
-                                            dto.getString("update_at"),
-                                            System.currentTimeMillis(),
+                                ).close()
+
+                            "note" ->
+                                when (op.operation) {
+                                    "delete" -> api.deleteQueued(SupabaseConfig.baseUrl + "rest/v1/notes?id=eq.${op.entityId}").close()
+                                    else -> {
+                                        val response =
+                                            api.postQueued(
+                                                SupabaseConfig.baseUrl + "rest/v1/notes",
+                                                "return=representation",
+                                                op.payload.toRequestBody("application/json".toMediaType()),
+                                            )
+                                        val rows = JSONArray(response.string())
+                                        if (rows.length() > 0 && op.entityId.toIntOrNull() != null) {
+                                            db.noteDao().delete(op.entityId.toInt())
+                                            val dto = rows.getJSONObject(0)
+                                            db.noteDao().upsert(
+                                                NoteEntity(
+                                                    dto.getInt("id"),
+                                                    dto.getInt("investigation_id"),
+                                                    dto.getString("text"),
+                                                    dto.getString("create_at"),
+                                                    dto.getString("update_at"),
+                                                    System.currentTimeMillis(),
+                                                    true,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                }
+
+                            "investigation" -> {
+                                val localId = checkNotNull(op.entityId.toIntOrNull())
+                                val local = db.investigationDao().getInvestigation(localId)
+                                if (local != null) {
+                                    if (local.userId != userId) {
+                                        deferredOps.add(op.id)
+                                        continue
+                                    }
+                                    val server =
+                                        api.startInvestigation(InvestigationInsertDto(local.caseId)).firstOrNull()
+                                            ?: api.getInvestigations("eq.${local.caseId}", "eq.${local.userId}").firstOrNull()
+                                            ?: error("Сервер не вернул расследование")
+                                    val serverId = server.id
+                                    db.withWriteTransaction {
+                                        db.investigationDao().remapInvestigation(localId, serverId)
+                                        db.investigationDao().remapCollected(localId, serverId)
+                                        db.investigationDao().remapSolved(localId, serverId)
+                                        db.dialogueDao().remapInvestigation(localId, serverId)
+                                        db.noteDao().remapInvestigation(localId, serverId)
+                                        db.syncQueueDao().replacePayload("\"investigation_id\":$localId", "\"investigation_id\":$serverId")
+                                        db.syncQueueDao().replacePayload("\"p_investigation\":$localId", "\"p_investigation\":$serverId")
+                                    }
+                                }
+                            }
+
+                            "dialogue_message" -> {
+                                val request = GsonHolder.gson.fromJson(op.payload, NpcChatRequestDto::class.java)
+                                val localId = checkNotNull(op.entityId.toLongOrNull())
+                                val player = db.dialogueDao().getById(localId)
+                                if (player != null) {
+                                    val investigation = db.investigationDao().getInvestigation(player.investigationId)
+                                    if (investigation?.userId != userId || player.investigationId <= 0) {
+                                        deferredOps.add(op.id)
+                                        continue
+                                    }
+                                    val reply = api.npcChat(request.copy(investigationId = player.investigationId))
+                                    db.withWriteTransaction {
+                                        db.dialogueDao().delete(localId)
+                                        db.dialogueDao().insert(player.copy(id = -reply.messageId.toLong(), synced = true))
+                                        db.dialogueDao().insert(
+                                            player.copy(
+                                                id = reply.messageId.toLong(),
+                                                author = "suspect",
+                                                text = reply.reply,
+                                                synced = true,
+                                            ),
+                                        )
+                                        db.syncQueueDao().remove(op.id)
+                                    }
+                                }
+                            }
+
+                            "puzzle_answer" -> {
+                                val request = GsonHolder.gson.fromJson(op.payload, CheckPuzzleDto::class.java)
+                                val investigation = db.investigationDao().getInvestigation(request.investigationId)
+                                if (investigation?.userId != userId || request.investigationId <= 0) {
+                                    deferredOps.add(op.id)
+                                    continue
+                                }
+                                val correct = api.checkPuzzle(request)
+                                if (correct) {
+                                    db.investigationDao().markPuzzleSolved(
+                                        SolvedPuzzleEntity(
+                                            request.investigationId,
+                                            request.puzzleId,
+                                            System.currentTimeMillis().toString(),
                                             true,
-                                        )
+                                        ),
                                     )
-                                }
-                            }
-                        }
-
-                        "investigation" -> {
-                            val localId = checkNotNull(op.entityId.toIntOrNull())
-                            val local = db.investigationDao().getInvestigation(localId)
-                            if (local != null) {
-                                if (local.userId != userId) {
-                                    deferredOps.add(op.id)
-                                    continue
-                                }
-                                val server = api.startInvestigation(InvestigationInsertDto(local.caseId)).firstOrNull()
-                                    ?: api.getInvestigations("eq.${local.caseId}", "eq.${local.userId}").firstOrNull()
-                                    ?: error("Сервер не вернул расследование")
-                                val serverId = server.id
-                                db.withWriteTransaction {
-                                    db.investigationDao().remapInvestigation(localId, serverId)
-                                    db.investigationDao().remapCollected(localId, serverId)
-                                    db.investigationDao().remapSolved(localId, serverId)
-                                    db.dialogueDao().remapInvestigation(localId, serverId)
-                                    db.noteDao().remapInvestigation(localId, serverId)
-                                    db.syncQueueDao().replacePayload("\"investigation_id\":$localId", "\"investigation_id\":$serverId")
-                                    db.syncQueueDao().replacePayload("\"p_investigation\":$localId", "\"p_investigation\":$serverId")
-                                }
-                            }
-                        }
-
-                        "dialogue_message" -> {
-                            val request = GsonHolder.gson.fromJson(op.payload, NpcChatRequestDto::class.java)
-                            val localId = checkNotNull(op.entityId.toLongOrNull())
-                            val player = db.dialogueDao().getById(localId)
-                            if (player != null) {
-                                val investigation = db.investigationDao().getInvestigation(player.investigationId)
-                                if (investigation?.userId != userId || player.investigationId <= 0) {
-                                    deferredOps.add(op.id)
-                                    continue
-                                }
-                                val reply = api.npcChat(request.copy(investigationId = player.investigationId))
-                                db.withWriteTransaction {
-                                    db.dialogueDao().delete(localId)
-                                    db.dialogueDao().insert(player.copy(id = -reply.messageId.toLong(), synced = true))
-                                    db.dialogueDao().insert(
-                                        player.copy(
-                                            id = reply.messageId.toLong(),
-                                            author = "suspect",
-                                            text = reply.reply,
-                                            synced = true,
+                                    val rewardId = db.puzzleDao().getById(request.puzzleId)?.rewardClueId
+                                    if (rewardId != null) {
+                                        db.investigationDao().collectClue(
+                                            CollectedClueEntity(
+                                                request.investigationId,
+                                                rewardId,
+                                                System.currentTimeMillis().toString(),
+                                                synced = true,
+                                            ),
                                         )
+                                    }
+                                }
+                            }
+
+                            "camera_capture" -> {
+                                val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
+                                val investigation = db.investigationDao().getInvestigation(request.investigationId)
+                                if (investigation?.userId != userId) {
+                                    deferredOps.add(op.id)
+                                    continue
+                                }
+                                val file = File(request.filePath)
+                                if (!file.isFile) {
+                                    db.syncQueueDao().remove(op.id)
+                                    continue
+                                }
+                                api.uploadPhoto(
+                                    "clue-photos",
+                                    "$userId/${request.clueId}.jpg",
+                                    file.readBytes().toRequestBody("image/jpeg".toMediaType()),
+                                ).close()
+                                val reward =
+                                    api.completeCameraPuzzle(
+                                        mapOf("p_investigation" to request.investigationId, "p_puzzle" to request.puzzleId),
+                                    )
+                                val now = System.currentTimeMillis().toString()
+                                db.withWriteTransaction {
+                                    db.investigationDao().markPuzzleSolved(
+                                        SolvedPuzzleEntity(request.investigationId, request.puzzleId, now, synced = true),
+                                    )
+                                    db.investigationDao().collectClue(
+                                        CollectedClueEntity(request.investigationId, reward, now, synced = true),
                                     )
                                     db.syncQueueDao().remove(op.id)
                                 }
+                                file.delete()
+                                continue
                             }
-                        }
 
-                        "puzzle_answer" -> {
-                            val request = GsonHolder.gson.fromJson(op.payload, CheckPuzzleDto::class.java)
-                            val investigation = db.investigationDao().getInvestigation(request.investigationId)
-                            if (investigation?.userId != userId || request.investigationId <= 0) {
-                                deferredOps.add(op.id)
-                                continue
-                            }
-                            val correct = api.checkPuzzle(request)
-                            if (correct) {
-                                db.investigationDao().markPuzzleSolved(
-                                    SolvedPuzzleEntity(
-                                        request.investigationId,
-                                        request.puzzleId,
-                                        System.currentTimeMillis().toString(),
-                                        true,
-                                    )
-                                )
-                                val rewardId = db.puzzleDao().getById(request.puzzleId)?.rewardClueId
-                                if (rewardId != null) db.investigationDao().collectClue(
-                                    CollectedClueEntity(
-                                        request.investigationId,
-                                        rewardId,
-                                        System.currentTimeMillis().toString(),
-                                        synced = true,
-                                    )
-                                )
-                            }
-                        }
+                            "accusation" ->
+                                api.postQueued(
+                                    SupabaseConfig.baseUrl + "functions/v1/submit-accusation",
+                                    null,
+                                    op.payload.toRequestBody("application/json".toMediaType()),
+                                ).close()
 
-                        "camera_capture" -> {
-                            val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
-                            val investigation = db.investigationDao().getInvestigation(request.investigationId)
-                            if (investigation?.userId != userId) {
-                                deferredOps.add(op.id)
-                                continue
+                            else -> throw IllegalStateException("Неизвестная операция очереди: ${op.entityType}")
+                        }
+                        db.syncQueueDao().remove(op.id)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        if (e is HttpException && e.code() in 400..499 && e.code() !in listOf(408, 429)) {
+                            // Ошибка данных не исправится повтором. Операция остаётся локально видимой, но снимается с автоповтора.
+                            db.syncQueueDao().recordFailure(op.id, "HTTP ${e.code()}: ${e.message()}")
+                            if (op.entityType == "camera_capture") {
+                                val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
+                                File(request.filePath).delete()
                             }
-                            val file = File(request.filePath)
-                            if (!file.isFile) {
-                                db.syncQueueDao().remove(op.id)
-                                continue
-                            }
-                            api.uploadPhoto(
-                                "clue-photos",
-                                "$userId/${request.clueId}.jpg",
-                                file.readBytes().toRequestBody("image/jpeg".toMediaType()),
-                            ).close()
-                            val reward = api.completeCameraPuzzle(
-                                mapOf("p_investigation" to request.investigationId, "p_puzzle" to request.puzzleId),
-                            )
-                            val now = System.currentTimeMillis().toString()
-                            db.withWriteTransaction {
-                                db.investigationDao().markPuzzleSolved(
-                                    SolvedPuzzleEntity(request.investigationId, request.puzzleId, now, synced = true),
-                                )
-                                db.investigationDao().collectClue(
-                                    CollectedClueEntity(request.investigationId, reward, now, synced = true),
-                                )
-                                db.syncQueueDao().remove(op.id)
-                            }
-                            file.delete()
+                            db.syncQueueDao().remove(op.id)
+                        } else {
+                            val message =
+                                when {
+                                    e is HttpException && e.code() >= 500 -> "Сервер временно недоступен. Попробуйте ещё раз позже."
+                                    else -> "Не удалось отправить данные. Проверьте подключение и повторите."
+                                }
+                            db.syncQueueDao().recordFailure(op.id, message)
+                            throw e
+                        }
+                    }
+                }
+
+                for (photo in db.pendingPhotoDao().pending()) {
+                    try {
+                        val file = File(photo.localPath)
+                        if (!file.exists()) {
+                            db.pendingPhotoDao().remove(photo.id)
                             continue
                         }
 
-                        "accusation" -> api.postQueued(
-                            SupabaseConfig.baseUrl + "functions/v1/submit-accusation", null,
-                            op.payload.toRequestBody("application/json".toMediaType()),
-                        ).close()
-
-                        else -> throw IllegalStateException("Неизвестная операция очереди: ${op.entityType}")
-                    }
-                    db.syncQueueDao().remove(op.id)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    if (e is HttpException && e.code() in 400..499 && e.code() !in listOf(408, 429)) {
-                        // Ошибка данных не исправится повтором. Операция остаётся локально видимой, но снимается с автоповтора.
-                        db.syncQueueDao().recordFailure(op.id, "HTTP ${e.code()}: ${e.message()}")
-                        if (op.entityType == "camera_capture") {
-                            val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
-                            File(request.filePath).delete()
-                        }
-                        db.syncQueueDao().remove(op.id)
-                    } else {
-                        val message = when {
-                            e is HttpException && e.code() >= 500 -> "Сервер временно недоступен. Попробуйте ещё раз позже."
-                            else -> "Не удалось отправить данные. Проверьте подключение и повторите."
-                        }
-                        db.syncQueueDao().recordFailure(op.id, message)
+                        val extension = file.extension.lowercase().ifBlank { "webp" }
+                        val mime =
+                            when (extension) {
+                                "jpg", "jpeg" -> "image/jpeg"
+                                "png" -> "image/png"
+                                else -> "image/webp"
+                            }
+                        val storagePath = "$userId/${photo.clueId}.$extension"
+                        api.uploadPhoto("clue-photos", storagePath, file.readBytes().toRequestBody(mime.toMediaType())).close()
+                        db.pendingPhotoDao().remove(photo.id)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        db.pendingPhotoDao().incrementAttempts(photo.id)
                         throw e
                     }
                 }
+                refreshLocalSnapshot(db, api, restApi, userId)
+                Result.success()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                Result.retry()
             }
-
-            for (photo in db.pendingPhotoDao().pending()) {
-                try {
-                    val file = File(photo.localPath)
-                    if (!file.exists()) {
-                        db.pendingPhotoDao().remove(photo.id)
-                        continue
-                    }
-
-                    val extension = file.extension.lowercase().ifBlank { "webp" }
-                    val mime = when (extension) { "jpg", "jpeg" -> "image/jpeg"; "png" -> "image/png"; else -> "image/webp" }
-                    val storagePath = "$userId/${photo.clueId}.$extension"
-                    api.uploadPhoto("clue-photos", storagePath, file.readBytes().toRequestBody(mime.toMediaType())).close()
-                    db.pendingPhotoDao().remove(photo.id)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    db.pendingPhotoDao().incrementAttempts(photo.id)
-                    throw e
-                }
-            }
-            refreshLocalSnapshot(db, api, restApi, userId)
-            Result.success()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            Result.retry()
         }
-    }
 
-    private suspend fun refreshLocalSnapshot(db: AppDatabase, api: OfflineApi, restApi: SupabaseRestApi, userId: String) {
+    private suspend fun refreshLocalSnapshot(
+        db: AppDatabase,
+        api: OfflineApi,
+        restApi: SupabaseRestApi,
+        userId: String,
+    ) {
         val cases = restApi.getCases()
         db.caseDao().upsertAll(cases.map { it.toEntity() })
         for (case in cases) {
@@ -271,16 +300,18 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
             db.suspectDao().upsertAll(suspectDtos.map { it.toEntity() })
             db.clueDao().upsertAll(api.getCluesByCase("eq.${case.id}").map { it.toEntity() })
             val puzzles = api.getPuzzlesByCase("eq.${case.id}")
-            db.puzzleDao().upsertAll(puzzles.map {
-                PuzzleEntity(
-                    it.id,
-                    it.caseId,
-                    it.kind,
-                    it.title,
-                    it.hint,
-                    it.rewardClueId
-                )
-            })
+            db.puzzleDao().upsertAll(
+                puzzles.map {
+                    PuzzleEntity(
+                        it.id,
+                        it.caseId,
+                        it.kind,
+                        it.title,
+                        it.hint,
+                        it.rewardClueId,
+                    )
+                },
+            )
 
             val investigation = db.investigationDao().getByCaseForUser(case.id, userId) ?: continue
             api.getCollectedClues("eq.${investigation.id}").forEach { row ->
@@ -297,18 +328,25 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
             for (suspect in suspectDtos) {
                 api.getDialogue("eq.${investigation.id}", "eq.${suspect.id}").forEach { row ->
                     val messageId = (row["id"] as? Number)?.toLong() ?: return@forEach
-                    db.dialogueDao().insert(DialogueMessageEntity(
-                        id = messageId, investigationId = investigation.id, caseId = case.id,
-                        suspectId = suspect.id, author = row["author"]?.toString() ?: "player",
-                        text = row["text"]?.toString() ?: "", createdAt = row["create_at"]?.toString() ?: "",
-                        synced = true,
-                    ))
+                    db.dialogueDao().insert(
+                        DialogueMessageEntity(
+                            id = messageId,
+                            investigationId = investigation.id,
+                            caseId = case.id,
+                            suspectId = suspect.id,
+                            author = row["author"]?.toString() ?: "player",
+                            text = row["text"]?.toString() ?: "",
+                            createdAt = row["create_at"]?.toString() ?: "",
+                            synced = true,
+                        ),
+                    )
                 }
             }
         }
     }
 }
 
+/** Holds the JSON serializer used to decode queued synchronization operations. */
 private object GsonHolder {
     val gson = com.google.gson.Gson()
 }

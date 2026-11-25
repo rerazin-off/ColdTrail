@@ -1,6 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,12 +9,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -45,34 +44,35 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
-import com.example.mrdetective.presentation.ui.components.CameraAccess
-import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
-import com.example.mrdetective.presentation.ui.components.ErrorNotice
-import com.example.mrdetective.presentation.ui.components.rememberCameraAccess
-import com.example.mrdetective.presentation.ui.components.NumericPuzzleKeypad
-import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.AppTextField
-import com.example.mrdetective.presentation.ui.components.MorseAlphabetPanel
+import com.example.mrdetective.presentation.ui.components.CameraAccess
 import com.example.mrdetective.presentation.ui.components.ClueCard
+import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
+import com.example.mrdetective.presentation.ui.components.ErrorNotice
+import com.example.mrdetective.presentation.ui.components.MorseAlphabetPanel
+import com.example.mrdetective.presentation.ui.components.NumericPuzzleKeypad
+import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.components.TypewriterText
+import com.example.mrdetective.presentation.ui.components.rememberCameraAccess
 import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import kotlinx.coroutines.delay
@@ -143,24 +143,30 @@ internal fun ProfileScreen(
         when (val current = statisticsState) {
             ProfileStatisticsState.Loading -> CircularProgressIndicator(color = colors.accent)
             is ProfileStatisticsState.Error -> Unit
-            is ProfileStatisticsState.Content -> FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                maxItemsInEachRow = if (LocalDensity.current.fontScale >= 1.4f) 1 else 3,
-            ) {
-                val stats = current.statistics
-                listOf(stats.total to stringResource(R.string.total_cases), stats.active to stringResource(R.string.active_total), stats.solved to stringResource(R.string.solved_total)).forEach { (value, label) ->
-                    AppCard(Modifier.weight(1f), outlined = true, padding = 8.dp) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Text(value.toString(), color = colors.text, style = MaterialTheme.typography.headlineMedium)
-                            Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+            is ProfileStatisticsState.Content ->
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = if (LocalDensity.current.fontScale >= 1.4f) 1 else 3,
+                ) {
+                    val stats = current.statistics
+                    listOf(
+                        stats.total to stringResource(R.string.total_cases),
+                        stats.active to stringResource(R.string.active_total),
+                        stats.solved to stringResource(R.string.solved_total),
+                    ).forEach {
+                            (value, label) ->
+                        AppCard(Modifier.weight(1f), outlined = true, padding = 8.dp) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(value.toString(), color = colors.text, style = MaterialTheme.typography.headlineMedium)
+                                Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                            }
                         }
                     }
                 }
-            }
         }
         Spacer(Modifier.height(24.dp))
         AppButton(
@@ -174,7 +180,10 @@ internal fun ProfileScreen(
 }
 
 @Composable
-internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) {
+internal fun InventoryScreen(
+    viewModel: InventoryViewModel,
+    onBack: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val colors = AppTheme.colors
     var selectedClueId by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -186,61 +195,73 @@ internal fun InventoryScreen(viewModel: InventoryViewModel, onBack: () -> Unit) 
         when (val current = state) {
             CluePickerState.Loading -> ScreenProgress()
             CluePickerState.Error -> ScreenRetry(stringResource(R.string.inventory_load_error), viewModel::load)
-            is CluePickerState.Content -> if (current.clues.isEmpty()) {
-                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    AppCard(outlined = true) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(vertical = 36.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(painterResource(R.drawable.ic_inventory), null, tint = colors.accent)
-                            Text(stringResource(R.string.no_clues), style = MaterialTheme.typography.headlineLarge)
-                            Text(
-                                stringResource(R.string.no_clues_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                textAlign = TextAlign.Center,
-                                color = colors.text2,
-                            )
-                        }
-                    }
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(if (LocalDensity.current.fontScale >= 1.4f) 280.dp else 170.dp),
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(current.clues, key = { it.id }) { clue ->
-                        Surface(
-                            onClick = { selectedClueId = clue.id },
-                            shape = AppShapes.card,
-                            color = colors.surface,
-                            border = BorderStroke(1.dp, colors.outline),
-                        ) {
+            is CluePickerState.Content ->
+                if (current.clues.isEmpty()) {
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        AppCard(outlined = true) {
                             Column(
-                                Modifier.heightIn(min = 140.dp).padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                Modifier.fillMaxWidth().padding(vertical = 36.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
-                                Box(Modifier.size(40.dp).background(colors.surface2, AppShapes.control))
-                                Text(clue.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text(clue.description, style = MaterialTheme.typography.bodySmall, color = colors.text2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Icon(painterResource(R.drawable.ic_inventory), null, tint = colors.accent)
+                                Text(stringResource(R.string.no_clues), style = MaterialTheme.typography.headlineLarge)
+                                Text(
+                                    stringResource(R.string.no_clues_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
+                                    color = colors.text2,
+                                )
                             }
                         }
                     }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(if (LocalDensity.current.fontScale >= 1.4f) 280.dp else 170.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(current.clues, key = { it.id }) { clue ->
+                            Surface(
+                                onClick = { selectedClueId = clue.id },
+                                shape = AppShapes.card,
+                                color = colors.surface,
+                                border = BorderStroke(1.dp, colors.outline),
+                            ) {
+                                Column(
+                                    Modifier.heightIn(min = 140.dp).padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Box(Modifier.size(40.dp).background(colors.surface2, AppShapes.control))
+                                    Text(
+                                        clue.title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        clue.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = colors.text2,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    current.clues.firstOrNull { it.id == selectedClueId }?.let { clue ->
+                        AlertDialog(
+                            onDismissRequest = { selectedClueId = null },
+                            title = { Text(stringResource(R.string.case_item)) },
+                            text = { ClueCard(clue.title, clue.description) },
+                            confirmButton = { AppButton(stringResource(R.string.close), { selectedClueId = null }) },
+                            containerColor = colors.bg,
+                        )
+                    }
                 }
-                current.clues.firstOrNull { it.id == selectedClueId }?.let { clue ->
-                    AlertDialog(
-                        onDismissRequest = { selectedClueId = null },
-                        title = { Text(stringResource(R.string.case_item)) },
-                        text = { ClueCard(clue.title, clue.description) },
-                        confirmButton = { AppButton(stringResource(R.string.close), { selectedClueId = null }) },
-                        containerColor = colors.bg,
-                    )
-                }
-            }
         }
     }
 }
@@ -264,6 +285,7 @@ internal fun MorseScreen(
     if (solved) {
         ClueRewardDialog(puzzle.reward?.title, puzzle.reward?.description, onBack)
     }
+
     fun checkCode() {
         viewModel.stopPlayback()
         game.submit()
@@ -286,9 +308,10 @@ internal fun MorseScreen(
         when {
             puzzle.loading -> CircularProgressIndicator(color = colors.accent)
             puzzle.loadError != null -> ScreenRetry(puzzle.loadError.orEmpty(), game::load)
-            challenge == null -> AppCard(outlined = true) {
-                Text(stringResource(R.string.no_morse_puzzles))
-            }
+            challenge == null ->
+                AppCard(outlined = true) {
+                    Text(stringResource(R.string.no_morse_puzzles))
+                }
             else -> {
                 Text(challenge.title, style = MaterialTheme.typography.displayLarge)
                 Text(stringResource(R.string.decode_morse), style = MaterialTheme.typography.bodySmall, color = colors.text2)
@@ -299,17 +322,23 @@ internal fun MorseScreen(
                             Text(it, style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         }
                         when {
-                            vibration.loading -> Text(stringResource(R.string.loading_signal_settings), style = MaterialTheme.typography.bodySmall)
-                            vibration.usesVibration -> AppButton(
-                                if (vibration.playing) stringResource(R.string.playing_signal) else stringResource(R.string.play_code),
-                                { viewModel.play(challenge.signal) },
-                                style = AppButtonStyle.Outlined,
-                                enabled = !vibration.playing && !vibration.saving && !solved && !puzzle.submitting,
-                            )
-                            else -> Text(
-                                challenge.signal.replace(" ", " / "),
-                                style = MaterialTheme.typography.headlineMedium,
-                            )
+                            vibration.loading ->
+                                Text(
+                                    stringResource(R.string.loading_signal_settings),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            vibration.usesVibration ->
+                                AppButton(
+                                    if (vibration.playing) stringResource(R.string.playing_signal) else stringResource(R.string.play_code),
+                                    { viewModel.play(challenge.signal) },
+                                    style = AppButtonStyle.Outlined,
+                                    enabled = !vibration.playing && !vibration.saving && !solved && !puzzle.submitting,
+                                )
+                            else ->
+                                Text(
+                                    challenge.signal.replace(" ", " / "),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                )
                         }
                         ErrorNotice(vibration.playbackError)
                         if (challenge.numericOnly) {
@@ -321,16 +350,23 @@ internal fun MorseScreen(
                                 placeholder = stringResource(R.string.morse_answer),
                                 enabled = !puzzle.submitting,
                             )
-                            Text(stringResource(R.string.answer_length, challenge.answerLength), style = MaterialTheme.typography.bodySmall, color = colors.text2)
+                            Text(
+                                stringResource(R.string.answer_length, challenge.answerLength),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.text2,
+                            )
                         }
                         if (solved) {
                             Text(stringResource(R.string.clue_added), color = colors.success, style = MaterialTheme.typography.bodyMedium)
                         }
-                        ErrorNotice(puzzle.answerError, when {
-                            puzzle.retrySync -> game::retrySync
-                            puzzle.retryAnswer -> ::checkCode
-                            else -> null
-                        })
+                        ErrorNotice(
+                            puzzle.answerError,
+                            when {
+                                puzzle.retrySync -> game::retrySync
+                                puzzle.retryAnswer -> ::checkCode
+                                else -> null
+                            },
+                        )
                     }
                 }
 
@@ -368,7 +404,13 @@ internal fun MorseScreen(
             onDismissRequest = dismiss,
             title = { Text(stringResource(R.string.morse_signal_options)) },
             text = { VibrationSettingRow(vibration, viewModel::setEnabled, viewModel::load) },
-            confirmButton = { AppButton(stringResource(R.string.continue_action), dismiss, enabled = !vibration.saving && !vibration.loading) },
+            confirmButton = {
+                AppButton(
+                    stringResource(R.string.continue_action),
+                    dismiss,
+                    enabled = !vibration.saving && !vibration.loading,
+                )
+            },
             containerColor = colors.bg,
         )
     }
@@ -405,16 +447,20 @@ internal fun DevicePermissionOptions(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DeviceSwitchRow(
                     title = stringResource(R.string.clue_camera),
-                    description = if (access.available) {
-                        stringResource(R.string.camera_setting_summary)
-                    } else {
-                        stringResource(R.string.rear_camera_missing)
-                    },
+                    description =
+                        if (access.available) {
+                            stringResource(R.string.camera_setting_summary)
+                        } else {
+                            stringResource(R.string.rear_camera_missing)
+                        },
                     checked = access.available && access.granted && camera.enabled != false && !camera.loading,
                     enabled = access.available && !camera.loading && !camera.saving && camera.error == null,
                     onChange = { enabled ->
-                        if (enabled) access.requestOrOpenSettings(camera.enabled != null)
-                        else cameraSettings.setEnabled(false)
+                        if (enabled) {
+                            access.requestOrOpenSettings(camera.enabled != null)
+                        } else {
+                            cameraSettings.setEnabled(false)
+                        }
                     },
                 )
                 if (access.available) {
@@ -429,15 +475,20 @@ internal fun DevicePermissionOptions(
 }
 
 @Composable
-private fun VibrationSettingRow(state: VibrationState, onChange: (Boolean) -> Unit, onRetry: () -> Unit) {
+private fun VibrationSettingRow(
+    state: VibrationState,
+    onChange: (Boolean) -> Unit,
+    onRetry: () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DeviceSwitchRow(
             title = stringResource(R.string.morse_vibration),
-            description = if (state.available) {
-                stringResource(R.string.vibration_summary)
-            } else {
-                stringResource(R.string.vibration_unavailable)
-            },
+            description =
+                if (state.available) {
+                    stringResource(R.string.vibration_summary)
+                } else {
+                    stringResource(R.string.vibration_unavailable)
+                },
             checked = state.enabled == true && state.available,
             enabled = state.available && !state.loading && !state.saving,
             onChange = onChange,
@@ -503,22 +554,32 @@ internal fun AccusationScreen(
                     items(state.suspects, key = { it.id }) { suspect ->
                         val chosen = suspect.id == selected
                         Surface(
-                            modifier = Modifier.fillMaxWidth().clip(AppShapes.card).selectable(
-                                selected = chosen,
-                                enabled = !state.submitting && !state.closed,
-                                role = Role.RadioButton,
-                                onClick = { viewModel.select(suspect.id) },
-                            ),
+                            modifier =
+                                Modifier.fillMaxWidth().clip(AppShapes.card).selectable(
+                                    selected = chosen,
+                                    enabled = !state.submitting && !state.closed,
+                                    role = Role.RadioButton,
+                                    onClick = { viewModel.select(suspect.id) },
+                                ),
                             color = if (chosen) colors.surface2 else colors.surface,
                             shape = AppShapes.card,
                             border = BorderStroke(if (chosen) 2.dp else 1.dp, if (chosen) colors.accent else colors.outline),
                         ) {
                             Column(Modifier.heightIn(min = 154.dp).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Box(Modifier.size(40.dp).background(colors.primary, AppShapes.control), contentAlignment = Alignment.Center) {
+                                Box(
+                                    Modifier.size(40.dp).background(colors.primary, AppShapes.control),
+                                    contentAlignment = Alignment.Center,
+                                ) {
                                     Text(suspect.name.take(1), color = colors.onPrimary)
                                 }
                                 Text(suspect.name, style = MaterialTheme.typography.titleMedium)
-                                Text(suspect.profile, style = MaterialTheme.typography.bodySmall, color = colors.text2, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    suspect.profile,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.text2,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
                     }
@@ -541,26 +602,41 @@ internal fun AccusationScreen(
             onDismissRequest = { confirming = false },
             title = { Text(stringResource(R.string.confirm_accusation)) },
             text = { Text(stringResource(R.string.accusation_confirmation, chosen.name)) },
-            confirmButton = { AppButton(stringResource(R.string.accuse), { confirming = false; viewModel.accuse() }, style = AppButtonStyle.Accent) },
+            confirmButton = {
+                AppButton(stringResource(R.string.accuse), {
+                    confirming = false
+                    viewModel.accuse()
+                }, style = AppButtonStyle.Accent)
+            },
             dismissButton = { AppButton(stringResource(R.string.cancel), { confirming = false }, style = AppButtonStyle.Outlined) },
             containerColor = colors.bg,
         )
     }
     if (result != null) {
         val accused = state.suspects.firstOrNull { it.id == result.suspectId }
-        val culprit = state.suspects.firstOrNull { it.id == result.culpritId }
-            ?: state.suspects.singleOrNull { result.explanation == "Это ошибка. Преступником был ${it.name}." }
+        val culprit =
+            state.suspects.firstOrNull { it.id == result.culpritId }
+                ?: state.suspects.singleOrNull { result.explanation == "Это ошибка. Преступником был ${it.name}." }
         val showAccused = result.isCorrect != true && accused != null
-        val summary = if (result.culpritTruth == null) result.explanation
-        else if (result.isCorrect == true) stringResource(R.string.culprit_correct)
-        else stringResource(R.string.culprit_incorrect)
+        val summary =
+            if (result.culpritTruth == null) {
+                result.explanation
+            } else if (result.isCorrect == true) {
+                stringResource(R.string.culprit_correct)
+            } else {
+                stringResource(R.string.culprit_incorrect)
+            }
         AlertDialog(
             onDismissRequest = onBack,
-            title = { Text(if (result.isCorrect == true) stringResource(R.string.case_solved) else stringResource(R.string.accusation_incorrect)) },
+            title = {
+                Text(
+                    if (result.isCorrect == true) stringResource(R.string.case_solved) else stringResource(R.string.accusation_incorrect),
+                )
+            },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TypewriterText(summary, style = MaterialTheme.typography.bodyMedium)
-                    if (showAccused && accused != null) {
+                    if (showAccused) {
                         VerdictCard(stringResource(R.string.accused_person), accused, result.selectedTruth, delayMillis = 280)
                     }
                     if (culprit != null) {
@@ -580,7 +656,12 @@ internal fun AccusationScreen(
 }
 
 @Composable
-private fun VerdictCard(label: String, suspect: Suspect, truth: String?, delayMillis: Long) {
+private fun VerdictCard(
+    label: String,
+    suspect: Suspect,
+    truth: String?,
+    delayMillis: Long,
+) {
     val colors = AppTheme.colors
     var visible by rememberSaveable(suspect.id, label) { mutableStateOf(false) }
     LaunchedEffect(suspect.id, label) {

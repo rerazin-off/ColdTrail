@@ -1,14 +1,12 @@
 package com.example.mrdetective.data.repository
 
 import android.content.Context
-import androidx.room3.withWriteTransaction
 import com.example.mrdetective.data.local.AppDatabase
 import com.example.mrdetective.data.local.entity.ClueEntity
 import com.example.mrdetective.data.local.entity.PuzzleEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.network.ConnectivityChecker
-
 import com.example.mrdetective.data.network.apiCall
 import com.example.mrdetective.data.network.remoteOrCache
 import com.example.mrdetective.data.network.toClueImageUrl
@@ -22,102 +20,117 @@ import com.example.mrdetective.domain.repositories.CameraChallengeRepository
 import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.map
 import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.flow.map
 
+/** Loads camera challenges and submits photos through the offline synchronization queue. */
+class CameraChallengeRepositoryImpl
+    @Inject
+    constructor(
+        private val auth: AuthRepository,
+        private val db: AppDatabase,
+        private val api: OfflineApi,
+        private val connectivity: ConnectivityChecker,
+        private val gson: Gson,
+        @param:ApplicationContext private val context: Context,
+    ) : CameraChallengeRepository {
+        /** Loads the camera puzzles available for the given case. */
+        override suspend fun load(caseId: Int): Result<List<CameraChallenge>> =
+            apiCall {
+                val user = auth.currentUser() ?: throw DomainError.Unauthorized()
+                val investigation =
+                    db.investigationDao().getByCaseForUser(caseId, user)
+                        ?: throw DomainError.NotFound("Сначала начните расследование.")
+                val id = investigation.id
+                if (id <= 0) throw DomainError.Validation("Дождитесь синхронизации расследования.")
+                val queued =
+                    db.syncQueueDao().pending()
+                        .filter { it.entityType == "camera_capture" }
+                        .mapTo(hashSetOf()) { it.entityId }
 
-class CameraChallengeRepositoryImpl @Inject constructor(
-    private val auth: AuthRepository,
-    private val db: AppDatabase,
-    private val api: OfflineApi,
-    private val connectivity: ConnectivityChecker,
-    private val gson: Gson,
-    @param:ApplicationContext private val context: Context,
-) : CameraChallengeRepository {
-    override suspend fun load(caseId: Int): Result<List<CameraChallenge>> = apiCall {
-        val user = auth.currentUser() ?: throw DomainError.Unauthorized()
-        val investigation = db.investigationDao().getByCaseForUser(caseId, user)
-            ?: throw DomainError.NotFound("Сначала начните расследование.")
-        val id = investigation.id
-        if (id <= 0) throw DomainError.Validation("Дождитесь синхронизации расследования.")
-        val queued = db.syncQueueDao().pending()
-            .filter { it.entityType == "camera_capture" }
-            .mapTo(hashSetOf()) { it.entityId }
-
-        remoteOrCache(
-            connectivity,
-            cached = {
-                val clues = db.clueDao().getByCase(caseId).associateBy { it.id }
-                val solved = db.investigationDao().solvedPuzzleIds(id).toSet()
-                val collected = db.investigationDao().collectedClueIds(id).toSet()
-                db.puzzleDao().getByCase(caseId)
-                    .filter { it.kind == "camera" && (investigation.status == "in_progress" || it.id in solved) }
-                    .mapNotNull { puzzle ->
-                        val clue = clues[puzzle.rewardClueId] ?: return@mapNotNull null
-                        puzzle.toChallenge(id, clue, puzzle.id in solved || "$id:${puzzle.id}" in queued, clue.id in collected)
-                    }.ifEmpty { null }
-            },
-            remote = {
-                val rows = api.getCameraChallenges(mapOf("p_investigation" to id))
-                val clues = if (rows.isEmpty()) {
-                    emptyMap()
-                } else {
-                    val freshClues = api.getCluesByCase("eq.$caseId").map { it.toEntity() }
-                    db.clueDao().upsertAll(freshClues)
-                    freshClues.associateBy { it.id }
-                }
-                val puzzles = rows.map { PuzzleEntity(it.id, caseId, "camera", it.title, it.hint, it.rewardClueId) }
-                if (puzzles.isNotEmpty()) db.puzzleDao().upsertAll(puzzles)
-                puzzles.zip(rows).mapNotNull { (puzzle, row) ->
-                    val clue = clues[puzzle.rewardClueId] ?: return@mapNotNull null
-                    puzzle.toChallenge(id, clue, row.solved || "$id:${puzzle.id}" in queued, row.rewardClaimed)
-                }
-            },
-        ).getOrThrow()
-    }
-
-    override suspend fun submit(challenge: CameraChallenge, photoPath: String): Result<Unit> = apiCall {
-        val owner = auth.currentUser() ?: throw DomainError.Unauthorized()
-        val investigation = db.investigationDao().getInvestigation(challenge.investigationId)
-        if (investigation?.userId != owner || investigation.status != "in_progress") {
-            throw DomainError.Validation("Расследование уже недоступно.")
-        }
-        val file = File(photoPath)
-        if (!file.isFile || file.length() !in 1..1_048_576L) {
-            throw DomainError.Validation("Не удалось сохранить снимок.")
-        }
-        val request = CameraCaptureDto(challenge.investigationId, challenge.id, challenge.clueId, photoPath)
-        db.syncQueueDao().enqueue(SyncQueueEntity(
-            entityType = "camera_capture",
-            entityId = challenge.queueKey,
-            operation = "upload",
-            payload = gson.toJson(request),
-        ))
-        SyncScheduler.enqueue(context)
-    }
-
-    override fun observeSubmission(challenge: CameraChallenge) =
-        db.syncQueueDao().observeCameraCapture(challenge.investigationId, challenge.id, challenge.queueKey).map { status ->
-            when (status) {
-                2 -> CameraSubmission.Awarded
-                1 -> CameraSubmission.Pending
-                else -> CameraSubmission.Failed
+                remoteOrCache(
+                    connectivity,
+                    cached = {
+                        val clues = db.clueDao().getByCase(caseId).associateBy { it.id }
+                        val solved = db.investigationDao().solvedPuzzleIds(id).toSet()
+                        val collected = db.investigationDao().collectedClueIds(id).toSet()
+                        db.puzzleDao().getByCase(caseId)
+                            .filter { it.kind == "camera" && (investigation.status == "in_progress" || it.id in solved) }
+                            .mapNotNull { puzzle ->
+                                val clue = clues[puzzle.rewardClueId] ?: return@mapNotNull null
+                                puzzle.toChallenge(id, clue, puzzle.id in solved || "$id:${puzzle.id}" in queued, clue.id in collected)
+                            }.ifEmpty { null }
+                    },
+                    remote = {
+                        val rows = api.getCameraChallenges(mapOf("p_investigation" to id))
+                        val clues =
+                            if (rows.isEmpty()) {
+                                emptyMap()
+                            } else {
+                                val freshClues = api.getCluesByCase("eq.$caseId").map { it.toEntity() }
+                                db.clueDao().upsertAll(freshClues)
+                                freshClues.associateBy { it.id }
+                            }
+                        val puzzles = rows.map { PuzzleEntity(it.id, caseId, "camera", it.title, it.hint, it.rewardClueId) }
+                        if (puzzles.isNotEmpty()) db.puzzleDao().upsertAll(puzzles)
+                        puzzles.zip(rows).mapNotNull { (puzzle, row) ->
+                            val clue = clues[puzzle.rewardClueId] ?: return@mapNotNull null
+                            puzzle.toChallenge(id, clue, row.solved || "$id:${puzzle.id}" in queued, row.rewardClaimed)
+                        }
+                    },
+                ).getOrThrow()
             }
-        }
 
-    override fun observeSubmissionError(challenge: CameraChallenge) =
-        db.syncQueueDao().observeCameraCaptureError(challenge.queueKey)
+        /** Submits the local photo for the selected camera puzzle. */
+        override suspend fun submit(
+            challenge: CameraChallenge,
+            photoPath: String,
+        ): Result<Unit> =
+            apiCall {
+                val owner = auth.currentUser() ?: throw DomainError.Unauthorized()
+                val investigation = db.investigationDao().getInvestigation(challenge.investigationId)
+                if (investigation?.userId != owner || investigation.status != "in_progress") {
+                    throw DomainError.Validation("Расследование уже недоступно.")
+                }
+                val file = File(photoPath)
+                if (!file.isFile || file.length() !in 1..1_048_576L) {
+                    throw DomainError.Validation("Не удалось сохранить снимок.")
+                }
+                val request = CameraCaptureDto(challenge.investigationId, challenge.id, challenge.clueId, photoPath)
+                db.syncQueueDao().enqueue(
+                    SyncQueueEntity(
+                        entityType = "camera_capture",
+                        entityId = challenge.queueKey,
+                        operation = "upload",
+                        payload = gson.toJson(request),
+                    ),
+                )
+                SyncScheduler.enqueue(context)
+            }
 
-    private fun PuzzleEntity.toChallenge(
-        investigationId: Int,
-        clue: ClueEntity,
-        pendingOrCompleted: Boolean,
-        rewardClaimed: Boolean,
-    ) = CameraChallenge(
-        id, investigationId, title, hint, clue.id, clue.title, clue.description,
-        clue.image.toClueImageUrl(), pendingOrCompleted, rewardClaimed,
-    )
+        /** Observes the queued or accepted state of the camera puzzle submission. */
+        override fun observeSubmission(challenge: CameraChallenge) =
+            db.syncQueueDao().observeCameraCapture(challenge.investigationId, challenge.id, challenge.queueKey).map { status ->
+                when (status) {
+                    2 -> CameraSubmission.Awarded
+                    1 -> CameraSubmission.Pending
+                    else -> CameraSubmission.Failed
+                }
+            }
 
-    private val CameraChallenge.queueKey get() = "$investigationId:$id"
-}
+        /** Observes the error associated with the camera puzzle submission, when present. */
+        override fun observeSubmissionError(challenge: CameraChallenge) = db.syncQueueDao().observeCameraCaptureError(challenge.queueKey)
+
+        private fun PuzzleEntity.toChallenge(
+            investigationId: Int,
+            clue: ClueEntity,
+            pendingOrCompleted: Boolean,
+            rewardClaimed: Boolean,
+        ) = CameraChallenge(
+            id, investigationId, title, hint, clue.id, clue.title, clue.description,
+            clue.image.toClueImageUrl(), pendingOrCompleted, rewardClaimed,
+        )
+
+        private val CameraChallenge.queueKey get() = "$investigationId:$id"
+    }

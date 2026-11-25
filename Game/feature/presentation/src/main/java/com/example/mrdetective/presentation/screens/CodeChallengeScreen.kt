@@ -1,7 +1,5 @@
 package com.example.mrdetective.presentation.ui
 
-import androidx.compose.ui.res.stringResource
-import com.example.mrdetective.presentation.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,9 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mrdetective.domain.usecases.puzzles.CODE_CHALLENGE_LENGTH
+import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppCard
 import com.example.mrdetective.presentation.ui.components.ClueRewardDialog
 import com.example.mrdetective.presentation.ui.components.ErrorNotice
@@ -25,7 +25,10 @@ import com.example.mrdetective.presentation.ui.components.NumericPuzzleSlots
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 
 @Composable
-internal fun CodeChallengeScreen(viewModel: CodeChallengeViewModel, onBack: () -> Unit) {
+internal fun CodeChallengeScreen(
+    viewModel: CodeChallengeViewModel,
+    onBack: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val code by viewModel.answer.collectAsStateWithLifecycle()
     val colors = AppTheme.colors
@@ -53,11 +56,14 @@ internal fun CodeChallengeScreen(viewModel: CodeChallengeViewModel, onBack: () -
                         Text(stringResource(R.string.enter_four_digits), style = MaterialTheme.typography.bodySmall, color = colors.text2)
                         NumericPuzzleSlots(CODE_CHALLENGE_LENGTH, code, state.solved, state.answerError != null)
                         if (state.submitting) Text(stringResource(R.string.checking_code), color = colors.text2)
-                        ErrorNotice(state.answerError, when {
-                            state.retrySync -> viewModel::retrySync
-                            state.retryAnswer -> viewModel::submit
-                            else -> null
-                        })
+                        ErrorNotice(
+                            state.answerError,
+                            when {
+                                state.retrySync -> viewModel::retrySync
+                                state.retryAnswer -> viewModel::submit
+                                else -> null
+                            },
+                        )
                     }
                 }
                 if (!state.solved) {

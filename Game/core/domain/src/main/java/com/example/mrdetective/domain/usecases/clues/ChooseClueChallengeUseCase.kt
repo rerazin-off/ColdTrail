@@ -7,10 +7,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import javax.inject.Inject
 
+/** Enumerates the puzzle types available from the clue picker. */
 enum class ClueChallengeKind { Morse, Camera, Code }
 
+/** Identifies the puzzle selected for the next clue attempt. */
 data class ClueChallengeChoice(val puzzleId: Int, val kind: ClueChallengeKind)
 
+/** Chooses an eligible clue puzzle that has not been solved or claimed. */
 class ChooseClueChallengeUseCase
     @Inject
     constructor(
@@ -18,6 +21,7 @@ class ChooseClueChallengeUseCase
         private val camera: CameraChallengeRepository,
         private val code: CodeChallengeRepository,
     ) {
+        /** Returns one available clue challenge from the supported types, if any remain. */
         suspend operator fun invoke(caseId: Int): Result<ClueChallengeChoice?> =
             coroutineScope {
                 val morseLoad = async { morse.load(caseId) }

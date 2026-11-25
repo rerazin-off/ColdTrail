@@ -1,5 +1,6 @@
 package com.example.mrdetective.domain.models
 
+/** Records the submitted suspect and the server's verdict for an investigation. */
 data class Accusation(
     val id: Int,
     val caseId: Int,
