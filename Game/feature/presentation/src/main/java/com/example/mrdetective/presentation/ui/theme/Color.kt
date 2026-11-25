@@ -3,7 +3,7 @@ package com.example.mrdetective.presentation.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-/** Holds the ColdTrail palette shared by application screens and components. */
+/** Хранит палитру ColdTrail для экранов и общих компонентов. */
 @Immutable
 data class AppColors(
     val bg: Color,

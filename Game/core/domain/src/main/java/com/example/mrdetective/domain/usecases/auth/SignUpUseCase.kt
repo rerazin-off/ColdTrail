@@ -4,13 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 
-/** Validates registration fields before creating a player account. */
+/** Проверяет поля регистрации перед созданием аккаунта. */
 class SignUpUseCase
     @Inject
     constructor(
         private val repository: AuthRepository,
     ) {
-        /** Checks registration details before calling the auth repository. */
+        /** Проверяет данные регистрации перед вызовом репозитория авторизации. */
         suspend operator fun invoke(
             email: String,
             password: String,

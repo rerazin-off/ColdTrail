@@ -28,15 +28,15 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Carries the identifier of the case opened for investigation. */
+/** Передаёт идентификатор открытого дела. */
 @Serializable
 internal data class InvestigationRoute(val caseId: Int)
 
-/** Carries the case and suspect identifiers for a conversation. */
+/** Передаёт идентификаторы дела и подозреваемого для диалога. */
 @Serializable
 internal data class InterrogationRoute(val caseId: Int, val suspectId: Int)
 
-/** Describes the case, its suspects, clue progress, and available actions. */
+/** Хранит данные дела, подозреваемых, прогресс поиска улик и доступные действия. */
 internal data class InvestigationState(
     val loading: Boolean = true,
     val case: Case? = null,
@@ -54,7 +54,7 @@ internal data class InvestigationState(
     val hasRemainingClues get() = totalClueCount?.let { collectedClueCount < it } ?: true
 }
 
-/** Loads investigation details and tracks progress as the player collects clues. */
+/** Загружает подробности расследования и отслеживает прогресс поиска улик. */
 @HiltViewModel
 internal class InvestigationViewModel
     @Inject
@@ -80,7 +80,7 @@ internal class InvestigationViewModel
             load()
         }
 
-        /** Loads the current case, its suspects, and any saved investigation progress. */
+        /** Загружает текущее дело, подозреваемых и сохранённый прогресс. */
         fun load() {
             viewModelScope.launch {
                 val previous = state.value
@@ -112,7 +112,7 @@ internal class InvestigationViewModel
             }
         }
 
-        /** Refreshes collected clue counts and investigation status on return to the case. */
+        /** Обновляет количество найденных улик и статус при возврате к делу. */
         fun refreshProgress() {
             if (state.value.loading || state.value.starting) return
             viewModelScope.launch {
@@ -125,7 +125,7 @@ internal class InvestigationViewModel
             }
         }
 
-        /** Starts the case for the current player and updates the displayed status. */
+        /** Запускает дело для текущего игрока и обновляет отображаемый статус. */
         fun start() {
             val current = state.value
             if (current.case == null || current.loading || current.starting || current.started) return
@@ -144,7 +144,7 @@ internal class InvestigationViewModel
         }
     }
 
-/** Holds the conversation, player draft, and evidence selection state. */
+/** Хранит диалог, черновик игрока и выбор прикрепляемой улики. */
 internal data class InterrogationState(
     val loading: Boolean = true,
     val suspect: Suspect? = null,
@@ -157,19 +157,19 @@ internal data class InterrogationState(
     val pendingFeedback: Boolean = false,
 )
 
-/** Represents the state of the attach-evidence picker. */
+/** Описывает состояние выбора прикрепляемой улики. */
 internal sealed interface CluePickerState {
-    /** Indicates that the attachable clues are being retrieved. */
+    /** Обозначает загрузку улик, доступных для прикрепления. */
     data object Loading : CluePickerState
 
-    /** Holds the failure shown in the clue picker. */
+    /** Хранит состояние ошибки при выборе улики. */
     data object Error : CluePickerState
 
-    /** Holds the collected clues available to attach to a message. */
+    /** Хранит найденные улики, которые можно прикрепить к сообщению. */
     data class Content(val clues: List<Clue>) : CluePickerState
 }
 
-/** Manages conversation history, message drafts, evidence attachments, and retries. */
+/** Управляет историей диалога, черновиками, вложениями и повторной отправкой. */
 @HiltViewModel
 internal class InterrogationViewModel
     @Inject
@@ -198,7 +198,7 @@ internal class InterrogationViewModel
             load()
         }
 
-        /** Loads the chosen suspect and their existing conversation history. */
+        /** Загружает выбранного подозреваемого и сохранённую историю разговора. */
         fun load() {
             if (state.value.sending) return
             viewModelScope.launch {
@@ -222,12 +222,12 @@ internal class InterrogationViewModel
             }
         }
 
-        /** Stores the draft until the player sends it. */
+        /** Хранит черновик до отправки сообщения. */
         fun updateDraft(text: String) {
             savedState["draft"] = text.take(1000)
         }
 
-        /** Loads collected evidence that can be attached to the current conversation. */
+        /** Загружает найденные улики, которые можно прикрепить в текущем диалоге. */
         fun loadClues() {
             if (inventoryJob?.isActive == true) return
             mutableClues.value = CluePickerState.Loading
@@ -244,12 +244,12 @@ internal class InterrogationViewModel
                 }
         }
 
-        /** Sets or clears the clue attached to the player's draft. */
+        /** Назначает или снимает улику, прикреплённую к черновику. */
         fun attach(clue: Clue?) {
             if (!state.value.sending) mutableAttachment.value = clue
         }
 
-        /** Sends the current draft with any attached evidence. */
+        /** Отправляет черновик вместе с прикреплённой уликой, если она есть. */
         fun send() {
             val question = draft.value.trim()
             val clue = attachment.value
@@ -303,7 +303,7 @@ internal class InterrogationViewModel
             }
         }
 
-        /** Retries the message previously left unsent after a failure. */
+        /** Повторяет отправку сообщения, которое осталось в очереди после сбоя. */
         fun retryPendingMessage() {
             viewModelScope.launch {
                 val result = progressRepository.syncProgress()

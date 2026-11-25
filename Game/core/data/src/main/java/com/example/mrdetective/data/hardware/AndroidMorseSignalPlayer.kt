@@ -14,7 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Converts Morse symbols and spacing into an Android vibration pattern. */
+/** Преобразует символы и паузы Морзе в последовательность вибраций Android. */
 @Singleton
 class AndroidMorseSignalPlayer
     @Inject
@@ -31,10 +31,10 @@ class AndroidMorseSignalPlayer
 
         private val playback = Mutex()
 
-        /** Reports whether this device can play Morse signals using its vibrator. */
+        /** Сообщает, может ли устройство воспроизводить сигналы Морзе вибрацией. */
         override fun isAvailable(): Boolean = vibrator?.hasVibrator() == true
 
-        /** Plays the supplied Morse pattern using vibration. */
+        /** Воспроизводит заданную последовательность Морзе вибрацией. */
         override suspend fun play(pattern: String) {
             playback.withLock {
                 val motor = vibrator?.takeIf { it.hasVibrator() } ?: throw DomainError.HardwareUnavailable()

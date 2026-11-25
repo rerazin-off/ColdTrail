@@ -1,10 +1,10 @@
 package com.example.mrdetective.domain.hardware
 
-/** Stores the player's Morse vibration preference. */
+/** Хранит настройку вибрации для головоломок Морзе. */
 interface VibrationPreferences {
-    /** A null preference means the player has not chosen a mode yet. */
+    /** Значение `null` означает, что игрок ещё не выбрал режим. */
     suspend fun getVibrationEnabled(): Boolean?
 
-    /** Stores the player's choice of whether to use vibration in Morse puzzles. */
+    /** Сохраняет выбор игрока об использовании вибрации в головоломках Морзе. */
     suspend fun setVibrationEnabled(enabled: Boolean)
 }

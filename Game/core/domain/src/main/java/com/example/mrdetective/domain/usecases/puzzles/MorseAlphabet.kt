@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.usecases.puzzles
 
-/** Provides the alphabet used to display and decode Morse puzzles. */
+/** Предоставляет алфавит для отображения и расшифровки головоломок Морзе. */
 object MorseAlphabet {
     val letters =
         ('A'..'Z').zip(

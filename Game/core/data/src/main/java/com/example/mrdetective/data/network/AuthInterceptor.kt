@@ -5,14 +5,14 @@ import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Adds the Supabase API key and the applicable authorization header to requests. */
+/** Добавляет к запросам ключ Supabase и необходимый заголовок авторизации. */
 @Singleton
 class AuthInterceptor
     @Inject
     constructor(
         private val tokenStore: SessionTokenStore,
     ) : Interceptor {
-        /** Adds API credentials and an applicable player access token before sending the request. */
+        /** Перед запросом добавляет учётные данные API и токен игрока, если он нужен. */
         override fun intercept(chain: Interceptor.Chain): Response {
             val request =
                 chain.request().newBuilder()

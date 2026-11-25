@@ -2,15 +2,15 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.CameraChallenge
 
-/** Identifies a clue image and its label for scene search. */
+/** Содержит изображение улики и его подпись для поиска на сцене. */
 data class SceneClueImage(val clueId: Int?, val imageUrl: String?, val title: String? = null)
 
-/** Provides alternative scene-search items and submits the selected clue. */
+/** Предоставляет предметы для запасной сцены и отправляет выбранную улику. */
 interface SceneClueRepository {
-    /** Loads alternative clue images while excluding the target clue. */
+    /** Загружает изображения других улик, исключая искомую улику. */
     suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage>
 
-    /** Submits the target clue found in the fallback scene. */
+    /** Отправляет искомую улику, найденную на запасной сцене. */
     suspend fun submit(
         challenge: CameraChallenge,
         selectedClueId: Int,

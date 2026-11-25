@@ -9,7 +9,7 @@ import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.models.Suspect
 
-/** Maps a case record, with app-side defaults for objective and status and no difficulty or creation date. */
+/** Создаёт модель дела с начальной целью и статусом. Сложность и дата создания в модель не входят. */
 fun CaseDto.toDomain() =
     Case(
         id = id,
@@ -19,10 +19,10 @@ fun CaseDto.toDomain() =
         status = "available",
     )
 
-/** Maps the public fields of a suspect record to the domain model. */
+/** Переносит публичные поля подозреваемого в доменную модель. */
 fun SuspectDto.toDomain() = Suspect(id = id, caseId = caseId, name = name, profile = profile)
 
-/** Maps a clue and its image reference, using an empty timestamp if the API omits it. */
+/** Переносит данные улики и ссылку на изображение. Если API не вернул дату, подставляет пустую строку. */
 fun ClueDto.toDomain() =
     Clue(
         id = id,
@@ -33,7 +33,7 @@ fun ClueDto.toDomain() =
         createdAt = createdAt.orEmpty(),
     )
 
-/** Maps the note identifier, investigation, text, and timestamps. */
+/** Переносит идентификатор заметки, расследование, текст и временные метки. */
 fun NoteDto.toDomain() =
     Note(
         id = id,

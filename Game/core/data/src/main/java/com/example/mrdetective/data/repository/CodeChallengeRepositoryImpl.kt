@@ -17,7 +17,7 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.CodeChallengeRepository
 import javax.inject.Inject
 
-/** Builds numeric challenges from puzzle metadata and recorded investigation progress. */
+/** Формирует числовые головоломки по их метаданным и сохранённому прогрессу. */
 class CodeChallengeRepositoryImpl
     @Inject
     constructor(
@@ -26,7 +26,7 @@ class CodeChallengeRepositoryImpl
         private val api: OfflineApi,
         private val connectivity: ConnectivityChecker,
     ) : CodeChallengeRepository {
-        /** Returns numeric puzzles for the given case and its investigation. */
+        /** Возвращает числовые головоломки указанного дела и расследования. */
         override suspend fun load(caseId: Int): Result<CodeChallenges> =
             apiCall {
                 val owner = auth.currentUser() ?: throw DomainError.Unauthorized()

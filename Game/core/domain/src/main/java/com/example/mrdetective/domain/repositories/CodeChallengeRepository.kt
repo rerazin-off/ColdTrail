@@ -2,8 +2,8 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.CodeChallenges
 
-/** Provides numeric puzzles for an investigation. */
+/** Предоставляет числовые головоломки расследования. */
 interface CodeChallengeRepository {
-    /** Returns numeric puzzles for the given case and its investigation. */
+    /** Возвращает числовые головоломки указанного дела и расследования. */
     suspend fun load(caseId: Int): Result<CodeChallenges>
 }

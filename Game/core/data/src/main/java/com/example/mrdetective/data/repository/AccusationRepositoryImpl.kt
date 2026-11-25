@@ -14,7 +14,7 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Requests verdicts from Supabase and stores the resulting investigation status. */
+/** Получает вердикты из Supabase и сохраняет итоговый статус расследования. */
 @Singleton
 class AccusationRepositoryImpl
     @Inject
@@ -24,7 +24,7 @@ class AccusationRepositoryImpl
         private val auth: AuthRepository,
         private val connectivity: ConnectivityChecker,
     ) : AccusationRepository {
-        /** Looks up the recorded verdict for the specified investigation. */
+        /** Ищет записанный вердикт указанного расследования. */
         override suspend fun getResult(caseId: Int): Result<Accusation> =
             apiCall {
                 val investigation = syncedInvestigation(caseId)
@@ -32,7 +32,7 @@ class AccusationRepositoryImpl
                 saveResult(investigation, response, response.suspectId ?: 0)
             }
 
-        /** Submits a selected suspect and supporting evidence for a verdict. */
+        /** Отправляет выбранного подозреваемого и подтверждающие улики для вынесения вердикта. */
         override suspend fun submitAccusation(
             caseId: Int,
             suspectId: Int,

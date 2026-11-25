@@ -7,12 +7,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [PlayCodeChallengeUseCase] using controlled inputs and dependencies. */
+/** Проверяет [PlayCodeChallengeUseCase] на заданных входных данных с тестовыми зависимостями. */
 class PlayCodeChallengeUseCaseTest {
     private val repository = FakePuzzleRepository()
     private val playCode = PlayCodeChallengeUseCase(PlayPuzzleUseCase(repository))
 
-    /** Sends four digits including the leading zero. */
+    /** Проверяет передачу четырёх цифр, включая начальный ноль. */
     @Test
     fun sendsFourDigitsIncludingTheLeadingZero() =
         runTest {
@@ -20,7 +20,7 @@ class PlayCodeChallengeUseCaseTest {
             assertEquals(listOf(1, 2, "0417"), repository.answerCalls.single())
         }
 
-    /** Invalid codes never reach the server. */
+    /** Проверяет, что неверно оформленный код не отправляется на сервер. */
     @Test
     fun invalidCodesNeverReachTheServer() =
         runTest {
@@ -30,7 +30,7 @@ class PlayCodeChallengeUseCaseTest {
             assertTrue(repository.answerCalls.isEmpty())
         }
 
-    /** Keeps the server decision for awell formed wrong code. */
+    /** Проверяет, что для неверного кода правильного формата сохраняется решение сервера. */
     @Test
     fun keepsTheServerDecisionForAWellFormedWrongCode() =
         runTest {

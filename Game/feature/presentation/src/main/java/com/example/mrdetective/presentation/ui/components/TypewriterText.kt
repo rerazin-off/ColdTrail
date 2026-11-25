@@ -14,7 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import kotlinx.coroutines.delay
 
-/** Reveals text progressively without changing the space reserved for the full message. */
+/** Показывает текст постепенно, сохраняя место под весь текст. */
 @Composable
 fun TypewriterText(
     text: String,

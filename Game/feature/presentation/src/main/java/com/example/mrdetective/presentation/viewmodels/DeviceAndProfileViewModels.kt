@@ -18,11 +18,11 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Identifies the route that displays device permissions and preferences. */
+/** Обозначает маршрут к экрану разрешений и настроек устройства. */
 @Serializable
 internal object DeviceSettingsRoute
 
-/** Tracks vibration availability, preference, and playback feedback. */
+/** Хранит доступность вибрации, настройку игрока и состояние воспроизведения. */
 internal data class VibrationState(
     val available: Boolean,
     val enabled: Boolean? = null,
@@ -36,7 +36,7 @@ internal data class VibrationState(
         get() = available && enabled == true && playbackError == null
 }
 
-/** Loads and updates the vibration preference and plays Morse signals. */
+/** Загружает и меняет настройку вибрации, воспроизводит сигналы Морзе. */
 @HiltViewModel
 internal class VibrationViewModel
     @Inject
@@ -54,7 +54,7 @@ internal class VibrationViewModel
             load()
         }
 
-        /** Reads the stored preference and checks whether vibration is available. */
+        /** Читает настройку игрока и проверяет доступность вибрации. */
         fun load() {
             if (loadJob?.isActive == true || state.value.saving) return
             mutableState.update { it.copy(loading = true, settingsError = null) }
@@ -71,7 +71,7 @@ internal class VibrationViewModel
                 }
         }
 
-        /** Persists the player's current preference for vibration. */
+        /** Сохраняет выбранную игроком настройку вибрации. */
         fun setEnabled(enabled: Boolean) {
             val current = state.value
             if (current.loading || current.saving || (enabled && !current.available)) return
@@ -89,7 +89,7 @@ internal class VibrationViewModel
             }
         }
 
-        /** Plays the Morse pattern and reports playback state. */
+        /** Воспроизводит сигнал Морзе и показывает состояние воспроизведения. */
         fun play(signal: String) {
             if (!state.value.usesVibration || state.value.saving || playbackJob?.isActive == true) return
             playbackJob =
@@ -107,13 +107,13 @@ internal class VibrationViewModel
                 }
         }
 
-        /** Resets the playback feedback when the player leaves the Morse screen. */
+        /** Сбрасывает индикацию воспроизведения при уходе с экрана Морзе. */
         fun stopPlayback() {
             playbackJob?.cancel()
         }
     }
 
-/** Tracks the player's camera preference in the permissions UI. */
+/** Хранит настройку камеры для экрана разрешений. */
 internal data class CameraSettingsState(
     val enabled: Boolean? = null,
     val loading: Boolean = true,
@@ -121,7 +121,7 @@ internal data class CameraSettingsState(
     val error: String? = null,
 )
 
-/** Loads and updates the player's camera preference. */
+/** Загружает и изменяет настройку камеры игрока. */
 @HiltViewModel
 internal class CameraSettingsViewModel
     @Inject
@@ -137,7 +137,7 @@ internal class CameraSettingsViewModel
             load()
         }
 
-        /** Reads the saved preference for camera puzzles. */
+        /** Читает сохранённую настройку камеры для головоломок. */
         fun load() {
             if (preferenceJob?.isActive == true) {
                 mutableState.update { it.copy(error = null) }
@@ -158,7 +158,7 @@ internal class CameraSettingsViewModel
                 }
         }
 
-        /** Persists the choice of whether a clue puzzle can use the device camera. */
+        /** Сохраняет выбор игрока об использовании камеры устройства в головоломках. */
         fun setEnabled(enabled: Boolean) {
             if (state.value.saving) return
             mutableState.update { it.copy(saving = true, error = null) }
@@ -176,19 +176,19 @@ internal class CameraSettingsViewModel
         }
     }
 
-/** Represents loading, failure, or loaded profile statistics. */
+/** Отражает загрузку, ошибку или результат получения статистики профиля. */
 internal sealed interface ProfileStatisticsState {
-    /** Indicates that the profile statistics are being retrieved. */
+    /** Обозначает загрузку статистики профиля. */
     data object Loading : ProfileStatisticsState
 
-    /** Holds the message shown when profile statistics cannot be retrieved. */
+    /** Хранит сообщение об ошибке загрузки статистики профиля. */
     data class Error(val message: String) : ProfileStatisticsState
 
-    /** Holds the statistics shown on the player's profile. */
+    /** Хранит статистику для отображения в профиле игрока. */
     data class Content(val statistics: ProfileStatistics) : ProfileStatisticsState
 }
 
-/** Loads profile statistics and the player's nickname. */
+/** Загружает статистику профиля и никнейм игрока. */
 @HiltViewModel
 internal class ProfileStatisticsViewModel
     @Inject
@@ -205,7 +205,7 @@ internal class ProfileStatisticsViewModel
         private var loadJob: Job? = null
         private var nicknameJob: Job? = null
 
-        /** Loads the nickname for display in the player profile. */
+        /** Загружает никнейм для отображения в профиле игрока. */
         fun loadNickname() {
             if (nicknameJob?.isActive == true) return
             mutableNicknameError.value = null
@@ -218,7 +218,7 @@ internal class ProfileStatisticsViewModel
                 }
         }
 
-        /** Loads the current player's investigation statistics. */
+        /** Загружает статистику расследований текущего игрока. */
         fun load() {
             if (loadJob?.isActive == true) return
             mutableState.value = ProfileStatisticsState.Loading

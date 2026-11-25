@@ -11,7 +11,7 @@ import okhttp3.Route
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Refreshes an expired Supabase session when an authenticated request receives HTTP 401. */
+/** Обновляет просроченную сессию Supabase, когда авторизованный запрос получает HTTP 401. */
 @Singleton
 class SupabaseTokenAuthenticator
     @Inject
@@ -21,7 +21,7 @@ class SupabaseTokenAuthenticator
         private val refreshClient = OkHttpClient()
         private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-        /** Retries an unauthorized request with a refreshed session when possible. */
+        /** По возможности повторяет запрос с обновлённой сессией после отказа в авторизации. */
         override fun authenticate(
             route: Route?,
             response: Response,

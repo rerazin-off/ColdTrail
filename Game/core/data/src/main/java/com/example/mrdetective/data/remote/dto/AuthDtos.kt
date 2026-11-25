@@ -2,20 +2,20 @@ package com.example.mrdetective.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Credentials sent to the password sign-in endpoint. */
+/** Учётные данные для входа по паролю. */
 data class AuthRequestDto(val email: String, val password: String)
 
-/** Account details sent to the registration endpoint. */
+/** Данные аккаунта, отправляемые при регистрации. */
 data class SignUpRequestDto(
     val email: String,
     val password: String,
     @SerializedName("data") val metadata: Map<String, String> = emptyMap(),
 )
 
-/** User information returned by Supabase Auth. */
+/** Данные пользователя, возвращаемые Supabase Auth. */
 data class AuthUserDto(val id: String, val email: String? = null)
 
-/** Authentication response containing the user and any issued session tokens. */
+/** Ответ авторизации с данными пользователя и выданными токенами сессии. */
 data class AuthResponseDto(
     @SerializedName("access_token") val accessToken: String? = null,
     @SerializedName("refresh_token") val refreshToken: String? = null,

@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import javax.inject.Inject
 
-/** Loads camera challenges and submits photos through the offline synchronization queue. */
+/** Загружает головоломки с камерой и отправляет фото через очередь синхронизации. */
 class CameraChallengeRepositoryImpl
     @Inject
     constructor(
@@ -35,7 +35,7 @@ class CameraChallengeRepositoryImpl
         private val gson: Gson,
         @param:ApplicationContext private val context: Context,
     ) : CameraChallengeRepository {
-        /** Loads the camera puzzles available for the given case. */
+        /** Загружает доступные головоломки с камерой для указанного дела. */
         override suspend fun load(caseId: Int): Result<List<CameraChallenge>> =
             apiCall {
                 val user = auth.currentUser() ?: throw DomainError.Unauthorized()
@@ -82,7 +82,7 @@ class CameraChallengeRepositoryImpl
                 ).getOrThrow()
             }
 
-        /** Submits the local photo for the selected camera puzzle. */
+        /** Отправляет локальный снимок для выбранной головоломки с камерой. */
         override suspend fun submit(
             challenge: CameraChallenge,
             photoPath: String,
@@ -109,7 +109,7 @@ class CameraChallengeRepositoryImpl
                 SyncScheduler.enqueue(context)
             }
 
-        /** Observes the queued or accepted state of the camera puzzle submission. */
+        /** Отслеживает, находится ли отправка снимка в очереди или уже принята. */
         override fun observeSubmission(challenge: CameraChallenge) =
             db.syncQueueDao().observeCameraCapture(challenge.investigationId, challenge.id, challenge.queueKey).map { status ->
                 when (status) {
@@ -119,7 +119,7 @@ class CameraChallengeRepositoryImpl
                 }
             }
 
-        /** Observes the error associated with the camera puzzle submission, when present. */
+        /** Отслеживает ошибку отправки снимка, если она есть. */
         override fun observeSubmissionError(challenge: CameraChallenge) = db.syncQueueDao().observeCameraCaptureError(challenge.queueKey)
 
         private fun PuzzleEntity.toChallenge(

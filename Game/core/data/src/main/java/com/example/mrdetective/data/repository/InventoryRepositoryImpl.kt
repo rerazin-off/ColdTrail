@@ -19,7 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Reads collected clues from the investigation inventory and records new entries. */
+/** Читает найденные улики из инвентаря и добавляет новые записи. */
 @Singleton
 class InventoryRepositoryImpl
     @Inject
@@ -31,7 +31,7 @@ class InventoryRepositoryImpl
         private val gson: Gson,
         @ApplicationContext private val context: Context,
     ) : InventoryRepository {
-        /** Returns the clue entries in an investigation inventory. */
+        /** Возвращает записи об уликах в инвентаре расследования. */
         override suspend fun getInventory(investigationId: Int): Result<List<Clue>> =
             try {
                 Result.success(clues.getInventory(investigationId).map { it.toDomain() })
@@ -39,7 +39,7 @@ class InventoryRepositoryImpl
                 Result.failure(error)
             }
 
-        /** Adds the specified clue to the investigation inventory. */
+        /** Добавляет указанную улику в инвентарь расследования. */
         override suspend fun addItem(
             investigationId: Int,
             clueId: Int,

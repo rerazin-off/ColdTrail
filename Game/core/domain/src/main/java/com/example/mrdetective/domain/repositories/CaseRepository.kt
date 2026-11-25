@@ -2,14 +2,14 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.Case
 
-/** Provides case descriptions and starts investigations. */
+/** Предоставляет описания дел и запускает расследования. */
 interface CaseRepository {
-    /** Returns the catalog of cases available to the player. */
+    /** Возвращает список доступных игроку дел. */
     suspend fun getAvailableCases(): Result<List<Case>>
 
-    /** Looks up the details of a case by its identifier. */
+    /** Ищет подробности дела по идентификатору. */
     suspend fun getCase(id: Int): Result<Case>
 
-    /** Starts or resumes an investigation for the specified case and player. */
+    /** Начинает или продолжает расследование указанного дела и игрока. */
     suspend fun startCase(id: Int): Result<Unit>
 }

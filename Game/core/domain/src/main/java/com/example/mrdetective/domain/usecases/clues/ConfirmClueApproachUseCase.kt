@@ -2,11 +2,11 @@ package com.example.mrdetective.domain.usecases.clues
 
 import javax.inject.Inject
 
-/** Determines whether the measured distance to a clue is within the required range. */
+/** Определяет, находится ли улика в пределах заданного расстояния. */
 class ConfirmClueApproachUseCase
     @Inject
     constructor() {
-        /** Accepts nonnegative distances only and checks whether the clue is within reach. */
+        /** Принимает неотрицательные расстояния и проверяет, находится ли улика в пределах досягаемости. */
         operator fun invoke(
             distanceInMeters: Float,
             requiredDistance: Float,

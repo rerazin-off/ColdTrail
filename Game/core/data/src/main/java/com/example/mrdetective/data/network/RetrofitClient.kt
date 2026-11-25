@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-/** Exposes the Retrofit clients used outside of the Hilt network module. */
+/** Предоставляет клиенты Retrofit для использования вне сетевого модуля Hilt. */
 object RetrofitClient {
     private val loggingInterceptor =
         HttpLoggingInterceptor().apply {

@@ -15,22 +15,22 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Represents the four display states of the case list. */
+/** Описывает четыре состояния отображения списка дел. */
 sealed interface CasesUiState {
-    /** Indicates that the case catalog is being loaded. */
+    /** Обозначает загрузку списка дел. */
     data object Loading : CasesUiState
 
-    /** Indicates that the catalog contains no cases for the player. */
+    /** Обозначает отсутствие доступных игроку дел. */
     data object Empty : CasesUiState
 
-    /** Holds the case catalog shown in the list. */
+    /** Хранит дела для отображения в списке. */
     data class Content(val cases: List<Case>) : CasesUiState
 
-    /** Holds the error presented when the catalog could not be loaded. */
+    /** Хранит ошибку, возникшую при загрузке списка дел. */
     data class Error(val unauthorized: Boolean, val message: String? = null) : CasesUiState
 }
 
-/** Loads and refreshes the case list displayed for the active session. */
+/** Загружает и обновляет список дел для текущей сессии. */
 @HiltViewModel
 class CasesViewModel
     @Inject
@@ -56,14 +56,14 @@ class CasesViewModel
             }
         }
 
-        /** Clears the currently displayed case list state. */
+        /** Сбрасывает текущее состояние списка дел. */
         fun reset() {
             loadJob?.cancel()
             loadJob = null
             mutableState.value = CasesUiState.Loading
         }
 
-        /** Reloads the case list for the active player. */
+        /** Перезагружает список дел текущего игрока. */
         fun reload() {
             if (loadJob?.isActive == true) return
             loadJob =

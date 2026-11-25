@@ -8,7 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Tests accusation submission and validation using a fake repository. */
+/** Проверяет отправку и валидацию обвинения с тестовым репозиторием. */
 class AccusationUseCasesTest {
     private val repository = FakeAccusationRepository()
     private val useCase = SubmitAccusationUseCase(repository)

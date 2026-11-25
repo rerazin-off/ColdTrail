@@ -5,13 +5,13 @@ import javax.inject.Inject
 
 const val CODE_CHALLENGE_LENGTH = 4
 
-/** Validates the format of a numeric answer and submits it for checking. */
+/** Проверяет формат числового ответа и отправляет его на проверку. */
 class PlayCodeChallengeUseCase
     @Inject
     constructor(
         private val playPuzzle: PlayPuzzleUseCase,
     ) {
-        /** Rejects answers without four digits before asking the repository to check the puzzle. */
+        /** Отклоняет ответ, если он состоит не из четырёх цифр. */
         suspend operator fun invoke(
             investigationId: Int,
             puzzleId: Int,

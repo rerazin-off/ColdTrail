@@ -3,7 +3,7 @@ package com.example.mrdetective.data.network
 import com.example.mrdetective.domain.models.DomainError
 import kotlinx.coroutines.CancellationException
 
-/** Converts transport failures into domain errors and allows coroutine cancellation to propagate. */
+/** Преобразует сетевые сбои в ошибки домена и сохраняет отмену корутины. */
 suspend inline fun <T> apiCall(crossinline block: suspend () -> T): Result<T> =
     try {
         Result.success(block())
@@ -13,7 +13,7 @@ suspend inline fun <T> apiCall(crossinline block: suspend () -> T): Result<T> =
         Result.failure(NetworkErrorHandler.map(e))
     }
 
-/** Uses the local cache when offline or when the remote read fails. */
+/** Использует локальный кеш без сети или при неудачном чтении с сервера. */
 suspend fun <T : Any> remoteOrCache(
     connectivity: ConnectivityChecker,
     cached: suspend () -> T?,

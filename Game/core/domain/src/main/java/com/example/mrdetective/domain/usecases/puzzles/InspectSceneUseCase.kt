@@ -4,13 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.SceneRepository
 import javax.inject.Inject
 
-/** Retrieves an interactive scene through the scene repository. */
+/** Загружает интерактивную сцену через репозиторий сцен. */
 class InspectSceneUseCase
     @Inject
     constructor(
         private val repository: SceneRepository,
     ) {
-        /** Requests the selected scene from the scene repository. */
+        /** Запрашивает выбранную сцену у репозитория. */
         suspend operator fun invoke(
             caseId: Int,
             sceneId: Int,

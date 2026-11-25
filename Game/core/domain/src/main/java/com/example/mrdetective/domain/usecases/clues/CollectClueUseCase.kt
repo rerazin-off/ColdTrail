@@ -4,13 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.ClueRepository
 import javax.inject.Inject
 
-/** Records a clue collected during an investigation. */
+/** Регистрирует улику, найденную при расследовании. */
 class CollectClueUseCase
     @Inject
     constructor(
         private val repository: ClueRepository,
     ) {
-        /** Records the selected clue for the given investigation. */
+        /** Регистрирует выбранную улику в указанном расследовании. */
         suspend operator fun invoke(clueId: Int): Result<Unit> {
             if (clueId <= 0) {
                 return Result.failure(

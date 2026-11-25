@@ -9,18 +9,18 @@ import com.example.mrdetective.domain.repositories.SuspectRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Loads suspect profiles from Supabase and uses cached records when offline. */
+/** Загружает профили подозреваемых из Supabase и использует кеш без сети. */
 @Singleton
 class SuspectRepositoryImpl
     @Inject
     constructor(private val api: SupabaseRestApi) : SuspectRepository {
-        /** Returns public profiles of the suspects assigned to the specified case. */
+        /** Возвращает публичные профили подозреваемых указанного дела. */
         override suspend fun getSuspects(caseId: Int): Result<List<Suspect>> =
             apiCall {
                 api.getSuspects("eq.$caseId").map { it.toDomain() }
             }
 
-        /** Looks up the public profile of a suspect by identifier. */
+        /** Ищет публичный профиль подозреваемого по идентификатору. */
         override suspend fun getSuspect(id: Int): Result<Suspect> =
             apiCall {
                 api.getSuspect("eq.$id").firstOrNull()?.toDomain() ?: throw DomainError.NotFound("Подозреваемый не найден")

@@ -22,19 +22,19 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Carries the case identifier for the inventory screen. */
+/** Передаёт идентификатор дела на экран инвентаря. */
 @Serializable
 internal data class InventoryRoute(val caseId: Int)
 
-/** Carries the case and puzzle identifiers for a Morse challenge. */
+/** Передаёт идентификаторы дела и головоломки Морзе. */
 @Serializable
 internal data class MorseRoute(val caseId: Int, val puzzleId: Int? = null)
 
-/** Carries the case identifier for the accusation screen. */
+/** Передаёт идентификатор дела на экран обвинения. */
 @Serializable
 internal data class AccusationRoute(val caseId: Int)
 
-/** Loads clues collected in the current investigation. */
+/** Загружает улики текущего расследования. */
 @HiltViewModel
 internal class InventoryViewModel
     @Inject
@@ -52,7 +52,7 @@ internal class InventoryViewModel
             load()
         }
 
-        /** Loads the clue inventory for the current investigation. */
+        /** Загружает инвентарь улик текущего расследования. */
         fun load() {
             if (loadJob?.isActive == true) return
             loadJob =
@@ -73,7 +73,7 @@ internal class InventoryViewModel
         }
     }
 
-/** Holds selectable suspects, the current selection, and the accusation result. */
+/** Хранит список подозреваемых, текущий выбор и результат обвинения. */
 internal data class AccusationState(
     val loading: Boolean = true,
     val suspects: List<Suspect> = emptyList(),
@@ -83,7 +83,7 @@ internal data class AccusationState(
     val closed: Boolean = false,
 )
 
-/** Tracks suspect selection and submits the accusation for a verdict. */
+/** Отслеживает выбор подозреваемого и отправляет обвинение для получения вердикта. */
 @HiltViewModel
 internal class AccusationViewModel
     @Inject
@@ -105,7 +105,7 @@ internal class AccusationViewModel
             load()
         }
 
-        /** Loads suspects and investigation details used in the accusation form. */
+        /** Загружает подозреваемых и данные расследования для формы обвинения. */
         fun load() {
             if (loadJob?.isActive == true || state.value.submitting) return
             loadJob =
@@ -140,12 +140,12 @@ internal class AccusationViewModel
                 }
         }
 
-        /** Sets the suspect that the player intends to accuse. */
+        /** Устанавливает подозреваемого, которого игрок собирается обвинить. */
         fun select(suspectId: Int) {
             if (!state.value.submitting) savedState["accusedSuspect"] = suspectId
         }
 
-        /** Submits the selected suspect and updates the displayed verdict. */
+        /** Отправляет обвинение выбранного подозреваемого и обновляет вердикт. */
         fun accuse() {
             val current = state.value
             val suspect = current.suspects.firstOrNull { it.id == selectedId.value } ?: return

@@ -3,20 +3,20 @@ package com.example.mrdetective.domain.repositories
 import com.example.mrdetective.domain.models.InvestigationProgress
 import kotlinx.coroutines.flow.Flow
 
-/** Reads, writes, observes, and synchronizes investigation progress. */
+/** Читает, сохраняет, отслеживает и синхронизирует прогресс расследования. */
 interface ProgressRepository {
-    /** Restores the saved progress for the given case and player. */
+    /** Восстанавливает сохранённый прогресс игрока по указанному делу. */
     suspend fun getProgress(caseId: Int): Result<InvestigationProgress>
 
-    /** Observes the identifiers of clues earned in the selected investigation. */
+    /** Отслеживает изменения списка идентификаторов улик, найденных в расследовании. */
     fun observeCollectedClueIds(caseId: Int): Flow<Set<Int>>
 
-    /** Persists the supplied investigation progress. */
+    /** Сохраняет переданный прогресс расследования. */
     suspend fun saveProgress(progress: InvestigationProgress): Result<Unit>
 
-    /** Records the final state of the investigation. */
+    /** Записывает итоговое состояние расследования. */
     suspend fun completeCase(caseId: Int): Result<Unit>
 
-    /** Requests synchronization of the locally stored changes. */
+    /** Запрашивает синхронизацию локально сохранённых изменений. */
     suspend fun syncProgress(): Result<Unit>
 }

@@ -26,7 +26,7 @@ import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
 import com.example.mrdetective.data.local.entity.SuspectEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 
-/** Stores the local game cache, progress, and pending synchronization work in Room. */
+/** Хранит кеш игры, прогресс и очередь синхронизации в Room. */
 @Database(
     entities = [
         CaseEntity::class, SuspectEntity::class, ClueEntity::class,
@@ -38,36 +38,39 @@ import com.example.mrdetective.data.local.entity.SyncQueueEntity
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
-    /** Returns the DAO for cached cases. */
+    /** Возвращает DAO для кеша дел. */
     abstract fun caseDao(): CaseDao
 
-    /** Returns the DAO for cached suspect profiles. */
+    /** Возвращает DAO для кеша профилей подозреваемых. */
     abstract fun suspectDao(): SuspectDao
 
-    /** Returns the DAO for cached clues and inventory entries. */
+    /** Возвращает DAO для кеша улик и записей инвентаря. */
     abstract fun clueDao(): ClueDao
 
-    /** Returns the DAO for local investigations and their progress. */
+    /** Возвращает DAO для локальных расследований и их прогресса. */
     abstract fun investigationDao(): InvestigationDao
 
-    /** Returns the DAO for cached conversations. */
+    /** Возвращает DAO для кеша диалогов. */
     abstract fun dialogueDao(): DialogueDao
 
-    /** Returns the DAO for local investigation notes. */
+    /** Возвращает DAO для локальных заметок расследования. */
     abstract fun noteDao(): NoteDao
 
-    /** Returns the DAO for cached puzzle metadata. */
+    /** Возвращает DAO для кеша метаданных головоломок. */
     abstract fun puzzleDao(): PuzzleDao
 
-    /** Returns the DAO for pending synchronization operations. */
+    /** Возвращает DAO для операций, ожидающих синхронизации. */
     abstract fun syncQueueDao(): SyncQueueDao
 
-    /** Returns the DAO for pending clue photo uploads. */
+    /** Возвращает DAO для очереди загрузки фотографий улик. */
     abstract fun pendingPhotoDao(): PendingPhotoDao
 
-    /** Holds migrations for the local game database. */
+    /** Хранит миграции локальной базы игры. */
     companion object {
-        /** Version 1 is the initial local game cache; v2 adds durable sync/photo outboxes. */
+        /**
+         * Первая версия содержит исходный кеш игры. Вторая добавляет сохраняемые очереди синхронизации и
+         * загрузки фото.
+         */
         val MIGRATION_1_2 =
             object : Migration(1, 2) {
                 override suspend fun migrate(db: SQLiteConnection) {

@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [LoadDialogueHistoryUseCase] using controlled inputs and dependencies. */
+/** Проверяет [LoadDialogueHistoryUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadDialogueHistoryUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = LoadDialogueHistoryUseCase(repository)
@@ -36,7 +36,7 @@ class LoadDialogueHistoryUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [PresentClueToSuspectUseCase] using controlled inputs and dependencies. */
+/** Проверяет [PresentClueToSuspectUseCase] на заданных входных данных с тестовыми зависимостями. */
 class PresentClueToSuspectUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = PresentClueToSuspectUseCase(repository)
@@ -62,7 +62,7 @@ class PresentClueToSuspectUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [SendSuspectMessageUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SendSuspectMessageUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SendSuspectMessageUseCaseTest {
     private val repository = FakeDialogueRepository()
     private val useCase = SendSuspectMessageUseCase(repository)

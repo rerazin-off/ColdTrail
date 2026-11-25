@@ -17,7 +17,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Stores clue photo files locally and queues their upload. */
+/** Сохраняет фотографии улик на устройстве и ставит их в очередь загрузки. */
 @Singleton
 class PhotoRepositoryImpl
     @Inject
@@ -28,7 +28,7 @@ class PhotoRepositoryImpl
         private val connectivity: ConnectivityChecker,
         @ApplicationContext private val context: Context,
     ) : PhotoRepository {
-        /** Persists the local photo associated with a clue. */
+        /** Сохраняет локальную фотографию указанной улики. */
         override suspend fun savePhoto(
             clueId: Int,
             filePath: String,
@@ -48,7 +48,7 @@ class PhotoRepositoryImpl
                 Result.failure(error)
             }
 
-        /** Requests upload of the clue photos waiting to be synchronized. */
+        /** Запрашивает отправку фотографий улик, ожидающих синхронизации. */
         override suspend fun uploadPending(): Result<Unit> =
             try {
                 val owner = settings.userId.first() ?: throw DomainError.Unauthorized()

@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Describes a piece of investigation evidence and its optional image. */
+/** Описывает улику и её необязательное изображение. */
 data class Clue(
     val id: Int,
     val caseId: Int,

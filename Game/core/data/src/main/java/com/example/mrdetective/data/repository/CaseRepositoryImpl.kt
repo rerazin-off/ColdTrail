@@ -30,7 +30,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Loads case descriptions with a Room fallback and starts tracked investigations. */
+/** Загружает описания дел с резервным чтением из Room и запускает расследования. */
 @Singleton
 class CaseRepositoryImpl
     @Inject
@@ -54,7 +54,7 @@ class CaseRepositoryImpl
             SyncScheduler.enqueue(context)
         }
 
-        /** Returns the catalog of cases available to the player. */
+        /** Возвращает список доступных игроку дел. */
         override suspend fun getAvailableCases(): Result<List<Case>> =
             remoteOrCache(
                 connectivity,
@@ -70,7 +70,7 @@ class CaseRepositoryImpl
                 }
             }, onFailure = { Result.failure(it) })
 
-        /** Looks up the details of a case by its identifier. */
+        /** Ищет подробности дела по идентификатору. */
         override suspend fun getCase(id: Int): Result<Case> =
             remoteOrCache(
                 connectivity,
@@ -81,7 +81,7 @@ class CaseRepositoryImpl
                 },
                 remote = {
                     val dto = api.getCase("eq.$id").firstOrNull() ?: throw DomainError.NotFound("Дело не найдено")
-                    // First open downloads all reference data needed to play this case offline.
+                    // При первом открытии загружаем справочные данные дела для игры без сети.
                     local.upsert(dto.toEntity())
                     val suspectRows = api.getSuspects("eq.$id")
                     val clueRows = offlineApi.getCluesByCase("eq.$id")
@@ -104,7 +104,7 @@ class CaseRepositoryImpl
                 },
             )
 
-        /** Starts or resumes an investigation for the specified case and player. */
+        /** Начинает или продолжает расследование указанного дела и игрока. */
         override suspend fun startCase(id: Int): Result<Unit> {
             return try {
                 val userId = auth.currentUser() ?: return Result.failure(DomainError.Unauthorized())
@@ -127,7 +127,7 @@ class CaseRepositoryImpl
                             return Result.success(Unit)
                         }
                     } catch (_: Exception) {
-                        // fall through to local-first start
+                        // Если серверный запуск не удался, создаём расследование локально.
                     }
                 }
                 val localId = -((System.nanoTime() % Int.MAX_VALUE).toInt().coerceAtLeast(1))

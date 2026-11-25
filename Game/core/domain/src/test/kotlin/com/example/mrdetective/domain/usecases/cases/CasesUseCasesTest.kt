@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [LoadAvailableCasesUseCase] using controlled inputs and dependencies. */
+/** Проверяет [LoadAvailableCasesUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadAvailableCasesUseCaseTest {
     private val repository = FakeCaseRepository()
     private val useCase = LoadAvailableCasesUseCase(repository)
@@ -39,7 +39,7 @@ class LoadAvailableCasesUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [LoadSuspectsUseCase] using controlled inputs and dependencies. */
+/** Проверяет [LoadSuspectsUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadSuspectsUseCaseTest {
     private val repository = FakeSuspectRepository()
     private val useCase = LoadSuspectsUseCase(repository)
@@ -65,8 +65,7 @@ class LoadSuspectsUseCaseTest {
 }
 
 /**
- * Unit tests for the behavior of [RestoreInvestigationProgressUseCase] using controlled inputs and
- * dependencies.
+ * Проверяет [RestoreInvestigationProgressUseCase] на заданных входных данных с тестовыми зависимостями.
  */
 class RestoreInvestigationProgressUseCaseTest {
     private val repository = FakeProgressRepository()
@@ -91,7 +90,7 @@ class RestoreInvestigationProgressUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [StartInvestigationUseCase] using controlled inputs and dependencies. */
+/** Проверяет [StartInvestigationUseCase] на заданных входных данных с тестовыми зависимостями. */
 class StartInvestigationUseCaseTest {
     private val repository = FakeCaseRepository()
     private val useCase = StartInvestigationUseCase(repository)
@@ -115,7 +114,7 @@ class StartInvestigationUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [SyncProgressUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SyncProgressUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SyncProgressUseCaseTest {
     private val progress = FakeProgressRepository()
     private val photos = FakePhotoRepository()

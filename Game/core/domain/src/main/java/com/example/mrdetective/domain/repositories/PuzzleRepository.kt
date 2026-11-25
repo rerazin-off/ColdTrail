@@ -2,15 +2,15 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.Puzzle
 
-/** Looks up puzzles, validates solutions, and records completion. */
+/** Ищет головоломки, проверяет решения и регистрирует завершение. */
 interface PuzzleRepository {
-    /** Looks up the public data for a puzzle. */
+    /** Ищет публичные данные головоломки. */
     suspend fun getPuzzle(id: Int): Result<Puzzle>
 
-    /** Records a puzzle as solved in the relevant investigation. */
+    /** Отмечает головоломку решённой в соответствующем расследовании. */
     suspend fun markSolved(id: Int): Result<Unit>
 
-    /** Validates an answer to the selected puzzle. */
+    /** Проверяет ответ на выбранную головоломку. */
     suspend fun checkAnswer(
         investigationId: Int,
         puzzleId: Int,

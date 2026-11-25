@@ -5,13 +5,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AccusationRepository
 import javax.inject.Inject
 
-/** Validates case and suspect identifiers and submits the supplied evidence for a verdict. */
+/** Проверяет идентификаторы дела и подозреваемого и отправляет улики для вынесения вердикта. */
 class SubmitAccusationUseCase
     @Inject
     constructor(
         private val repository: AccusationRepository,
     ) {
-        /** Rejects invalid case or suspect identifiers before submitting the evidence to the repository. */
+        /** Отклоняет недопустимые идентификаторы дела и подозреваемого до вызова репозитория. */
         suspend operator fun invoke(
             caseId: Int,
             suspectId: Int,

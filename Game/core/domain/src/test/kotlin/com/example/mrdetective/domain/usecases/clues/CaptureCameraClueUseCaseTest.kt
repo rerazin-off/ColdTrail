@@ -9,12 +9,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** Unit tests for the behavior of [CaptureCameraClueUseCase] using controlled inputs and dependencies. */
+/** Проверяет [CaptureCameraClueUseCase] на заданных входных данных с тестовыми зависимостями. */
 class CaptureCameraClueUseCaseTest {
     private val camera = FakeClueCamera()
     private val capture = CaptureCameraClueUseCase()
 
-    /** Captures when clue fits the frame. */
+    /** Проверяет, что камера делает снимок, когда улика помещается в кадре. */
     @Test
     fun capturesWhenClueFitsTheFrame() =
         runTest {
@@ -22,7 +22,7 @@ class CaptureCameraClueUseCaseTest {
             assertEquals(1, camera.shots)
         }
 
-    /** Skips the shutter when clue is outside the frame. */
+    /** Проверяет, что камера не снимает, если улика находится за пределами кадра. */
     @Test
     fun skipsTheShutterWhenClueIsOutsideTheFrame() =
         runTest {
@@ -31,7 +31,7 @@ class CaptureCameraClueUseCaseTest {
             assertEquals(0, camera.shots)
         }
 
-    /** Clue remains visible across north. */
+    /** Проверяет, что улика остаётся видимой при переходе азимута через север. */
     @Test
     fun clueRemainsVisibleAcrossNorth() {
         assertNotNull(cluePositionInFrame(0f, CameraDirection(359f, 0f)))
@@ -39,7 +39,7 @@ class CaptureCameraClueUseCaseTest {
         assertNull(cluePositionInFrame(0f, CameraDirection(180f, 0f)))
     }
 
-    /** Every starting heading requires turning toward acardinal direction. */
+    /** Проверяет, что при любом начальном направлении игроку нужно повернуться к одной из сторон света. */
     @Test
     fun everyStartingHeadingRequiresTurningTowardACardinalDirection() {
         for (heading in 0..359) {
@@ -51,7 +51,7 @@ class CaptureCameraClueUseCaseTest {
         }
     }
 
-    /** Visible clue stays in frame near the entry threshold. */
+    /** Проверяет, что уже видимая улика остаётся в кадре рядом с порогом появления. */
     @Test
     fun visibleClueStaysInFrameNearTheEntryThreshold() {
         val nearEdge = CameraDirection(22f, 0f)
@@ -60,25 +60,25 @@ class CaptureCameraClueUseCaseTest {
         assertNull(cluePositionInFrame(0f, CameraDirection(25f, 0f), alreadyVisible = true))
     }
 
-    /** Waits until camera points toward the room. */
+    /** Проверяет ожидание момента, когда камера будет направлена в комнату. */
     @Test
     fun waitsUntilCameraPointsTowardTheRoom() {
         assertNull(chooseClueAzimuth(CameraDirection(90f, -60f)))
         assertNull(chooseClueAzimuth(CameraDirection(90f, 45f)))
     }
 
-    /** Test camera that supplies a local photo path and records shutter requests. */
+    /** Тестовая камера, возвращающая путь к снимку и запоминающая запросы съёмки. */
     private class FakeClueCamera : ClueCamera<Unit> {
         var shots = 0
             private set
 
-        /** Supplies a close handle without starting a real Android camera. */
+        /** Возвращает объект для закрытия без запуска настоящей камеры Android. */
         override fun attach(
             host: Unit,
             onState: (ClueCameraState) -> Unit,
         ): AutoCloseable = AutoCloseable {}
 
-        /** Records the shutter call and returns the fixture photo path. */
+        /** Запоминает запрос съёмки и возвращает путь к тестовому снимку. */
         override suspend fun takePhoto(): String {
             shots++
             return "fake-photo.jpg"

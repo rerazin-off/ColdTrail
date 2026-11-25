@@ -4,12 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
+ * Пример локального юнит-теста, который запускается на компьютере разработчика. См. [документацию по
+ * тестированию](http://d.android.com/tools/testing).
  */
 class ExampleUnitTest {
-    /** Verifies that the example JVM test runs and evaluates a simple assertion. */
+    /** Проверяет запуск примера JVM-теста и выполнение простого утверждения. */
     @Test
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)

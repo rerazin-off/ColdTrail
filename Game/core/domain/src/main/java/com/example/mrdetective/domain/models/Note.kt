@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Stores the player's note for an investigation, with its timestamps. */
+/** Хранит заметку игрока по расследованию и её временные метки. */
 data class Note(
     val id: Int,
     val investigationId: Int,

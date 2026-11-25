@@ -7,14 +7,14 @@ import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Fails a request early when the device lacks a network connection. */
+/** Отклоняет запрос, если у устройства нет сетевого подключения. */
 @Singleton
 class NetworkAvailabilityInterceptor
     @Inject
     constructor(
         private val connectivityChecker: ConnectivityChecker,
     ) : Interceptor {
-        /** Rejects calls when offline before handing them to the network client. */
+        /** Отклоняет запросы без сети до обращения к HTTP-клиенту. */
         @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
         override fun intercept(chain: Interceptor.Chain): Response {
             if (!connectivityChecker.isNetworkAvailable()) {

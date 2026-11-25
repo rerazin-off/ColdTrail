@@ -16,7 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Uses Supabase Auth and maintains the locally persisted player session. */
+/** Работает с Supabase Auth и хранит сессию игрока на устройстве. */
 @Singleton
 class AuthRepositoryImpl
     @Inject
@@ -26,7 +26,7 @@ class AuthRepositoryImpl
         private val settings: SettingsData,
         @param:ApplicationContext private val context: Context,
     ) : AuthRepository {
-        /** Starts an authenticated session using the provided credentials. */
+        /** Открывает авторизованную сессию по переданным учётным данным. */
         override suspend fun signIn(
             email: String,
             password: String,
@@ -41,7 +41,7 @@ class AuthRepositoryImpl
                 userId
             }
 
-        /** Registers a new account using the provided credentials. */
+        /** Регистрирует аккаунт по переданным учётным данным. */
         override suspend fun signUp(
             email: String,
             password: String,
@@ -59,19 +59,19 @@ class AuthRepositoryImpl
                 userId
             }
 
-        /** Ends the current player's session. */
+        /** Завершает текущую сессию игрока. */
         override suspend fun signOut() {
             try {
                 api.signOut()
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                // Local logout must work offline and after a session expires.
+                // Локальный выход из аккаунта работает без сети и после истечения сессии.
             }
             settings.setUserId(null)
             tokenStore.clear()
         }
 
-        /** Returns the active account identifier, when available. */
+        /** Возвращает идентификатор активного аккаунта, если он доступен. */
         override suspend fun currentUser(): String? = if (tokenStore.session() == null) null else settings.userId.first()
     }

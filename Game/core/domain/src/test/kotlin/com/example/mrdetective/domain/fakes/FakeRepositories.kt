@@ -23,7 +23,7 @@ import com.example.mrdetective.domain.repositories.PuzzleRepository
 import com.example.mrdetective.domain.repositories.SceneRepository
 import com.example.mrdetective.domain.repositories.SuspectRepository
 
-/** In-memory implementation of [AuthRepository] with fixture data and configurable failures for unit tests. */
+/** Реализует [AuthRepository] в памяти с тестовыми данными и настраиваемыми ошибками. */
 class FakeAuthRepository : AuthRepository {
     var signInResult: Result<String> = Result.success("user-1")
     var signUpResult: Result<String> = Result.success("user-1")
@@ -64,8 +64,7 @@ class FakeAuthRepository : AuthRepository {
 }
 
 /**
- * In-memory implementation of [AccusationRepository] with fixture data and configurable failures for unit
- * tests.
+ * Реализует [AccusationRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeAccusationRepository : AccusationRepository {
     var result: Result<Accusation> = Result.success(TestData.accusation)
@@ -89,7 +88,7 @@ class FakeAccusationRepository : AccusationRepository {
     }
 }
 
-/** In-memory implementation of [CaseRepository] with fixture data and configurable failures for unit tests. */
+/** Реализует [CaseRepository] в памяти с тестовыми данными и настраиваемыми ошибками. */
 class FakeCaseRepository : CaseRepository {
     var availableResult: Result<List<Case>> = Result.success(listOf(TestData.case))
     var startResult: Result<Unit> = Result.success(Unit)
@@ -118,7 +117,7 @@ class FakeCaseRepository : CaseRepository {
     }
 }
 
-/** In-memory implementation of [ClueRepository] with fixture data and configurable failures for unit tests. */
+/** Реализует [ClueRepository] в памяти с тестовыми данными и настраиваемыми ошибками. */
 class FakeClueRepository : ClueRepository {
     var clueResult: Result<Clue> = Result.success(TestData.clue)
     var collectResult: Result<Unit> = Result.success(Unit)
@@ -148,7 +147,7 @@ class FakeClueRepository : ClueRepository {
 }
 
 /**
- * In-memory implementation of [DialogueRepository] with fixture data and configurable failures for unit tests.
+ * Реализует [DialogueRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeDialogueRepository : DialogueRepository {
     var historyResult: Result<List<DialogueMessage>> = Result.success(listOf(TestData.message))
@@ -196,8 +195,7 @@ class FakeDialogueRepository : DialogueRepository {
 }
 
 /**
- * In-memory implementation of [InventoryRepository] with fixture data and configurable failures for unit
- * tests.
+ * Реализует [InventoryRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeInventoryRepository : InventoryRepository {
     var inventoryResult: Result<List<Clue>> = Result.success(listOf(TestData.clue))
@@ -226,7 +224,7 @@ class FakeInventoryRepository : InventoryRepository {
 }
 
 /**
- * In-memory implementation of [NotebookRepository] with fixture data and configurable failures for unit tests.
+ * Реализует [NotebookRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeNotebookRepository : NotebookRepository {
     var noteResult: Result<Note> = Result.success(TestData.note)
@@ -264,7 +262,7 @@ class FakeNotebookRepository : NotebookRepository {
     }
 }
 
-/** In-memory implementation of [PhotoRepository] with fixture data and configurable failures for unit tests. */
+/** Реализует [PhotoRepository] в памяти с тестовыми данными и настраиваемыми ошибками. */
 class FakePhotoRepository : PhotoRepository {
     var saveResult: Result<Unit> = Result.success(Unit)
     var uploadResult: Result<Unit> = Result.success(Unit)
@@ -292,7 +290,7 @@ class FakePhotoRepository : PhotoRepository {
 }
 
 /**
- * In-memory implementation of [ProgressRepository] with fixture data and configurable failures for unit tests.
+ * Реализует [ProgressRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeProgressRepository : ProgressRepository {
     var progressResult: Result<InvestigationProgress> = Result.success(TestData.progress)
@@ -334,7 +332,7 @@ class FakeProgressRepository : ProgressRepository {
 }
 
 /**
- * In-memory implementation of [PuzzleRepository] with fixture data and configurable failures for unit tests.
+ * Реализует [PuzzleRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakePuzzleRepository : PuzzleRepository {
     var answerResult: Result<Boolean> = Result.success(true)
@@ -363,7 +361,7 @@ class FakePuzzleRepository : PuzzleRepository {
     }
 }
 
-/** In-memory implementation of [SceneRepository] with fixture data and configurable failures for unit tests. */
+/** Реализует [SceneRepository] в памяти с тестовыми данными и настраиваемыми ошибками. */
 class FakeSceneRepository : SceneRepository {
     var sceneResult: Result<String> = Result.success("Описание сцены")
     val calls = mutableListOf<List<Any?>>()
@@ -381,7 +379,7 @@ class FakeSceneRepository : SceneRepository {
 }
 
 /**
- * In-memory implementation of [SuspectRepository] with fixture data and configurable failures for unit tests.
+ * Реализует [SuspectRepository] в памяти с тестовыми данными и настраиваемыми ошибками.
  */
 class FakeSuspectRepository : SuspectRepository {
     var suspectsResult: Result<List<Suspect>> = Result.success(listOf(TestData.suspect))
@@ -401,17 +399,17 @@ class FakeSuspectRepository : SuspectRepository {
     override suspend fun getSuspect(id: Int): Result<Suspect> = Result.success(TestData.suspect)
 }
 
-/** Records Morse playback requests and simulates whether the device can vibrate. */
+/** Запоминает вызовы воспроизведения Морзе и имитирует доступность вибрации. */
 class FakeMorseSignalPlayer : MorseSignalPlayer {
     var available = true
 
-    /** Reports whether this device can play Morse signals using its vibrator. */
+    /** Сообщает, может ли устройство воспроизводить сигналы Морзе вибрацией. */
     override fun isAvailable(): Boolean = available
 
     var error: Throwable? = null
     val played = mutableListOf<String>()
 
-    /** Plays the supplied Morse pattern using vibration. */
+    /** Воспроизводит заданную последовательность Морзе вибрацией. */
     override suspend fun play(pattern: String) {
         played += pattern
         error?.let { throw it }

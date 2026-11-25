@@ -23,7 +23,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Caches public puzzle metadata and handles online or deferred answer validation. */
+/** Кеширует публичные данные головоломок и проверяет ответы сразу или после подключения. */
 @Singleton
 class PuzzleRepositoryImpl
     @Inject
@@ -37,7 +37,7 @@ class PuzzleRepositoryImpl
         private val gson: Gson,
         @ApplicationContext private val context: Context,
     ) : PuzzleRepository {
-        /** Looks up the public data for a puzzle. */
+        /** Ищет публичные данные головоломки. */
         override suspend fun getPuzzle(id: Int): Result<Puzzle> =
             try {
                 var local = puzzles.getById(id)
@@ -52,7 +52,7 @@ class PuzzleRepositoryImpl
                 Result.failure(error)
             }
 
-        /** Records a puzzle as solved in the relevant investigation. */
+        /** Отмечает головоломку решённой в соответствующем расследовании. */
         override suspend fun markSolved(id: Int): Result<Unit> =
             try {
                 val puzzle = puzzles.getById(id) ?: throw DomainError.NotFound("Головоломка не найдена")
@@ -67,7 +67,7 @@ class PuzzleRepositoryImpl
                 Result.failure(error)
             }
 
-        /** Validates an answer to the selected puzzle. */
+        /** Проверяет ответ на выбранную головоломку. */
         override suspend fun checkAnswer(
             investigationId: Int,
             puzzleId: Int,
@@ -93,7 +93,7 @@ class PuzzleRepositoryImpl
                     }
                     Result.success(correct)
                 } else {
-                    // Keep the submitted answer locally; server remains the only authority that can validate it.
+                    // Сохраняем ответ на устройстве. Правильность ответа проверяет сервер.
                     outbox.enqueue(
                         SyncQueueEntity(
                             entityType = "puzzle_answer",

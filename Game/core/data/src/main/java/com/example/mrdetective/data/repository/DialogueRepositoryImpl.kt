@@ -24,7 +24,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Uses cached message history and submits new questions to the server chat function. */
+/** Читает историю из кеша и отправляет новые вопросы в серверную функцию диалога. */
 @Singleton
 class DialogueRepositoryImpl
     @Inject
@@ -39,7 +39,7 @@ class DialogueRepositoryImpl
         private val gson: Gson,
         @ApplicationContext private val context: Context,
     ) : DialogueRepository {
-        /** Returns the conversation history for the specified case and suspect. */
+        /** Возвращает историю диалога для указанного дела и подозреваемого. */
         override suspend fun getHistory(
             caseId: Int,
             suspectId: Int,
@@ -93,14 +93,14 @@ class DialogueRepositoryImpl
                 Result.failure(NetworkErrorHandler.map(error))
             }
 
-        /** Sends the player's question and returns the suspect's reply. */
+        /** Отправляет вопрос игрока и возвращает ответ подозреваемого. */
         override suspend fun sendMessage(
             caseId: Int,
             suspectId: Int,
             message: String,
         ): Result<DialogueMessage> = send(caseId, suspectId, message, null)
 
-        /** Presents an inventory clue to a suspect and returns their response. */
+        /** Предъявляет подозреваемому улику из инвентаря и возвращает его реакцию. */
         override suspend fun presentClue(
             caseId: Int,
             suspectId: Int,

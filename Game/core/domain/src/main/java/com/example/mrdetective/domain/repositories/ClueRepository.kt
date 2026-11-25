@@ -2,14 +2,14 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.Clue
 
-/** Provides clue descriptions and records clues collected in an investigation. */
+/** Предоставляет описания улик и регистрирует находки по расследованию. */
 interface ClueRepository {
-    /** Looks up a clue by its identifier. */
+    /** Ищет улику по идентификатору. */
     suspend fun getClue(id: Int): Result<Clue>
 
-    /** Returns the clues collected for the specified investigation. */
+    /** Возвращает найденные улики указанного расследования. */
     suspend fun getCollectedClues(caseId: Int): Result<List<Clue>>
 
-    /** Records a clue as collected in the specified investigation. */
+    /** Регистрирует улику как найденную в указанном расследовании. */
     suspend fun collectClue(clueId: Int): Result<Unit>
 }

@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Contains the public information about a suspect available to the player. */
+/** Содержит публичные данные подозреваемого, доступные игроку. */
 data class Suspect(
     val id: Int,
     val caseId: Int,

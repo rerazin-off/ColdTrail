@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Uses Room to track investigation progress and schedules synchronization with Supabase. */
+/** Хранит прогресс в Room и планирует синхронизацию с Supabase. */
 @Singleton
 class ProgressRepositoryImpl
     @Inject
@@ -31,7 +31,7 @@ class ProgressRepositoryImpl
         private val gson: Gson,
         @ApplicationContext private val context: Context,
     ) : ProgressRepository {
-        /** Restores the saved progress for the given case and player. */
+        /** Восстанавливает сохранённый прогресс игрока по указанному делу. */
         override suspend fun getProgress(caseId: Int): Result<InvestigationProgress> {
             return try {
                 val userId = auth.currentUser() ?: return Result.failure(DomainError.Unauthorized())
@@ -52,7 +52,7 @@ class ProgressRepositoryImpl
             }
         }
 
-        /** Observes the identifiers of clues earned in the selected investigation. */
+        /** Отслеживает изменения списка идентификаторов улик, найденных в расследовании. */
         override fun observeCollectedClueIds(caseId: Int) =
             flow {
                 val userId = auth.currentUser()
@@ -63,7 +63,7 @@ class ProgressRepositoryImpl
                 }
             }
 
-        /** Persists the supplied investigation progress. */
+        /** Сохраняет переданный прогресс расследования. */
         override suspend fun saveProgress(progressModel: InvestigationProgress): Result<Unit> =
             try {
                 db.withWriteTransaction {
@@ -92,7 +92,7 @@ class ProgressRepositoryImpl
                 Result.failure(error)
             }
 
-        /** Records the final state of the investigation. */
+        /** Записывает итоговое состояние расследования. */
         override suspend fun completeCase(caseId: Int): Result<Unit> {
             return try {
                 val current =
@@ -105,7 +105,7 @@ class ProgressRepositoryImpl
             }
         }
 
-        /** Requests synchronization of the locally stored changes. */
+        /** Запрашивает синхронизацию локально сохранённых изменений. */
         override suspend fun syncProgress(): Result<Unit> =
             try {
                 SyncScheduler.enqueue(context)

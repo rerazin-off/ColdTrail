@@ -2,7 +2,7 @@ package com.example.mrdetective.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Case row returned by the Supabase REST API. */
+/** Запись дела из REST API Supabase. */
 data class CaseDto(
     val id: Int,
     val title: String,

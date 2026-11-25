@@ -18,7 +18,7 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.MorseChallengeRepository
 import javax.inject.Inject
 
-/** Combines server-provided Morse challenges with locally recorded completion state. */
+/** Объединяет головоломки Морзе с сервера и сохранённые на устройстве результаты. */
 class MorseChallengeRepositoryImpl
     @Inject
     constructor(
@@ -29,7 +29,7 @@ class MorseChallengeRepositoryImpl
         private val api: OfflineApi,
         private val db: AppDatabase,
     ) : MorseChallengeRepository {
-        /** Returns Morse puzzles for the given case and its investigation. */
+        /** Возвращает головоломки Морзе указанного дела и расследования. */
         override suspend fun load(caseId: Int): Result<MorseChallenges> =
             apiCall {
                 val userId = auth.currentUser() ?: throw DomainError.Unauthorized()

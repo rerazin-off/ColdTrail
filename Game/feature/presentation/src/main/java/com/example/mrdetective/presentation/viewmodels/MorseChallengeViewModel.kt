@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Describes the active Morse puzzle, answer input, and submission state. */
+/** Описывает активную головоломку Морзе, введённый ответ и состояние отправки. */
 internal data class MorseGameState(
     val loading: Boolean = true,
     val challenge: MorseChallenge? = null,
@@ -37,7 +37,7 @@ internal data class MorseGameState(
     val retryAnswer: Boolean = false,
 )
 
-/** Loads a Morse puzzle and manages answer submission and reward display. */
+/** Загружает головоломку Морзе, управляет проверкой ответа и показом награды. */
 @HiltViewModel
 internal class MorseChallengeViewModel
     @Inject
@@ -59,7 +59,7 @@ internal class MorseChallengeViewModel
             load()
         }
 
-        /** Loads the selected Morse challenge and its reward state. */
+        /** Загружает выбранную головоломку Морзе и состояние её награды. */
         fun load() {
             if (loadJob?.isActive == true || state.value.submitting) return
             mutableState.value = MorseGameState()
@@ -104,7 +104,7 @@ internal class MorseChallengeViewModel
                 }
         }
 
-        /** Updates the answer currently entered by the player. */
+        /** Обновляет ответ, введённый игроком. */
         fun updateAnswer(value: String) {
             val current = state.value
             val challenge = current.challenge ?: return
@@ -113,7 +113,7 @@ internal class MorseChallengeViewModel
             mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
         }
 
-        /** Validates and submits the current Morse answer. */
+        /** Проверяет и отправляет текущий ответ на головоломку Морзе. */
         fun submit() {
             val current = state.value
             val challenge = current.challenge ?: return
@@ -151,7 +151,7 @@ internal class MorseChallengeViewModel
             }
         }
 
-        /** Requests synchronization again and refreshes the Morse challenge state. */
+        /** Повторно запрашивает синхронизацию и обновляет состояние головоломки Морзе. */
         fun retrySync() {
             viewModelScope.launch {
                 val result = progress.syncProgress()

@@ -12,7 +12,7 @@ import com.example.mrdetective.domain.repositories.ProfileStatistics
 import com.example.mrdetective.domain.repositories.ProfileStatisticsRepository
 import javax.inject.Inject
 
-/** Computes profile statistics from investigation records and fetches the account nickname. */
+/** Вычисляет статистику из записей расследований и загружает никнейм аккаунта. */
 class ProfileStatisticsRepositoryImpl
     @Inject
     constructor(
@@ -23,7 +23,7 @@ class ProfileStatisticsRepositoryImpl
         private val profiles: SupabaseRestApi,
         private val settings: SettingsData,
     ) : ProfileStatisticsRepository {
-        /** Looks up the nickname of the current player. */
+        /** Ищет никнейм текущего игрока. */
         override suspend fun loadNickname(): Result<String?> =
             apiCall {
                 val user = auth.currentUser() ?: throw DomainError.Unauthorized()
@@ -38,7 +38,7 @@ class ProfileStatisticsRepositoryImpl
                 )
             }
 
-        /** Loads investigation statistics for the current player. */
+        /** Загружает статистику расследований текущего игрока. */
         override suspend fun load(): Result<ProfileStatistics> =
             apiCall {
                 val userId = auth.currentUser() ?: throw DomainError.Unauthorized()

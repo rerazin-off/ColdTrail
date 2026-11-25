@@ -4,7 +4,7 @@ import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 
-/** Room row containing the cached public data of a case. */
+/** Запись Room с кешированными публичными данными дела. */
 @Entity(tableName = "cases")
 data class CaseEntity(
     @PrimaryKey val id: Int,
@@ -15,7 +15,7 @@ data class CaseEntity(
     val cachedAt: Long = System.currentTimeMillis(),
 )
 
-/** Room row containing a suspect profile and its case association. */
+/** Запись Room с профилем подозреваемого и его привязкой к делу. */
 @Entity(tableName = "suspects", indices = [Index("caseId")])
 data class SuspectEntity(
     @PrimaryKey val id: Int,
@@ -26,7 +26,7 @@ data class SuspectEntity(
     val createdAt: String = "",
 )
 
-/** Room row containing a clue's description and optional image. */
+/** Запись Room с описанием улики и необязательным изображением. */
 @Entity(tableName = "clues", indices = [Index("caseId")])
 data class ClueEntity(
     @PrimaryKey val id: Int,
@@ -37,7 +37,7 @@ data class ClueEntity(
     val createdAt: String = "",
 )
 
-/** Room row representing the progress of a player in one case. */
+/** Запись Room о прогрессе игрока по одному делу. */
 @Entity(tableName = "investigations", indices = [Index("caseId"), Index("userId")])
 data class InvestigationEntity(
     @PrimaryKey val id: Int,
@@ -49,7 +49,7 @@ data class InvestigationEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
-/** Room row associating a collected clue with an investigation. */
+/** Запись Room, связывающая найденную улику с расследованием. */
 @Entity(tableName = "collected_clues", primaryKeys = ["investigationId", "clueId"])
 data class CollectedClueEntity(
     val investigationId: Int,
@@ -58,7 +58,7 @@ data class CollectedClueEntity(
     val synced: Boolean = false,
 )
 
-/** Room row associating a solved puzzle with an investigation. */
+/** Запись Room, связывающая решённую головоломку с расследованием. */
 @Entity(tableName = "solved_puzzles", primaryKeys = ["investigationId", "puzzleId"])
 data class SolvedPuzzleEntity(
     val investigationId: Int,
@@ -67,7 +67,7 @@ data class SolvedPuzzleEntity(
     val synced: Boolean = false,
 )
 
-/** Room row for a dialogue message, including its local delivery state. */
+/** Запись Room с сообщением и его локальным статусом доставки. */
 @Entity(tableName = "dialogue_messages", indices = [Index("investigationId", "suspectId")])
 data class DialogueMessageEntity(
     @PrimaryKey val id: Long,
@@ -80,7 +80,7 @@ data class DialogueMessageEntity(
     val synced: Boolean = false,
 )
 
-/** Room row containing the player's note and its synchronization status. */
+/** Запись Room с заметкой игрока и её статусом синхронизации. */
 @Entity(tableName = "notes", indices = [Index("investigationId")])
 data class NoteEntity(
     @PrimaryKey val id: Int,
@@ -92,7 +92,7 @@ data class NoteEntity(
     val synced: Boolean = true,
 )
 
-/** Room row for public puzzle metadata and its possible clue reward. */
+/** Запись Room с публичными метаданными головоломки и её возможной наградой. */
 @Entity(tableName = "puzzles", indices = [Index("caseId")])
 data class PuzzleEntity(
     @PrimaryKey val id: Int,

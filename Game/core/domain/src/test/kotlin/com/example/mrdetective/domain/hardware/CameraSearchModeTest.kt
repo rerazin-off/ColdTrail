@@ -3,9 +3,9 @@ package com.example.mrdetective.domain.hardware
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** Tests camera permission and fallback decisions for clue puzzles. */
+/** Проверяет выбор между запросом разрешения, камерой и поиском на сцене. */
 class CameraSearchModeTest {
-    /** First use asks for permission and existing access starts camera. */
+    /** Проверяет запрос разрешения при первом запуске и запуск камеры при наличии доступа. */
     @Test
     fun firstUseAsksForPermissionAndExistingAccessStartsCamera() {
         assertEquals(ClueSearchMode.AskPermission, chooseClueSearchMode(null, true, false, false))
@@ -13,14 +13,14 @@ class CameraSearchModeTest {
         assertEquals(ClueSearchMode.Camera, chooseClueSearchMode(true, true, true, false))
     }
 
-    /** App switch off or missing camera opens picture search. */
+    /** Проверяет переход к поиску на картинке при отключённой или отсутствующей камере. */
     @Test
     fun appSwitchOffOrMissingCameraOpensPictureSearch() {
         assertEquals(ClueSearchMode.Picture, chooseClueSearchMode(false, true, true, false))
         assertEquals(ClueSearchMode.Picture, chooseClueSearchMode(true, false, true, false))
     }
 
-    /** Previously denied or revoked permission opens picture search. */
+    /** Проверяет переход к поиску на картинке, если в доступе отказали или разрешение отозвали. */
     @Test
     fun previouslyDeniedOrRevokedPermissionOpensPictureSearch() {
         assertEquals(ClueSearchMode.Picture, chooseClueSearchMode(false, true, false, false))

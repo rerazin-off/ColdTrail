@@ -1,13 +1,13 @@
 package com.example.mrdetective.domain.repositories
 
-/** Summarizes the total, active, and solved investigations for the current player. */
+/** Содержит число всех, активных и раскрытых расследований игрока. */
 data class ProfileStatistics(val total: Int, val active: Int, val solved: Int)
 
-/** Provides player statistics and the account nickname. */
+/** Предоставляет статистику игрока и никнейм аккаунта. */
 interface ProfileStatisticsRepository {
-    /** Loads investigation statistics for the current player. */
+    /** Загружает статистику расследований текущего игрока. */
     suspend fun load(): Result<ProfileStatistics>
 
-    /** Looks up the nickname of the current player. */
+    /** Ищет никнейм текущего игрока. */
     suspend fun loadNickname(): Result<String?>
 }

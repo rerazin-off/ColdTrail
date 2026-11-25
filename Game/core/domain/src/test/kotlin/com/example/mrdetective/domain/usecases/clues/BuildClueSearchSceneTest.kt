@@ -6,11 +6,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 import kotlin.random.Random
 
-/** Tests selection, uniqueness, and placeholder handling in the fallback scene. */
+/** Проверяет выбор уникальных предметов и подстановку заглушек на запасной сцене. */
 class BuildClueSearchSceneTest {
     private val target = SceneClueImage(10, "target.webp")
 
-    /** Uses three distinct pictures including the target. */
+    /** Проверяет, что сцена содержит три разных изображения, включая искомое. */
     @Test
     fun usesThreeDistinctPicturesIncludingTheTarget() {
         val candidates =
@@ -30,7 +30,7 @@ class BuildClueSearchSceneTest {
         assertFalse(items.any { it.clueId == 11 })
     }
 
-    /** Missing artwork still leaves three tappable objects. */
+    /** Проверяет, что без изображений на сцене остаются три доступных для нажатия предмета. */
     @Test
     fun missingArtworkStillLeavesThreeTappableObjects() {
         val items = buildClueSearchScene(target.copy(imageUrl = null), emptyList(), Random(1))

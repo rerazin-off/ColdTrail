@@ -2,17 +2,17 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.Note
 
-/** Provides the current note and its persistence operations. */
+/** Предоставляет операции чтения, сохранения и удаления заметки. */
 interface NotebookRepository {
-    /** Returns the existing note for an investigation, if present. */
+    /** Возвращает заметку расследования, если она существует. */
     suspend fun getNote(investigationId: Int): Result<Note>
 
-    /** Stores a note and returns the saved note record. */
+    /** Сохраняет заметку и возвращает сохранённую запись. */
     suspend fun saveNote(
         investigationId: Int,
         text: String,
     ): Result<Note>
 
-    /** Removes a note by its identifier. */
+    /** Удаляет заметку по идентификатору. */
     suspend fun deleteNote(noteId: Int): Result<Unit>
 }

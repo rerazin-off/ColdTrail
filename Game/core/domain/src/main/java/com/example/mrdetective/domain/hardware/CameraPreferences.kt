@@ -2,18 +2,18 @@ package com.example.mrdetective.domain.hardware
 
 import kotlinx.coroutines.flow.Flow
 
-/** Stores the player's preference for using the camera in clue puzzles. */
+/** Хранит выбор игрока об использовании камеры в головоломках с уликами. */
 interface CameraPreferences {
     val cameraEnabled: Flow<Boolean?>
 
-    /** Stores the user's choice of camera mode for clue puzzles. */
+    /** Сохраняет выбор игрока об использовании камеры в головоломках с уликами. */
     suspend fun setCameraEnabled(enabled: Boolean)
 }
 
-/** Selects live camera capture or the alternative scene search. */
+/** Определяет режим поиска: живая камера или запасная сцена. */
 enum class ClueSearchMode { Camera, AskPermission, Picture }
 
-/** Chooses scene search when the live camera cannot be used or was turned off. */
+/** Выбирает поиск на сцене, если камера недоступна или выключена игроком. */
 fun chooseClueSearchMode(
     cameraEnabled: Boolean?,
     cameraAvailable: Boolean,

@@ -40,75 +40,75 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/** Binds data repositories to their domain interfaces. */
+/** Связывает репозитории слоя данных с их интерфейсами в домене. */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-    /** Binds the data implementation of [AuthRepository]. */
+    /** Подключает реализацию [AuthRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
 
-    /** Binds the data implementation of [CaseRepository]. */
+    /** Подключает реализацию [CaseRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindCaseRepository(impl: CaseRepositoryImpl): CaseRepository
 
-    /** Binds the data implementation of [SuspectRepository]. */
+    /** Подключает реализацию [SuspectRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindSuspectRepository(impl: SuspectRepositoryImpl): SuspectRepository
 
-    /** Binds the data implementation of [ClueRepository]. */
+    /** Подключает реализацию [ClueRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindClueRepository(impl: ClueRepositoryImpl): ClueRepository
 
-    /** Binds the data implementation of [NotebookRepository]. */
+    /** Подключает реализацию [NotebookRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindNotebookRepository(impl: NotebookRepositoryImpl): NotebookRepository
 
-    /** Binds the data implementation of [DialogueRepository]. */
+    /** Подключает реализацию [DialogueRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindDialogueRepository(impl: DialogueRepositoryImpl): DialogueRepository
 
-    /** Binds the data implementation of [InventoryRepository]. */
+    /** Подключает реализацию [InventoryRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindInventoryRepository(impl: InventoryRepositoryImpl): InventoryRepository
 
-    /** Binds the data implementation of [ProgressRepository]. */
+    /** Подключает реализацию [ProgressRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindProgressRepository(impl: ProgressRepositoryImpl): ProgressRepository
 
-    /** Binds the data implementation of [ProfileStatisticsRepository]. */
+    /** Подключает реализацию [ProfileStatisticsRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindProfileStatistics(impl: ProfileStatisticsRepositoryImpl): ProfileStatisticsRepository
 
-    /** Binds the data implementation of [PuzzleRepository]. */
+    /** Подключает реализацию [PuzzleRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindPuzzleRepository(impl: PuzzleRepositoryImpl): PuzzleRepository
 
-    /** Binds the data implementation of [MorseChallengeRepository]. */
+    /** Подключает реализацию [MorseChallengeRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindMorseChallengeRepository(impl: MorseChallengeRepositoryImpl): MorseChallengeRepository
 
-    /** Binds the data implementation of [CameraChallengeRepository]. */
+    /** Подключает реализацию [CameraChallengeRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindCameraChallengeRepository(impl: CameraChallengeRepositoryImpl): CameraChallengeRepository
 
-    /** Binds the data implementation of [SceneClueRepository]. */
+    /** Подключает реализацию [SceneClueRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindSceneClueRepository(impl: SceneClueRepositoryImpl): SceneClueRepository
 
-    /** Binds the data implementation of [CodeChallengeRepository]. */
+    /** Подключает реализацию [CodeChallengeRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindCodeChallengeRepository(impl: CodeChallengeRepositoryImpl): CodeChallengeRepository
 
-    /** Binds the data implementation of [AccusationRepository]. */
+    /** Подключает реализацию [AccusationRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindAccusationRepository(impl: AccusationRepositoryImpl): AccusationRepository
 
-    /** Binds the data implementation of [SceneRepository]. */
+    /** Подключает реализацию [SceneRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindSceneRepository(impl: SceneRepositoryImpl): SceneRepository
 
-    /** Binds the data implementation of [PhotoRepository]. */
+    /** Подключает реализацию [PhotoRepository] из слоя данных. */
     @Binds @Singleton
     abstract fun bindPhotoRepository(impl: PhotoRepositoryImpl): PhotoRepository
 }

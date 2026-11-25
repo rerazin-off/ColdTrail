@@ -1,13 +1,13 @@
 package com.example.mrdetective.domain.repositories
 
-/** Stores clue photos and sends pending uploads. */
+/** Сохраняет фотографии улик и отправляет ожидающие загрузки снимки. */
 interface PhotoRepository {
-    /** Persists the local photo associated with a clue. */
+    /** Сохраняет локальную фотографию указанной улики. */
     suspend fun savePhoto(
         clueId: Int,
         filePath: String,
     ): Result<Unit>
 
-    /** Requests upload of the clue photos waiting to be synchronized. */
+    /** Запрашивает отправку фотографий улик, ожидающих синхронизации. */
     suspend fun uploadPending(): Result<Unit>
 }

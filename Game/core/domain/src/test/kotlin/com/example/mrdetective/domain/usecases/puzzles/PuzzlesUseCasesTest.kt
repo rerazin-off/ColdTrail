@@ -11,7 +11,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [InspectSceneUseCase] using controlled inputs and dependencies. */
+/** Проверяет [InspectSceneUseCase] на заданных входных данных с тестовыми зависимостями. */
 class InspectSceneUseCaseTest {
     private val repository = FakeSceneRepository()
     private val useCase = InspectSceneUseCase(repository)
@@ -36,7 +36,7 @@ class InspectSceneUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [MatchFingerprintUseCase] using controlled inputs and dependencies. */
+/** Проверяет [MatchFingerprintUseCase] на заданных входных данных с тестовыми зависимостями. */
 class MatchFingerprintUseCaseTest {
     private val useCase = MatchFingerprintUseCase()
 
@@ -53,7 +53,7 @@ class MatchFingerprintUseCaseTest {
     }
 }
 
-/** Unit tests for the behavior of [PlayMorseSignalUseCase] using controlled inputs and dependencies. */
+/** Проверяет [PlayMorseSignalUseCase] на заданных входных данных с тестовыми зависимостями. */
 class PlayMorseSignalUseCaseTest {
     private val player = FakeMorseSignalPlayer()
     private val useCase = PlayMorseSignalUseCase(player)
@@ -93,7 +93,7 @@ class PlayMorseSignalUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [PlayPuzzleUseCase] using controlled inputs and dependencies. */
+/** Проверяет [PlayPuzzleUseCase] на заданных входных данных с тестовыми зависимостями. */
 class PlayPuzzleUseCaseTest {
     private val repository = FakePuzzleRepository()
     private val useCase = PlayPuzzleUseCase(repository)

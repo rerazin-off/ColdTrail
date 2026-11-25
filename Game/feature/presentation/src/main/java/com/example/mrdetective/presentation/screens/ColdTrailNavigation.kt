@@ -56,13 +56,13 @@ import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
 import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
-/** Defines the top-level destinations shown in the main navigation. */
+/** Определяет разделы основной навигации. */
 private enum class Tab(val route: String, val label: Int, val icon: Int) {
     Cases("cases", R.string.cases, R.drawable.ic_cases),
     Profile("profile", R.string.profile, R.drawable.ic_profile),
 }
 
-/** Selects the splash, authentication, or signed-in navigation flow based on session state. */
+/** Выбирает заставку, экран авторизации или игровой маршрут по состоянию сессии. */
 @Composable
 fun ColdTrailNavigation(
     auth: AuthViewModel,

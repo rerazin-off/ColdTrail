@@ -2,7 +2,7 @@ package com.example.mrdetective.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Server representation of a camera puzzle and its clue reward. */
+/** Серверная модель головоломки с камерой и её улики-награды. */
 data class CameraChallengeDto(
     val id: Int,
     val title: String,
@@ -12,7 +12,7 @@ data class CameraChallengeDto(
     @SerializedName("reward_claimed") val rewardClaimed: Boolean,
 )
 
-/** Server response to a clue capture or scene-search submission. */
+/** Ответ сервера на отправку снимка или выбор предмета на сцене. */
 data class CameraCaptureDto(
     @SerializedName("p_investigation") val investigationId: Int,
     val puzzleId: Int,

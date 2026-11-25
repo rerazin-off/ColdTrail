@@ -7,16 +7,16 @@ import javax.inject.Inject
 
 private val MorsePattern = Regex("[.-]+(?:\\s+[.-]+|\\s*/\\s*[.-]+)*")
 
-/** Validates and plays the Morse pattern using a device-independent signal player. */
+/** Проверяет и воспроизводит сигнал Морзе через интерфейс проигрывателя. */
 class PlayMorseSignalUseCase
     @Inject
     constructor(
         private val player: MorseSignalPlayer,
     ) {
-        /** Reports whether the injected Morse signal player is available. */
+        /** Сообщает, доступен ли переданный проигрыватель Морзе. */
         fun isAvailable(): Boolean = player.isAvailable()
 
-        /** Returns an error when the signal cannot be played, or starts playback. */
+        /** Начинает воспроизведение или возвращает ошибку, если сигнал проиграть нельзя. */
         suspend operator fun invoke(pattern: String): Result<Unit> {
             val signal = pattern.trim()
             if (signal.length > 256 || !MorsePattern.matches(signal)) {

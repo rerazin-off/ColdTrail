@@ -18,10 +18,10 @@ import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Sizes
 
-/** Selects the appearance of an action button. */
+/** Определяет внешний вид кнопки действия. */
 enum class AppButtonStyle { Primary, Accent, Outlined }
 
-/** Displays a themed button whose touch area meets the minimum target size. */
+/** Отображает кнопку темы с минимальной областью нажатия. */
 @Composable
 fun AppButton(
     text: String,

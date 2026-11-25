@@ -2,11 +2,11 @@ package com.example.mrdetective.domain.usecases.puzzles
 
 import javax.inject.Inject
 
-/** Compares the selected fingerprint with the expected fingerprint. */
+/** Сравнивает выбранный отпечаток с ожидаемым. */
 class MatchFingerprintUseCase
     @Inject
     constructor() {
-        /** Compares non-blank fingerprint strings after trimming whitespace. */
+        /** Сравнивает непустые строки отпечатков после удаления пробелов по краям. */
         operator fun invoke(
             selectedFingerprint: String,
             correctFingerprint: String,

@@ -15,7 +15,7 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-/** Associates an investigation status with its localized label resource. */
+/** Связывает статус расследования с локализованной подписью. */
 enum class ChipStatus(val label: Int) {
     ClueFound(R.string.clue_found),
     Available(R.string.available),
@@ -23,7 +23,7 @@ enum class ChipStatus(val label: Int) {
     Error(R.string.error),
 }
 
-/** Displays a status label in a themed chip. */
+/** Отображает статус в оформленной плашке. */
 @Composable
 fun Statuses(
     status: ChipStatus,

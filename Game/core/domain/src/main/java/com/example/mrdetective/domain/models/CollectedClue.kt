@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Associates a clue with the investigation that earned it. */
+/** Связывает улику с расследованием, в котором её нашли. */
 data class CollectedClue(
     val investigationId: Int,
     val clueId: Int,

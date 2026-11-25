@@ -2,43 +2,43 @@ package com.example.mrdetective.domain.models
 
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Classifies failures shared by the domain, data, and presentation layers. */
+/** Определяет общие категории ошибок для домена, слоя данных и интерфейса. */
 sealed class DomainError(
     message: String? = null,
     cause: Throwable? = null,
 ) : Exception(message, cause) {
-    /** Indicates an input or game action that the player must correct. */
+    /** Обозначает ошибку ввода или игрового действия, которую может исправить игрок. */
     class Validation(message: String) : DomainError(message)
 
-    /** Indicates that the requested game data could not be found. */
+    /** Обозначает отсутствие запрошенных игровых данных. */
     class NotFound(message: String = "Не найдено") : DomainError(message)
 
-    /** Indicates that an authenticated session is required or no longer valid. */
+    /** Обозначает отсутствие или истечение авторизованной сессии. */
     class Unauthorized(message: String = "Нет доступа") : DomainError(message)
 
-    /** Represents a network-related failure and its category. */
+    /** Представляет сетевой сбой и его категорию. */
     class Network(
         cause: Throwable? = null,
         val kind: Kind = Kind.Connection,
     ) : DomainError("Ошибка сети", cause) {
-        /** Distinguishes offline, server, and other network failures. */
+        /** Различает отсутствие сети, сбой сервера и другие сбои соединения. */
         enum class Kind { Offline, Server, Connection }
     }
 
-    /** Indicates that an operation awaits synchronization. */
+    /** Обозначает операцию, ожидающую синхронизации. */
     class SyncPending : DomainError("Данные ожидают синхронизации")
 
-    /** Indicates that the device cannot use the requested hardware. */
+    /** Обозначает недоступность нужного оборудования устройства. */
     class HardwareUnavailable : DomainError("Вибрация недоступна на этом устройстве")
 
-    /** Preserves the cause of a failure without a more specific domain category. */
+    /** Сохраняет причину ошибки, для которой нет более точной категории домена. */
     class Unknown(cause: Throwable? = null) : DomainError(cause?.message, cause)
 }
 
-/** Preserves an existing domain error or wraps an unclassified failure. */
+/** Сохраняет существующую ошибку домена или оборачивает неклассифицированный сбой. */
 fun Throwable.toDomainError(): DomainError = this as? DomainError ?: DomainError.Unknown(this)
 
-/** Captures a domain operation as a result while allowing coroutine cancellation to propagate. */
+/** Возвращает результат доменной операции и передаёт исключение отмены корутины вызывающему коду. */
 inline fun <T> domainCatching(block: () -> T): Result<T> =
     try {
         Result.success(block())

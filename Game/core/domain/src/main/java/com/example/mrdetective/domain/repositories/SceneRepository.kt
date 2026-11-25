@@ -1,8 +1,8 @@
 package com.example.mrdetective.domain.repositories
 
-/** Defines lookup of interactive scenes for a case. */
+/** Определяет способ загрузки интерактивных сцен дела. */
 interface SceneRepository {
-    /** Looks up the interactive scene for the given case and scene identifiers. */
+    /** Ищет интерактивную сцену по идентификаторам дела и сцены. */
     suspend fun getScene(
         caseId: Int,
         sceneId: Int,

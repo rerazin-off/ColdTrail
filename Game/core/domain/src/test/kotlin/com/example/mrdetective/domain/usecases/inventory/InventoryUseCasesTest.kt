@@ -9,7 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [InspectItemUseCase] using controlled inputs and dependencies. */
+/** Проверяет [InspectItemUseCase] на заданных входных данных с тестовыми зависимостями. */
 class InspectItemUseCaseTest {
     private val clues = FakeClueRepository()
     private val inventory = FakeInventoryRepository()
@@ -34,7 +34,7 @@ class InspectItemUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [LoadInventoryUseCase] using controlled inputs and dependencies. */
+/** Проверяет [LoadInventoryUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadInventoryUseCaseTest {
     private val repository = FakeInventoryRepository()
     private val useCase = LoadInventoryUseCase(repository)

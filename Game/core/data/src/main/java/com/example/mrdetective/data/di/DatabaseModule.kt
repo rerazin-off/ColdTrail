@@ -17,11 +17,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/** Provides the singleton Room database and its investigation DAOs. */
+/** Предоставляет общий экземпляр базы Room и её DAO. */
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    /** Builds the Room database with the registered schema migrations. */
+    /** Создаёт базу Room с зарегистрированными миграциями схемы. */
     @Provides
     @Singleton
     fun provideDatabase(
@@ -39,31 +39,31 @@ object DatabaseModule {
             .build()
     }
 
-    /** Provides the DAO for cached cases. */
+    /** Предоставляет DAO для кеша дел. */
     @Provides
     fun provideCaseDao(database: AppDatabase): CaseDao = database.caseDao()
 
-    /** Provides the DAO for cached suspect profiles. */
+    /** Предоставляет DAO для кеша профилей подозреваемых. */
     @Provides
     fun provideSuspectDao(database: AppDatabase): SuspectDao = database.suspectDao()
 
-    /** Provides the DAO for cached clues and inventory entries. */
+    /** Предоставляет DAO для кеша улик и записей инвентаря. */
     @Provides
     fun provideClueDao(database: AppDatabase): ClueDao = database.clueDao()
 
-    /** Provides the DAO for local investigations and their progress. */
+    /** Предоставляет DAO для локальных расследований и их прогресса. */
     @Provides
     fun provideInvestigationDao(database: AppDatabase): InvestigationDao = database.investigationDao()
 
-    /** Provides the DAO for cached conversations. */
+    /** Предоставляет DAO для кеша диалогов. */
     @Provides
     fun provideDialogueDao(database: AppDatabase): DialogueDao = database.dialogueDao()
 
-    /** Provides the DAO for local investigation notes. */
+    /** Предоставляет DAO для локальных заметок расследования. */
     @Provides
     fun provideNoteDao(database: AppDatabase): NoteDao = database.noteDao()
 
-    /** Provides the DAO for pending synchronization operations. */
+    /** Предоставляет DAO для операций, ожидающих синхронизации. */
     @Provides
     fun provideSyncQueueDao(database: AppDatabase): SyncQueueDao = database.syncQueueDao()
 }

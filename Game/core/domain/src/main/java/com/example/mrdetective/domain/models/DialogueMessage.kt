@@ -1,12 +1,12 @@
 package com.example.mrdetective.domain.models
 
-/** Distinguishes the player from the suspect in a dialogue. */
+/** Различает игрока и подозреваемого в диалоге. */
 enum class MessageAuthor {
     PLAYER,
     SUSPECT,
 }
 
-/** Represents one message in an investigation's conversation with a suspect. */
+/** Представляет сообщение в диалоге с подозреваемым. */
 data class DialogueMessage(
     val id: Int,
     val caseId: Int,

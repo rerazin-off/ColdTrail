@@ -2,8 +2,8 @@ package com.example.mrdetective.domain.repositories
 
 import com.example.mrdetective.domain.models.MorseChallenges
 
-/** Provides Morse puzzles for an investigation. */
+/** Предоставляет головоломки Морзе для расследования. */
 interface MorseChallengeRepository {
-    /** Returns Morse puzzles for the given case and its investigation. */
+    /** Возвращает головоломки Морзе указанного дела и расследования. */
     suspend fun load(caseId: Int): Result<MorseChallenges>
 }

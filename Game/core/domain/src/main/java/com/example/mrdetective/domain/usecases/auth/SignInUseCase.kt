@@ -4,13 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 
-/** Validates credentials before starting a player session. */
+/** Проверяет учётные данные перед запуском сессии игрока. */
 class SignInUseCase
     @Inject
     constructor(
         private val repository: AuthRepository,
     ) {
-        /** Checks the email and password format before calling the auth repository. */
+        /** Проверяет формат почты и пароля перед вызовом репозитория авторизации. */
         suspend operator fun invoke(
             email: String,
             password: String,

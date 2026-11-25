@@ -24,134 +24,134 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Url
 
-/** Retrofit contract for investigation progress, puzzles, dialogue, and queued operations. */
+/** Интерфейс Retrofit для прогресса, головоломок, диалогов и операций из очереди. */
 interface OfflineApi {
-    /** Creates or updates the player's investigation on Supabase. */
+    /** Создаёт или обновляет расследование игрока в Supabase. */
     @POST("rest/v1/investigations?on_conflict=user_id,case_id")
     @Headers("Prefer: resolution=ignore-duplicates,return=representation")
     suspend fun startInvestigation(
         @Body body: InvestigationInsertDto,
     ): List<InvestigationDto>
 
-    /** Reads investigation rows matching the supplied filters. */
+    /** Читает записи расследований по переданным фильтрам. */
     @GET("rest/v1/investigations?select=id,user_id,case_id,status,start_at")
     suspend fun getInvestigations(
         @Query("case_id") caseId: String?,
         @Query("user_id") userId: String,
     ): List<InvestigationDto>
 
-    /** Reads clue metadata for the specified case. */
+    /** Читает метаданные улик выбранного дела. */
     @GET("rest/v1/clues?select=*")
     suspend fun getCluesByCase(
         @Query("case_id") caseId: String,
     ): List<ClueDto>
 
-    /** Reads public clue image metadata for scene search. */
+    /** Читает публичные сведения об изображениях улик для поиска на сцене. */
     @GET("rest/v1/clues?select=id,image,title&image=not.is.null&order=id&limit=50")
     suspend fun getClueImages(
         @Query("id") excludeId: String,
     ): List<SceneClueImageDto>
 
-    /** Reads the public puzzle metadata for the specified case. */
+    /** Читает публичные метаданные головоломок выбранного дела. */
     @GET("rest/v1/puzzles?select=id,case_id,kind,title,hint,reward_clue")
     suspend fun getPuzzlesByCase(
         @Query("case_id") caseId: String,
     ): List<PuzzleDto>
 
-    /** Reads public metadata for the selected puzzle. */
+    /** Читает публичные метаданные выбранной головоломки. */
     @GET("rest/v1/puzzles?select=id,case_id,kind,title,hint,reward_clue")
     suspend fun getPuzzle(
         @Query("id") id: String,
     ): List<PuzzleDto>
 
-    /** Reads the clue links recorded for an investigation. */
+    /** Читает записи о найденных уликах расследования. */
     @GET("rest/v1/collected_clues?select=*")
     suspend fun getCollectedClues(
         @Query("investigation_id") investigationId: String,
     ): List<Map<String, Any?>>
 
-    /** Reads the puzzle completions recorded for an investigation. */
+    /** Читает записи о решённых головоломках расследования. */
     @GET("rest/v1/solved_puzzles?select=*")
     suspend fun getSolvedPuzzles(
         @Query("investigation_id") investigationId: String,
     ): List<Map<String, Any?>>
 
-    /** Writes the association between an investigation and a collected clue. */
+    /** Сохраняет связь расследования с найденной уликой. */
     @POST("rest/v1/collected_clues")
     @Headers("Prefer: resolution=ignore-duplicates,return=minimal")
     suspend fun collectClue(
         @Body body: Map<String, Int>,
     )
 
-    /** Calls the server-side answer validator for the selected puzzle. */
+    /** Вызывает серверную проверку ответа выбранной головоломки. */
     @POST("rest/v1/rpc/check_puzzle")
     suspend fun checkPuzzle(
         @Body body: CheckPuzzleDto,
     ): Boolean
 
-    /** Fetches the Morse challenge records for the selected case. */
+    /** Загружает записи головоломок Морзе для выбранного дела. */
     @POST("rest/v1/rpc/get_morse_challenges")
     suspend fun getMorseChallenges(
         @Body body: Map<String, Int>,
     ): List<MorseChallengeDto>
 
-    /** Fetches the camera challenge records for the selected case. */
+    /** Загружает записи головоломок с камерой для выбранного дела. */
     @POST("rest/v1/rpc/get_camera_challenges")
     suspend fun getCameraChallenges(
         @Body body: Map<String, Int>,
     ): List<CameraChallengeDto>
 
-    /** Submits a camera puzzle proof to the completion function. */
+    /** Передаёт подтверждение разгадки в функцию завершения головоломки с камерой. */
     @POST("rest/v1/rpc/complete_camera_puzzle")
     suspend fun completeCameraPuzzle(
         @Body body: Map<String, Int>,
     ): Int
 
-    /** Submits a found scene item through the camera puzzle completion flow. */
+    /** Передаёт выбранный на сцене предмет через API завершения головоломки с камерой. */
     @POST("rest/v1/rpc/complete_scene_camera_puzzle")
     suspend fun completeSceneCameraPuzzle(
         @Body body: Map<String, Int>,
     ): Int
 
-    /** Sends a question and optional evidence to the suspect chat function. */
+    /** Отправляет вопрос и, при наличии, улику в серверную функцию диалога. */
     @POST("functions/v1/npc-chat")
     suspend fun npcChat(
         @Body body: NpcChatRequestDto,
     ): NpcChatResponseDto
 
-    /** Retrieves stored messages for the specified investigation and suspect. */
+    /** Загружает сохранённые сообщения указанного расследования и подозреваемого. */
     @GET("rest/v1/dialogue_messages?select=*")
     suspend fun getDialogue(
         @Query("investigation_id") investigationId: String,
         @Query("suspect_id") suspectId: String,
     ): List<Map<String, Any?>>
 
-    /** Sends an accusation to the server for evaluation. */
+    /** Отправляет обвинение на проверку серверу. */
     @POST("functions/v1/submit-accusation")
     suspend fun submitAccusation(
         @Body body: AccusationRequestDto,
     ): AccusationResponseDto
 
-    /** Retrieves the verdict already recorded for an investigation. */
+    /** Загружает вердикт, уже записанный для расследования. */
     @GET("functions/v1/submit-accusation")
     suspend fun getAccusation(
         @Query("investigation_id") investigationId: Int,
     ): AccusationResponseDto
 
-    /** Sends a serialized queued write to its configured path. */
+    /** Отправляет сериализованную операцию записи на указанный адрес. */
     @POST suspend fun postQueued(
         @Url url: String,
         @Header("Prefer") prefer: String?,
         @Body body: RequestBody,
     ): ResponseBody
 
-    /** Sends a queued deletion to its configured path. */
+    /** Отправляет поставленный в очередь запрос на удаление по указанному адресу. */
     @DELETE
     suspend fun deleteQueued(
         @Url url: String,
     ): ResponseBody
 
-    /** Uploads the locally captured photo to Supabase Storage. */
+    /** Загружает локальный снимок в Supabase Storage. */
     @POST("storage/v1/object/{bucket}/{path}")
     @Headers("x-upsert: true")
     suspend fun uploadPhoto(

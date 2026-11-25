@@ -5,13 +5,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.DialogueRepository
 import javax.inject.Inject
 
-/** Presents inventory evidence to a suspect and requests a response. */
+/** Предъявляет подозреваемому улику из инвентаря и запрашивает его ответ. */
 class PresentClueToSuspectUseCase
     @Inject
     constructor(
         private val repository: DialogueRepository,
     ) {
-        /** Sends the selected evidence to the suspect through the dialogue repository. */
+        /** Отправляет выбранную улику подозреваемому через репозиторий диалогов. */
         suspend operator fun invoke(
             caseId: Int,
             suspectId: Int,

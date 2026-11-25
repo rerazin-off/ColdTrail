@@ -1,6 +1,6 @@
 BEGIN;
 
--- Public game artwork is separate from private photographs taken by players.
+-- Публичные игровые изображения хранятся отдельно от личных фотографий игроков.
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('clue-images', 'clue-images', true, 1048576, ARRAY['image/png','image/webp','image/jpeg'])
 ON CONFLICT (id) DO NOTHING;
@@ -72,7 +72,7 @@ REVOKE EXECUTE ON FUNCTION public.complete_camera_puzzle(integer, integer) FROM 
 GRANT EXECUTE ON FUNCTION public.get_camera_challenges(integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.complete_camera_puzzle(integer, integer) TO authenticated;
 
--- Make the scenario playable in the original case if it has no camera puzzle.
+-- Добавляем в исходное дело головоломку с камерой, если её ещё нет.
 INSERT INTO public.puzzles (case_id, kind, title, hint, answer, reward_clue)
 SELECT c.case_id, 'camera', 'Поиск улики камерой',
        'Медленно повернитесь с телефоном, пока в кадре не появится улика.', 'photo', c.id

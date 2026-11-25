@@ -23,11 +23,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
-/** Carries the case and puzzle identifiers for a numeric challenge. */
+/** Передаёт идентификаторы дела и числовой головоломки. */
 @Serializable
 internal data class CodeChallengeRoute(val caseId: Int, val puzzleId: Int)
 
-/** Stores the numeric puzzle, entered digits, and submission result. */
+/** Хранит числовую головоломку, введённые цифры и результат отправки. */
 internal data class CodeChallengeState(
     val loading: Boolean = true,
     val investigationId: Int = 0,
@@ -41,7 +41,7 @@ internal data class CodeChallengeState(
     val retryAnswer: Boolean = false,
 )
 
-/** Manages numeric input and the corresponding clue reward. */
+/** Управляет вводом числового ответа и получением улики-награды. */
 @HiltViewModel
 internal class CodeChallengeViewModel
     @Inject
@@ -63,7 +63,7 @@ internal class CodeChallengeViewModel
             load()
         }
 
-        /** Loads the numeric puzzle selected by the navigation arguments. */
+        /** Загружает числовую головоломку по аргументам маршрута. */
         fun load() {
             if (loadJob?.isActive == true || state.value.submitting) return
             mutableState.value = CodeChallengeState()
@@ -104,7 +104,7 @@ internal class CodeChallengeViewModel
                 }
         }
 
-        /** Updates the numeric answer shown on the keypad screen. */
+        /** Обновляет числовой ответ, отображаемый на экране клавиатуры. */
         fun updateAnswer(value: String) {
             val current = state.value
             if (current.challenge == null || current.submitting || current.solved) return
@@ -112,7 +112,7 @@ internal class CodeChallengeViewModel
             mutableState.update { it.copy(answerError = null, retrySync = false, retryAnswer = false) }
         }
 
-        /** Validates the entered code and updates the state with the clue reward. */
+        /** Проверяет введённый код и обновляет состояние улики-награды. */
         fun submit() {
             val current = state.value
             val puzzle = current.challenge ?: return
@@ -156,7 +156,7 @@ internal class CodeChallengeViewModel
             }
         }
 
-        /** Requests synchronization again and refreshes the numeric puzzle state. */
+        /** Повторно запрашивает синхронизацию и обновляет состояние числовой головоломки. */
         fun retrySync() {
             viewModelScope.launch {
                 val result = progress.syncProgress()

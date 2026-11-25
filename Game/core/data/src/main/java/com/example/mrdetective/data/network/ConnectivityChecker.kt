@@ -9,14 +9,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Reports whether Android has validated internet access on the active network. */
+/** Сообщает, подтвердил ли Android доступ в интернет для активной сети. */
 @Singleton
 class ConnectivityChecker
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
     ) {
-        /** Checks for an active Android network with validated internet access. */
+        /** Проверяет, есть ли активная сеть с подтверждённым доступом в интернет. */
         @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
         fun isNetworkAvailable(): Boolean {
             val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

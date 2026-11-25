@@ -3,12 +3,12 @@ package com.example.mrdetective.domain.hardware
 import kotlin.math.abs
 import kotlin.math.exp
 
-/** Smooths camera heading and pitch while handling azimuth wraparound. */
+/** Сглаживает азимут и наклон камеры с учётом перехода через север. */
 class CameraDirectionFilter {
     private var direction: CameraDirection? = null
     private var lastSampleNanos = 0L
 
-    /** Feeds a sensor reading into the filter and returns the smoothed direction. */
+    /** Принимает показание датчика и возвращает сглаженное направление. */
     fun update(
         reading: CameraDirection,
         timestampNanos: Long,
@@ -33,7 +33,7 @@ class CameraDirectionFilter {
         return result
     }
 
-    /** Clears the previous direction so the next reading starts a fresh sample. */
+    /** Сбрасывает предыдущее направление перед следующим измерением. */
     fun reset() {
         direction = null
     }

@@ -17,14 +17,14 @@ import javax.inject.Singleton
 
 private val Context.settingsDataStore by preferencesDataStore(name = "coldtrail_settings")
 
-/** Stores game preferences and player metadata in DataStore. */
+/** Хранит настройки игры и данные игрока в DataStore. */
 @Singleton
 class SettingsData
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
     ) : VibrationPreferences, CameraPreferences, PuzzlePermissionsPreferences {
-        /** Defines the DataStore keys shared by the application's settings. */
+        /** Определяет ключи DataStore для настроек приложения. */
         private object Keys {
             val DARK_THEME = booleanPreferencesKey("dark_theme")
             val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
@@ -42,24 +42,24 @@ class SettingsData
         val userId: Flow<String?> = context.settingsDataStore.data.map { it[Keys.USER_ID] }
         override val cameraEnabled: Flow<Boolean?> = context.settingsDataStore.data.map { it[Keys.CAMERA_ENABLED] }
 
-        /** Stores the user's choice of camera mode for clue puzzles. */
+        /** Сохраняет выбор игрока об использовании камеры в головоломках с уликами. */
         override suspend fun setCameraEnabled(enabled: Boolean) {
             context.settingsDataStore.edit { it[Keys.CAMERA_ENABLED] = enabled }
         }
 
-        /** Checks whether the permissions introduction has been shown to the specified player. */
+        /** Проверяет, был ли показан экран разрешений указанному игроку. */
         override suspend fun hasSeenPuzzlePermissions(userId: String): Boolean =
             context.settingsDataStore.data.first()[booleanPreferencesKey("puzzle_permissions_seen_$userId")] == true
 
-        /** Records that the specified player has seen the permissions introduction. */
+        /** Отмечает, что указанный игрок увидел экран разрешений. */
         override suspend fun markPuzzlePermissionsSeen(userId: String) {
             context.settingsDataStore.edit { it[booleanPreferencesKey("puzzle_permissions_seen_$userId")] = true }
         }
 
-        /** Reads the locally cached nickname for a player. */
+        /** Читает сохранённый на устройстве никнейм игрока. */
         suspend fun getNickname(userId: String): String? = context.settingsDataStore.data.first()[stringPreferencesKey("nickname_$userId")]
 
-        /** Updates the locally cached nickname for a player. */
+        /** Обновляет сохранённый на устройстве никнейм игрока. */
         suspend fun setNickname(
             userId: String,
             nickname: String,
@@ -67,35 +67,35 @@ class SettingsData
             context.settingsDataStore.edit { it[stringPreferencesKey("nickname_$userId")] = nickname }
         }
 
-        /** Reads the saved choice for vibration, if the player has set one. */
+        /** Читает настройку вибрации, если игрок уже её задал. */
         override suspend fun getVibrationEnabled(): Boolean? = context.settingsDataStore.data.first()[Keys.VIBRATION_ENABLED]
 
-        /** Stores the player's choice of whether to use vibration in Morse puzzles. */
+        /** Сохраняет выбор игрока об использовании вибрации в головоломках Морзе. */
         override suspend fun setVibrationEnabled(enabled: Boolean) {
             context.settingsDataStore.edit { it[Keys.VIBRATION_ENABLED] = enabled }
         }
 
-        /** Stores the preferred dark-theme flag. */
+        /** Сохраняет настройку тёмной темы. */
         suspend fun setDarkTheme(enabled: Boolean) {
             context.settingsDataStore.edit { it[Keys.DARK_THEME] = enabled }
         }
 
-        /** Stores whether game sound should be enabled. */
+        /** Сохраняет настройку звука игры. */
         suspend fun setSoundEnabled(enabled: Boolean) {
             context.settingsDataStore.edit { it[Keys.SOUND_ENABLED] = enabled }
         }
 
-        /** Stores the preferred language identifier. */
+        /** Сохраняет идентификатор выбранного языка. */
         suspend fun setLanguage(language: String) {
             context.settingsDataStore.edit { it[Keys.LANGUAGE] = language }
         }
 
-        /** Updates the stored player identifier. */
+        /** Обновляет сохранённый идентификатор игрока. */
         suspend fun setUserId(id: String?) {
             context.settingsDataStore.edit { if (id == null) it.remove(Keys.USER_ID) else it[Keys.USER_ID] = id }
         }
 
-        /** Updates the identifier of the last case opened. */
+        /** Обновляет идентификатор последнего открытого дела. */
         suspend fun setLastOpenedCase(id: Int?) {
             context.settingsDataStore.edit { if (id == null) it.remove(Keys.LAST_OPENED_CASE) else it[Keys.LAST_OPENED_CASE] = id }
         }

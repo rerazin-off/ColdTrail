@@ -22,8 +22,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 
 /**
- * Holds the camera capability and permission state along with actions for requesting access and opening system
- * settings.
+ * Хранит состояние доступности и разрешения камеры и действия для запроса доступа и открытия настроек.
  */
 internal class CameraAccess(
     val available: Boolean,

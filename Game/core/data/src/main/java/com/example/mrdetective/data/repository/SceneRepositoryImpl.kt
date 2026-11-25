@@ -6,14 +6,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The supplied PostgreSQL schema and REST contract do not define a scenes table or scene endpoint.
- * Keep the interface bound, but fail explicitly instead of inventing server data.
+ * В текущей схеме PostgreSQL и REST API нет ресурса для интерактивных сцен. Реализация подключена к интерфейсу
+ * и возвращает явную ошибку.
  */
 @Singleton
 class SceneRepositoryImpl
     @Inject
     constructor() : SceneRepository {
-        /** Returns a not-found error because the current API has no scene resource. */
+        /** Возвращает ошибку «Не найдено», поскольку API не предоставляет ресурс сцен. */
         override suspend fun getScene(
             caseId: Int,
             sceneId: Int,

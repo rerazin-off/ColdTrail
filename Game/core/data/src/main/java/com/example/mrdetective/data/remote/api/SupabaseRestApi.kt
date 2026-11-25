@@ -12,46 +12,46 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 
-/** Represents the nickname selected from a Supabase profile row. */
+/** Содержит никнейм из записи профиля Supabase. */
 data class ProfileNicknameDto(val nickname: String)
 
-/** Retrofit contract for querying public game data and updating investigation notes. */
+/** Интерфейс Retrofit для чтения публичных данных и работы с заметками расследований. */
 interface SupabaseRestApi {
-    /** Queries the nickname of the selected account profile. */
+    /** Запрашивает никнейм указанного аккаунта. */
     @GET("rest/v1/profiles?select=nickname")
     suspend fun getNickname(
         @Query("id") userFilter: String,
     ): List<ProfileNicknameDto>
 
-    /** Returns the available case rows from Supabase. */
+    /** Возвращает записи доступных дел из Supabase. */
     @GET("rest/v1/cases?select=*")
     suspend fun getCases(): List<CaseDto>
 
-    /** Looks up a case using its identifier filter. */
+    /** Ищет дело по фильтру идентификатора. */
     @GET("rest/v1/cases?select=*")
     suspend fun getCase(
         @Query("id") idFilter: String,
     ): List<CaseDto>
 
-    /** Looks up the suspects in the selected case. */
+    /** Ищет подозреваемых в выбранном деле. */
     @GET("rest/v1/suspects?select=id,case_id,name,profile,photo,created_at")
     suspend fun getSuspects(
         @Query("case_id") caseFilter: String,
     ): List<SuspectDto>
 
-    /** Looks up a public suspect profile by its identifier. */
+    /** Ищет публичный профиль подозреваемого по идентификатору. */
     @GET("rest/v1/suspects?select=id,case_id,name,profile,photo,created_at")
     suspend fun getSuspect(
         @Query("id") idFilter: String,
     ): List<SuspectDto>
 
-    /** Looks up a clue record using its identifier filter. */
+    /** Ищет улику по фильтру идентификатора. */
     @GET("rest/v1/clues?select=*")
     suspend fun getClue(
         @Query("id") idFilter: String,
     ): List<ClueDto>
 
-    /** Queries the latest note belonging to the investigation. */
+    /** Запрашивает последнюю заметку выбранного расследования. */
     @GET("rest/v1/notes?select=*")
     suspend fun getLatestNote(
         @Query("investigation_id") investigationFilter: String,
@@ -59,14 +59,14 @@ interface SupabaseRestApi {
         @Query("limit") limit: Int = 1,
     ): List<NoteDto>
 
-    /** Sends a new or updated note to the Supabase REST API. */
+    /** Отправляет новую или изменённую заметку в REST API Supabase. */
     @Headers("Prefer: return=representation")
     @POST("rest/v1/notes")
     suspend fun insertNote(
         @Body body: NoteInsertDto,
     ): List<NoteDto>
 
-    /** Deletes the note matching the supplied filter. */
+    /** Удаляет заметку по переданному фильтру. */
     @DELETE("rest/v1/notes")
     suspend fun deleteNote(
         @Query("id") idFilter: String,

@@ -6,9 +6,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-/** Constructs the HTTP transport, logging, and Retrofit client for Supabase. */
+/** Настраивает HTTP-транспорт, журналирование и клиент Retrofit для Supabase. */
 object NetworkClientFactory {
-    /** Creates the HTTP logger and redacts credentials in headers. */
+    /** Создаёт HTTP-журнал и скрывает учётные данные в заголовках. */
     fun logging(debug: Boolean): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
             level = if (debug) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
@@ -17,7 +17,7 @@ object NetworkClientFactory {
             redactHeader("Cookie")
         }
 
-    /** Configures request interceptors, session refresh, and network timeouts. */
+    /** Настраивает перехватчики запросов, обновление сессии и сетевые таймауты. */
     fun okHttp(
         authInterceptor: AuthInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
@@ -35,7 +35,7 @@ object NetworkClientFactory {
             .callTimeout(30, TimeUnit.SECONDS)
             .build()
 
-    /** Validates the base URL configuration and attaches the JSON converter to Retrofit. */
+    /** Проверяет базовый URL и подключает к Retrofit преобразователь JSON. */
     fun retrofit(client: OkHttpClient): Retrofit {
         SupabaseConfig.validate()
         return Retrofit.Builder()

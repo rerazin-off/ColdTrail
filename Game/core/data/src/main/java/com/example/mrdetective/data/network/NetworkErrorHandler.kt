@@ -6,9 +6,9 @@ import retrofit2.HttpException
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-/** Maps transport failures and HTTP responses to domain error categories. */
+/** Преобразует сетевые сбои и ответы HTTP в категории ошибок домена. */
 object NetworkErrorHandler {
-    /** Converts HTTP and transport exceptions into the closest domain error category. */
+    /** Преобразует HTTP- и сетевые исключения в соответствующие ошибки домена. */
     fun map(throwable: Throwable): DomainError =
         when (throwable) {
             is CancellationException -> throw throwable

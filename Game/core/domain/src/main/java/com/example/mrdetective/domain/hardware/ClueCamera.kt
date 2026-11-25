@@ -1,23 +1,26 @@
 package com.example.mrdetective.domain.hardware
 
-/** Heading and pitch reported by the device orientation sensors. */
+/** Азимут и наклон по данным датчиков ориентации устройства. */
 data class CameraDirection(val azimuth: Float, val elevation: Float)
 
-/** Availability and tracking information emitted by the clue camera. */
+/** Состояние доступности камеры и данные отслеживания ориентации. */
 data class ClueCameraState(
     val previewReady: Boolean = false,
     val direction: CameraDirection? = null,
     val error: String? = null,
 )
 
-/** Device-independent port for camera preview, orientation, and photo capture. */
+/** Интерфейс предпросмотра, ориентации и съёмки без привязки к Android. */
 interface ClueCamera<PreviewHost> {
-    /** Attaches preview and direction tracking to the caller's host and returns a handle for releasing them. */
+    /**
+     * Подключает предпросмотр и датчики к компоненту вызывающей стороны и возвращает объект для освобождения
+     * ресурсов.
+     */
     fun attach(
         host: PreviewHost,
         onState: (ClueCameraState) -> Unit,
     ): AutoCloseable
 
-    /** Captures a photo and returns its local path. */
+    /** Делает снимок и возвращает путь к локальному файлу. */
     suspend fun takePhoto(): String
 }

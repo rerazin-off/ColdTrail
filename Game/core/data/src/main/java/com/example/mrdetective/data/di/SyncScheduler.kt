@@ -13,11 +13,11 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 
-/** Schedules one-off and periodic synchronization with WorkManager. */
+/** Планирует разовую и периодическую синхронизацию через WorkManager. */
 object SyncScheduler {
     private fun connected() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-    /** Requests a one-off synchronization attempt when network constraints allow it. */
+    /** Запрашивает разовую синхронизацию при выполнении сетевых условий. */
     fun enqueue(context: Context) {
         val request =
             OneTimeWorkRequestBuilder<OfflineSyncWorker>()
@@ -27,7 +27,7 @@ object SyncScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork("coldtrail_sync_once", ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
-    /** Schedules regular checks for pending synchronization work. */
+    /** Планирует периодическую проверку очереди синхронизации. */
     fun schedulePeriodic(context: Context) {
         val request =
             PeriodicWorkRequestBuilder<ScheduleOfflineSyncWorker>(15, TimeUnit.MINUTES)
@@ -40,9 +40,9 @@ object SyncScheduler {
     }
 }
 
-/** Enqueues a sync attempt when the periodic work runs. */
+/** Ставит попытку синхронизации в очередь при запуске периодической задачи. */
 class ScheduleOfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    /** Requests a synchronization pass and completes the periodic trigger. */
+    /** Запрашивает синхронизацию и завершает периодическую задачу. */
     override suspend fun doWork(): Result {
         SyncScheduler.enqueue(applicationContext)
         return Result.success()

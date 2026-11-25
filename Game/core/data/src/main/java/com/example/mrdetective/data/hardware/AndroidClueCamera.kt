@@ -32,7 +32,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.math.asin
 import kotlin.math.atan2
 
-/** Implements clue preview, photo capture, and orientation tracking with Android hardware. */
+/** Реализует предпросмотр улики, съёмку и отслеживание ориентации на Android. */
 class AndroidClueCamera
     @Inject
     constructor(
@@ -41,7 +41,7 @@ class AndroidClueCamera
         private val main = ContextCompat.getMainExecutor(context)
         private var controller: LifecycleCameraController? = null
 
-        /** Starts preview and orientation updates for the given host and returns a handle for releasing both. */
+        /** Запускает предпросмотр и обновление ориентации, возвращает объект для освобождения ресурсов. */
         override fun attach(
             host: Pair<LifecycleOwner, PreviewView>,
             onState: (ClueCameraState) -> Unit,
@@ -74,7 +74,7 @@ class AndroidClueCamera
 
                     override fun onSensorChanged(event: SensorEvent) {
                         SensorManager.getRotationMatrixFromVector(matrix, event.values)
-                        // The rear lens points along the negative device Z axis.
+                        // Задняя камера направлена вдоль отрицательной оси Z устройства.
                         val east = -matrix[2]
                         val north = -matrix[5]
                         val up = -matrix[8]
@@ -139,7 +139,7 @@ class AndroidClueCamera
             }
         }
 
-        /** Captures a photo with the bound camera and returns its local file path. */
+        /** Делает снимок подключённой камерой и возвращает путь к локальному файлу. */
         override suspend fun takePhoto(): String {
             val camera = checkNotNull(controller) { "Камера ещё не готова." }
             val image =

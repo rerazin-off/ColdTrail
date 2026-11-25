@@ -25,7 +25,7 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Sizes
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-/** Displays a themed input field with a label exposed to accessibility services. */
+/** Отображает поле ввода с подписью, доступной службам специальных возможностей. */
 @Composable
 fun AppTextField(
     value: String,

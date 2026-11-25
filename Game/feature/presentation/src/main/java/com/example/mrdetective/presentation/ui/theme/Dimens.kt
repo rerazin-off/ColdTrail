@@ -3,7 +3,7 @@ package com.example.mrdetective.presentation.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
-/** Defines the spacing scale used by the design system. */
+/** Задаёт шкалу отступов дизайн-системы. */
 object Spacing {
     val xs = 4.dp
     val sm = 8.dp
@@ -13,12 +13,12 @@ object Spacing {
     val screenHorizontal = 16.dp
 }
 
-/** Holds standard dimensions for design-system components. */
+/** Задаёт стандартные размеры компонентов дизайн-системы. */
 object Sizes {
     val controlHeight = 48.dp
 }
 
-/** Defines the corner shapes shared by design-system components. */
+/** Задаёт формы углов для общих компонентов. */
 object AppShapes {
     val control = RoundedCornerShape(12.dp)
     val card = RoundedCornerShape(16.dp)

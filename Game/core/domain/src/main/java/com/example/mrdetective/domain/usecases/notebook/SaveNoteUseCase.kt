@@ -5,13 +5,13 @@ import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.repositories.NotebookRepository
 import javax.inject.Inject
 
-/** Validates and saves the player's investigation note. */
+/** Проверяет и сохраняет заметку игрока по расследованию. */
 class SaveNoteUseCase
     @Inject
     constructor(
         private val repository: NotebookRepository,
     ) {
-        /** Rejects empty note text before persisting it. */
+        /** Отклоняет пустой текст перед сохранением заметки. */
         suspend operator fun invoke(
             investigationId: Int,
             text: String,

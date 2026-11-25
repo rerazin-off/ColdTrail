@@ -8,12 +8,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** Unit tests for the behavior of [SignInUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SignInUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SignInUseCaseTest {
     private lateinit var repository: FakeAuthRepository
     private lateinit var useCase: SignInUseCase
 
-    /** Recreates the fake repository and use case before each test. */
+    /** Перед каждым тестом заново создаёт тестовый репозиторий и сценарий. */
     @Before
     fun setUp() {
         repository = FakeAuthRepository()
@@ -47,12 +47,12 @@ class SignInUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [SignUpUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SignUpUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SignUpUseCaseTest {
     private lateinit var repository: FakeAuthRepository
     private lateinit var useCase: SignUpUseCase
 
-    /** Recreates the fake repository and use case before each test. */
+    /** Перед каждым тестом заново создаёт тестовый репозиторий и сценарий. */
     @Before
     fun setUp() {
         repository = FakeAuthRepository()

@@ -42,15 +42,15 @@ import java.io.File
 import javax.inject.Inject
 import kotlin.random.Random
 
-/** Identifies the case for which to choose the next clue puzzle. */
+/** Указывает дело, для которого нужно выбрать следующую головоломку. */
 @Serializable
 internal data class ChooseClueChallengeRoute(val caseId: Int)
 
-/** Identifies the camera puzzle to open for a case. */
+/** Указывает головоломку с камерой, которую нужно открыть по делу. */
 @Serializable
 internal data class CameraClueRoute(val caseId: Int, val puzzleId: Int)
 
-/** Represents puzzle selection and whether the permissions introduction is required. */
+/** Отражает состояние выбора головоломки и необходимость показа экрана разрешений. */
 internal data class ClueChoiceState(
     val loading: Boolean = true,
     val choice: ClueChallengeChoice? = null,
@@ -58,7 +58,7 @@ internal data class ClueChoiceState(
     val error: String? = null,
 )
 
-/** Selects the next clue puzzle and gates the first attempt on the permissions introduction. */
+/** Выбирает головоломку и показывает экран разрешений перед первой попыткой. */
 @HiltViewModel
 internal class ClueChallengePickerViewModel
     @Inject
@@ -79,10 +79,10 @@ internal class ClueChallengePickerViewModel
             load()
         }
 
-        /** Loads an available challenge or pauses selection to show game permissions. */
+        /** Загружает доступную головоломку или приостанавливает выбор до показа разрешений. */
         fun load() = prepareChallenge(cameraGranted = null)
 
-        /** Records that the permissions screen was seen and resumes finding a challenge. */
+        /** Отмечает показ экрана разрешений и продолжает выбор головоломки. */
         fun continueWithPermissions(cameraGranted: Boolean) = prepareChallenge(cameraGranted)
 
         private fun prepareChallenge(cameraGranted: Boolean?) {
@@ -113,7 +113,7 @@ internal class ClueChallengePickerViewModel
         }
     }
 
-/** Describes the camera puzzle, fallback scene, and reward or submission state. */
+/** Описывает головоломку с камерой, запасную сцену и состояние отправки или награды. */
 internal data class CameraClueUiState(
     val loading: Boolean = true,
     val challenge: CameraChallenge? = null,
@@ -127,7 +127,7 @@ internal data class CameraClueUiState(
     val sceneRetry: Boolean = false,
 )
 
-/** Coordinates clue capture, scene-search fallback, and reward synchronization. */
+/** Координирует съёмку улики, переход к поиску на сцене и синхронизацию награды. */
 @HiltViewModel
 internal class CameraClueViewModel
     @Inject
@@ -157,7 +157,7 @@ internal class CameraClueViewModel
             load()
         }
 
-        /** Loads the assigned camera puzzle and begins observing its submission state. */
+        /** Загружает выбранную головоломку с камерой и начинает отслеживать состояние отправки. */
         fun load() {
             if (loadJob?.isActive == true || state.value.capturing) return
             observation?.cancel()
@@ -188,19 +188,19 @@ internal class CameraClueViewModel
                 }
         }
 
-        /** Switches the current camera puzzle to the fallback scene. */
+        /** Переключает текущую головоломку с камеры на запасную сцену. */
         fun useScene(enabled: Boolean) {
             savedState["searchingScene"] = enabled
         }
 
-        /** Switches to scene search after camera initialization or capture fails. */
+        /** Переключает на поиск на сцене при сбое инициализации камеры или съёмки. */
         fun fallbackAfterCameraError(message: String) {
             useScene(true)
             val explanation = strings.domainMessage(message, strings.get(R.string.rear_camera_error))
             mutableState.update { it.copy(sceneMessage = explanation, sceneRetry = false) }
         }
 
-        /** Loads clue images and builds the scene search for the active puzzle. */
+        /** Загружает изображения улик и формирует сцену для активной головоломки. */
         fun loadScene() {
             val current = state.value
             val challenge = current.challenge ?: return
@@ -218,7 +218,7 @@ internal class CameraClueViewModel
                 }
         }
 
-        /** Checks the selected scene item and requests the reward when it is the target. */
+        /** Проверяет выбранный предмет на сцене и запрашивает награду, если это искомая улика. */
         fun selectSceneItem(index: Int) {
             val current = state.value
             val challenge = current.challenge ?: return
@@ -242,7 +242,7 @@ internal class CameraClueViewModel
             }
         }
 
-        /** Connects the camera to the supplied preview host and receives device state updates. */
+        /** Подключает камеру к компоненту предпросмотра и получает обновления её состояния. */
         fun attach(
             owner: LifecycleOwner,
             preview: PreviewView,
@@ -268,7 +268,7 @@ internal class CameraClueViewModel
             }
         }
 
-        /** Captures and submits a clue when its image is inside the viewfinder. */
+        /** Снимает и отправляет улику, если она находится в видоискателе. */
         fun capture() {
             val current = state.value
             val challenge = current.challenge ?: return
@@ -310,7 +310,7 @@ internal class CameraClueViewModel
             }
         }
 
-        /** Requests another sync attempt for the queued camera or scene submission. */
+        /** Повторно запрашивает синхронизацию ожидающего снимка или результата поиска на сцене. */
         fun retrySync() {
             viewModelScope.launch {
                 val result = progress.syncProgress()

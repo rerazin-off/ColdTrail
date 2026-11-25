@@ -4,7 +4,7 @@ import com.example.mrdetective.data.hardware.morseWaveform
 import org.junit.Assert.assertArrayEquals
 import org.junit.Test
 
-/** Checks the vibration waveform generated from a Morse sequence. */
+/** Проверяет последовательность вибраций, построенную по сигналу Морзе. */
 class MorseWaveformTest {
     /** Проверяет сценарий «точки тире и паузы переводятся во включение и выключение мотора». */
     @Test

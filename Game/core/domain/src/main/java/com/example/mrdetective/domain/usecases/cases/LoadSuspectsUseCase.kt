@@ -5,13 +5,13 @@ import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.domain.repositories.SuspectRepository
 import javax.inject.Inject
 
-/** Loads the suspects assigned to a case. */
+/** Загружает подозреваемых, связанных с делом. */
 class LoadSuspectsUseCase
     @Inject
     constructor(
         private val repository: SuspectRepository,
     ) {
-        /** Returns the public suspect profiles for the case. */
+        /** Возвращает публичные профили подозреваемых по делу. */
         suspend operator fun invoke(caseId: Int): Result<List<Suspect>> {
             if (caseId <= 0) {
                 return Result.failure(

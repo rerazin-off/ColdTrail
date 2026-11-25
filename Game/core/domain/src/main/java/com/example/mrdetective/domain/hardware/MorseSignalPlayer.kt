@@ -1,10 +1,10 @@
 package com.example.mrdetective.domain.hardware
 
-/** Device-independent interface for playing Morse signals as vibration. */
+/** Интерфейс воспроизведения Морзе вибрацией без привязки к устройству. */
 interface MorseSignalPlayer {
-    /** Reports whether this device can play Morse signals using its vibrator. */
+    /** Сообщает, может ли устройство воспроизводить сигналы Морзе вибрацией. */
     fun isAvailable(): Boolean
 
-    /** Plays the supplied Morse pattern using vibration. */
+    /** Воспроизводит заданную последовательность Морзе вибрацией. */
     suspend fun play(pattern: String)
 }

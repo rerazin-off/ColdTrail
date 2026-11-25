@@ -7,9 +7,9 @@ import com.example.mrdetective.data.remote.dto.SuspectDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** Verifies how the four remote DTOs map to their domain models. */
+/** Проверяет преобразование четырёх сетевых DTO в доменные модели. */
 class DtoMappersTest {
-    /** Case dto maps only fields represented in domain. */
+    /** Проверяет, что из DTO дела переносятся поля доменной модели. */
     @Test fun `case dto maps only fields represented in domain`() {
         val result = CaseDto(7, "Дело", "Вступление", 3, "2026-01-01T10:00:00Z").toDomain()
         assertEquals(7, result.id)
@@ -19,7 +19,7 @@ class DtoMappersTest {
         assertEquals("available", result.status)
     }
 
-    /** Suspect dto maps public fields. */
+    /** Проверяет преобразование публичных полей подозреваемого. */
     @Test fun `suspect dto maps public fields`() {
         val result = SuspectDto(2, 5, "Анна", "Реставратор", "photo.webp", "date").toDomain()
         assertEquals(2, result.id)
@@ -28,14 +28,14 @@ class DtoMappersTest {
         assertEquals("Реставратор", result.profile)
     }
 
-    /** Clue dto maps image and timestamp. */
+    /** Проверяет преобразование изображения и временной метки улики. */
     @Test fun `clue dto maps image and timestamp`() {
         val result = ClueDto(1, 4, "Записка", "Описание", "clues/a.webp", "created").toDomain()
         assertEquals("clues/a.webp", result.image)
         assertEquals("created", result.createdAt)
     }
 
-    /** Note dto maps timestamps. */
+    /** Проверяет преобразование временных меток заметки. */
     @Test fun `note dto maps timestamps`() {
         val result = NoteDto(9, 3, "Текст", "created", "updated").toDomain()
         assertEquals(3, result.investigationId)

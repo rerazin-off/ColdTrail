@@ -14,7 +14,7 @@ import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.domain.repositories.SceneClueRepository
 import javax.inject.Inject
 
-/** Loads clue imagery for scene search and submits the selected reward clue. */
+/** Загружает изображения для поиска на сцене и отправляет выбранную улику. */
 class SceneClueRepositoryImpl
     @Inject
     constructor(
@@ -22,7 +22,7 @@ class SceneClueRepositoryImpl
         private val api: OfflineApi,
         private val connectivity: ConnectivityChecker,
     ) : SceneClueRepository {
-        /** Loads alternative clue images while excluding the target clue. */
+        /** Загружает изображения других улик, исключая искомую улику. */
         override suspend fun loadDecoys(targetClueId: Int): List<SceneClueImage> {
             val remote =
                 if (connectivity.isNetworkAvailable()) {
@@ -38,7 +38,7 @@ class SceneClueRepositoryImpl
             return remote + cached
         }
 
-        /** Submits the target clue found in the fallback scene. */
+        /** Отправляет искомую улику, найденную на запасной сцене. */
         override suspend fun submit(
             challenge: CameraChallenge,
             selectedClueId: Int,

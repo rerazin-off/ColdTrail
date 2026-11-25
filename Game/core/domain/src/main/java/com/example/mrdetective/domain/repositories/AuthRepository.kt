@@ -1,22 +1,22 @@
 package com.example.mrdetective.domain.repositories
 
-/** Defines the operations for registration, sign-in, and session management. */
+/** Определяет операции регистрации, входа и управления сессией. */
 interface AuthRepository {
-    /** Starts an authenticated session using the provided credentials. */
+    /** Открывает авторизованную сессию по переданным учётным данным. */
     suspend fun signIn(
         email: String,
         password: String,
     ): Result<String>
 
-    /** Registers a new account using the provided credentials. */
+    /** Регистрирует аккаунт по переданным учётным данным. */
     suspend fun signUp(
         email: String,
         password: String,
     ): Result<String>
 
-    /** Ends the current player's session. */
+    /** Завершает текущую сессию игрока. */
     suspend fun signOut()
 
-    /** Returns the active account identifier, when available. */
+    /** Возвращает идентификатор активного аккаунта, если он доступен. */
     suspend fun currentUser(): String?
 }

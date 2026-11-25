@@ -18,31 +18,31 @@ import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.models.Puzzle
 import com.example.mrdetective.domain.models.Suspect
 
-/** Converts the remote case record to a cache row, retaining the difficulty and creation timestamp. */
+/** Преобразует серверную запись дела для кеша, сохраняя сложность и время создания. */
 fun CaseDto.toEntity() = CaseEntity(id, title, introduction, difficulty, createdAt.orEmpty())
 
-/** Builds a domain case from the locally cached case description. */
+/** Создаёт модель дела из кешированного описания. */
 fun CaseEntity.toDomain() = Case(id, title, introduction)
 
-/** Converts the remote suspect profile to a cache row, retaining its photo reference. */
+/** Преобразует серверный профиль подозреваемого для кеша, сохраняя ссылку на фотографию. */
 fun SuspectDto.toEntity() = SuspectEntity(id, caseId, name, profile, photo, createdAt.orEmpty())
 
-/** Builds the public domain profile from the cached suspect record. */
+/** Создаёт публичную модель подозреваемого из записи кеша. */
 fun SuspectEntity.toDomain() = Suspect(id, caseId, name, profile)
 
-/** Converts remote clue metadata to a Room row, using an empty timestamp when none is supplied. */
+/** Преобразует серверные метаданные улики для Room, подставляя пустую строку при отсутствии даты. */
 fun ClueDto.toEntity() = ClueEntity(id, caseId, title, description, image, createdAt.orEmpty())
 
-/** Builds a domain clue from the cached description and image reference. */
+/** Создаёт модель улики из кешированных описания и ссылки на изображение. */
 fun ClueEntity.toDomain() = Clue(id, caseId, title, description, image, createdAt)
 
-/** Converts the remote note to a Room row with its timestamps. */
+/** Преобразует серверную заметку для Room, сохраняя её временные метки. */
 fun NoteDto.toEntity() = NoteEntity(id, investigationId, text, createdAt, updatedAt)
 
-/** Builds a domain note from the cached text and timestamps. */
+/** Создаёт модель заметки из сохранённого текста и временных меток. */
 fun NoteEntity.toDomain() = Note(id, investigationId, text, createdAt, updatedAt)
 
-/** Builds a domain message and maps the stored author string to an author type. */
+/** Создаёт модель сообщения и преобразует значение автора в доменный тип. */
 fun DialogueMessageEntity.toDomain() =
     DialogueMessage(
         id = id.toInt(),
@@ -53,12 +53,12 @@ fun DialogueMessageEntity.toDomain() =
         createdAt = createdAt,
     )
 
-/** Builds public puzzle information from the cache. Answer validation remains on the server. */
+/** Создаёт публичную модель головоломки из кеша. Ответ проверяется на сервере. */
 fun PuzzleEntity.toDomain() =
     Puzzle(
         id = id,
         encodedPattern = "$kind:$title${hint?.let { "|$it" } ?: ""}",
-        // The SQL permissions intentionally never expose answers to the mobile client.
+        // Политики доступа SQL скрывают ответы от мобильного клиента.
         expectedAnswer = "",
         clueRewardId = rewardClueId,
     )

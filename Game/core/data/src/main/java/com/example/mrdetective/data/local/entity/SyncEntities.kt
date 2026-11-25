@@ -3,7 +3,7 @@ package com.example.mrdetective.data.local.entity
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 
-/** Outbox row for an operation awaiting upload to Supabase. */
+/** Запись очереди операции, ожидающей отправки в Supabase. */
 @Entity(tableName = "sync_queue")
 data class SyncQueueEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -16,7 +16,7 @@ data class SyncQueueEntity(
     val lastError: String? = null,
 )
 
-/** Outbox row for a clue photo awaiting upload. */
+/** Запись очереди фотографии улики, ожидающей загрузки. */
 @Entity(tableName = "pending_photo_uploads")
 data class PendingPhotoUploadEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

@@ -9,12 +9,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** Unit tests for the behavior of [LoadNotebookUseCase] using controlled inputs and dependencies. */
+/** Проверяет [LoadNotebookUseCase] на заданных входных данных с тестовыми зависимостями. */
 class LoadNotebookUseCaseTest {
     private lateinit var repository: FakeNotebookRepository
     private lateinit var useCase: LoadNotebookUseCase
 
-    /** Recreates the fake repository and use case before each test. */
+    /** Перед каждым тестом заново создаёт тестовый репозиторий и сценарий. */
     @Before
     fun setUp() {
         repository = FakeNotebookRepository()
@@ -41,7 +41,7 @@ class LoadNotebookUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [SaveNoteUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SaveNoteUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SaveNoteUseCaseTest {
     private val repository = FakeNotebookRepository()
     private val useCase = SaveNoteUseCase(repository)
@@ -66,7 +66,7 @@ class SaveNoteUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [DeleteNoteUseCase] using controlled inputs and dependencies. */
+/** Проверяет [DeleteNoteUseCase] на заданных входных данных с тестовыми зависимостями. */
 class DeleteNoteUseCaseTest {
     private val repository = FakeNotebookRepository()
     private val useCase = DeleteNoteUseCase(repository)

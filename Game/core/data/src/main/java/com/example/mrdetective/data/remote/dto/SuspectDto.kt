@@ -2,7 +2,7 @@ package com.example.mrdetective.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Public suspect record returned by the Supabase REST API. */
+/** Публичная запись подозреваемого из REST API Supabase. */
 data class SuspectDto(
     val id: Int,
     @SerializedName("case_id") val caseId: Int,

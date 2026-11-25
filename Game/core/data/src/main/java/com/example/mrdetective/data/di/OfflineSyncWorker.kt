@@ -33,26 +33,26 @@ import retrofit2.HttpException
 import java.io.File
 import kotlin.collections.map
 
-/** Exposes Hilt dependencies to the WorkManager synchronization worker. */
+/** Открывает фоновой задаче WorkManager доступ к зависимостям Hilt. */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface SyncWorkerEntryPoint {
-    /** Returns the local database to the background worker. */
+    /** Возвращает локальную базу данных фоновой задаче. */
     fun database(): AppDatabase
 
-    /** Returns the investigation and synchronization API to the background worker. */
+    /** Возвращает фоновой задаче API расследований и синхронизации. */
     fun offlineApi(): OfflineApi
 
-    /** Returns the table REST API to the background worker. */
+    /** Возвращает фоновой задаче REST API таблиц. */
     fun restApi(): SupabaseRestApi
 
-    /** Returns the source of the current player session to the background worker. */
+    /** Возвращает фоновой задаче источник текущей сессии игрока. */
     fun auth(): AuthRepository
 }
 
-/** WorkManager retries transient errors and only runs with a validated network connection. */
+/** WorkManager повторяет операции при временных сбоях и запускает задачу при наличии сетевого подключения. */
 class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    /** Sends eligible queued operations and pending photos for the active account. */
+    /** Отправляет доступные операции из очереди и ожидающие загрузки фото для активного аккаунта. */
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             val entry = EntryPointAccessors.fromApplication(applicationContext, SyncWorkerEntryPoint::class.java)
@@ -346,7 +346,7 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
     }
 }
 
-/** Holds the JSON serializer used to decode queued synchronization operations. */
+/** Хранит сериализатор JSON для чтения операций из очереди синхронизации. */
 private object GsonHolder {
     val gson = com.google.gson.Gson()
 }

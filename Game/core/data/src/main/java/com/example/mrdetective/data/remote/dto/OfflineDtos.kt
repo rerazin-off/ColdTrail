@@ -2,12 +2,12 @@ package com.example.mrdetective.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Request body for starting an investigation. */
+/** Тело запроса на начало расследования. */
 data class InvestigationInsertDto(
     @SerializedName("case_id") val caseId: Int,
 )
 
-/** Investigation record returned by Supabase. */
+/** Запись расследования из Supabase. */
 data class InvestigationDto(
     val id: Int,
     @SerializedName("user_id") val userId: String,
@@ -16,7 +16,7 @@ data class InvestigationDto(
     @SerializedName("start_at") val startedAt: String,
 )
 
-/** Public puzzle metadata returned by Supabase. */
+/** Публичные метаданные головоломки из Supabase. */
 data class PuzzleDto(
     val id: Int,
     @SerializedName("case_id") val caseId: Int,
@@ -26,14 +26,14 @@ data class PuzzleDto(
     @SerializedName("reward_clue") val rewardClueId: Int?,
 )
 
-/** Submission containing the answer for a server-validated puzzle. */
+/** Ответ игрока для проверки головоломки на сервере. */
 data class CheckPuzzleDto(
     @SerializedName("p_investigation") val investigationId: Int,
     @SerializedName("p_puzzle") val puzzleId: Int,
     @SerializedName("p_answer") val answer: String,
 )
 
-/** Server representation of a Morse pattern and its challenge state. */
+/** Серверная модель сигнала Морзе и состояния головоломки. */
 data class MorseChallengeDto(
     val id: Int,
     val title: String,
@@ -44,7 +44,7 @@ data class MorseChallengeDto(
     @SerializedName("reward_claimed") val rewardClaimed: Boolean,
 )
 
-/** Question and optional evidence sent to the suspect chat function. */
+/** Вопрос и необязательная улика, отправляемые в серверную функцию диалога. */
 data class NpcChatRequestDto(
     @SerializedName("investigation_id") val investigationId: Int,
     @SerializedName("suspect_id") val suspectId: Int,
@@ -52,19 +52,19 @@ data class NpcChatRequestDto(
     @SerializedName("clue_id") val clueId: Int? = null,
 )
 
-/** Reply returned by the suspect chat function. */
+/** Реплика, возвращаемая серверной функцией диалога. */
 data class NpcChatResponseDto(
     val reply: String,
     @SerializedName("message_id") val messageId: Int,
 )
 
-/** Selected suspect and evidence sent to the accusation function. */
+/** Выбранный подозреваемый и улики для проверки обвинения. */
 data class AccusationRequestDto(
     @SerializedName("investigation_id") val investigationId: Int,
     @SerializedName("suspect_id") val suspectId: Int,
 )
 
-/** Verdict and explanation returned by the accusation function. */
+/** Вердикт и объяснение, возвращаемые функцией обвинения. */
 data class AccusationResponseDto(
     val id: Int,
     @SerializedName("is_correct") val isCorrect: Boolean,

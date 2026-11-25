@@ -194,7 +194,7 @@ private fun CameraViewfinder(
     ErrorNotice(state.captureMessage)
     ErrorNotice(if (state.submission == CameraSubmission.Failed) stringResource(R.string.capture_failed) else null)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Keep the viewfinder size stable when the instruction changes.
+        // При смене инструкции размер видоискателя остаётся прежним.
         Text(
             instruction,
             style = MaterialTheme.typography.bodyMedium,

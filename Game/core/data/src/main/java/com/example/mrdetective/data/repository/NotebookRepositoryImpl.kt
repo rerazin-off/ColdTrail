@@ -10,19 +10,19 @@ import com.example.mrdetective.domain.repositories.NotebookRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Reads and changes investigation notes directly through the Supabase REST API. */
+/** Читает и изменяет заметки напрямую через REST API Supabase. */
 @Singleton
 class NotebookRepositoryImpl
     @Inject
     constructor(private val api: SupabaseRestApi) : NotebookRepository {
-        /** Returns the latest note for an investigation, or a not-found error if there is none. */
+        /** Возвращает последнюю заметку расследования или ошибку, если её нет. */
         override suspend fun getNote(investigationId: Int): Result<Note> =
             apiCall {
                 api.getLatestNote("eq.$investigationId").firstOrNull()?.toDomain()
                     ?: throw DomainError.NotFound("Заметка не найдена")
             }
 
-        /** Stores a note and returns the saved note record. */
+        /** Сохраняет заметку и возвращает сохранённую запись. */
         override suspend fun saveNote(
             investigationId: Int,
             text: String,
@@ -32,6 +32,6 @@ class NotebookRepositoryImpl
                     ?: throw DomainError.Unknown(IllegalStateException("Supabase did not return inserted note"))
             }
 
-        /** Removes a note by its identifier. */
+        /** Удаляет заметку по идентификатору. */
         override suspend fun deleteNote(noteId: Int): Result<Unit> = apiCall { api.deleteNote("eq.$noteId") }
     }

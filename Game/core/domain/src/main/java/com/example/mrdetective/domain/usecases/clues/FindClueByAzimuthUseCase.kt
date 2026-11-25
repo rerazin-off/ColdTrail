@@ -3,11 +3,11 @@ package com.example.mrdetective.domain.usecases.clues
 import com.example.mrdetective.domain.models.Clue
 import javax.inject.Inject
 
-/** Finds the clue whose bearing is nearest to the current device heading. */
+/** Находит улику, направление на которую ближе всего к текущему азимуту устройства. */
 class FindClueByAzimuthUseCase
     @Inject
     constructor() {
-        /** Returns the clue with the smallest circular angular distance among clues with assigned bearings. */
+        /** Возвращает улику с наименьшей угловой разницей среди улик с заданным азимутом. */
         operator fun invoke(
             clues: List<Clue>,
             currentAzimuth: Float,

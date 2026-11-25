@@ -17,124 +17,124 @@ import com.example.mrdetective.data.local.entity.SuspectEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import kotlinx.coroutines.flow.Flow
 
-/** Queries and updates cached case descriptions. */
+/** Читает и обновляет описания дел в кеше. */
 @Dao
 interface CaseDao {
-    /** Observes the cached case catalog as it changes. */
+    /** Отслеживает изменения списка дел в кеше. */
     @Query("SELECT * FROM cases ORDER BY id")
     fun observeAll(): Flow<List<CaseEntity>>
 
-    /** Reads the cached case matching the given identifier. */
+    /** Читает кешированное дело по идентификатору. */
     @Query("SELECT * FROM cases WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): CaseEntity?
 
-    /** Returns the current snapshot of cached cases. */
+    /** Возвращает текущий список дел из кеша. */
     @Query("SELECT * FROM cases ORDER BY id")
     suspend fun getAll(): List<CaseEntity>
 
-    /** Inserts or updates the supplied case records. */
+    /** Добавляет или обновляет переданные записи дел. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<CaseEntity>)
 
-    /** Inserts or updates one cached case. */
+    /** Добавляет или обновляет запись дела в кеше. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: CaseEntity)
 }
 
-/** Queries and updates cached suspect profiles. */
+/** Читает и обновляет профили подозреваемых в кеше. */
 @Dao interface SuspectDao {
-    /** Observes cached suspects for the selected case. */
+    /** Отслеживает изменения списка подозреваемых выбранного дела в кеше. */
     @Query("SELECT * FROM suspects WHERE caseId = :caseId ORDER BY id")
     fun observeByCase(caseId: Int): Flow<List<SuspectEntity>>
 
-    /** Returns cached suspects assigned to the selected case. */
+    /** Возвращает подозреваемых выбранного дела из кеша. */
     @Query("SELECT * FROM suspects WHERE caseId = :caseId ORDER BY id")
     suspend fun getByCase(caseId: Int): List<SuspectEntity>
 
-    /** Reads the cached suspect matching the given identifier. */
+    /** Читает профиль подозреваемого из кеша по идентификатору. */
     @Query("SELECT * FROM suspects WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): SuspectEntity?
 
-    /** Inserts or updates the supplied suspect profiles. */
+    /** Добавляет или обновляет переданные профили подозреваемых. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<SuspectEntity>)
 }
 
-/** Queries cached clue descriptions, imagery, and inventory entries. */
+/** Читает из кеша описания, изображения улик и записи инвентаря. */
 @Dao interface ClueDao {
-    /** Reads one cached clue description. */
+    /** Читает описание одной улики из кеша. */
     @Query("SELECT * FROM clues WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): ClueEntity?
 
-    /** Returns cached clues associated with the selected case. */
+    /** Возвращает сохранённые в кеше улики выбранного дела. */
     @Query("SELECT * FROM clues WHERE caseId = :caseId ORDER BY id")
     suspend fun getByCase(caseId: Int): List<ClueEntity>
 
-    /** Returns up to fifty cached clues with an image reference. */
+    /** Возвращает до пятидесяти кешированных улик со ссылкой на изображение. */
     @Query("SELECT * FROM clues WHERE image IS NOT NULL ORDER BY id LIMIT 50")
     suspend fun getClueImages(): List<ClueEntity>
 
-    /** Observes the clues collected in the specified investigation. */
+    /** Отслеживает изменения списка найденных улик расследования. */
     @Query(
         "SELECT c.* FROM clues c INNER JOIN collected_clues cc ON c.id = cc.clueId " +
             "WHERE cc.investigationId = :investigationId ORDER BY cc.collectedAt",
     )
     fun observeInventory(investigationId: Int): Flow<List<ClueEntity>>
 
-    /** Returns the current snapshot of an investigation's collected clues. */
+    /** Возвращает текущий список найденных улик расследования. */
     @Query(
         "SELECT c.* FROM clues c INNER JOIN collected_clues cc ON c.id = cc.clueId " +
             "WHERE cc.investigationId = :investigationId ORDER BY cc.collectedAt",
     )
     suspend fun getInventory(investigationId: Int): List<ClueEntity>
 
-    /** Inserts or updates the supplied clue records. */
+    /** Добавляет или обновляет переданные записи улик. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<ClueEntity>)
 }
 
-/** Stores local investigations and their collected clues and solved puzzles. */
+/** Хранит локальные расследования, найденные улики и решённые головоломки. */
 @Dao interface InvestigationDao {
-    /** Reads a local investigation by its record identifier. */
+    /** Читает локальное расследование по идентификатору записи. */
     @Query("SELECT * FROM investigations WHERE id = :id LIMIT 1")
     suspend fun getInvestigation(id: Int): InvestigationEntity?
 
-    /** Returns an investigation associated with the specified case. */
+    /** Возвращает расследование, связанное с указанным делом. */
     @Query("SELECT * FROM investigations WHERE caseId = :caseId ORDER BY updatedAt DESC LIMIT 1")
     suspend fun getByCase(caseId: Int): InvestigationEntity?
 
-    /** Returns the specified player's investigation of the case. */
+    /** Возвращает расследование указанного игрока по делу. */
     @Query("SELECT * FROM investigations WHERE caseId = :caseId AND userId = :userId ORDER BY updatedAt DESC LIMIT 1")
     suspend fun getByCaseForUser(
         caseId: Int,
         userId: String,
     ): InvestigationEntity?
 
-    /** Lists investigations belonging to the specified player. */
+    /** Возвращает список расследований указанного игрока. */
     @Query("SELECT * FROM investigations WHERE userId = :userId ORDER BY updatedAt DESC, id DESC")
     suspend fun getForUser(userId: String): List<InvestigationEntity>
 
-    /** Lists the investigation records stored on this device. */
+    /** Возвращает расследования, сохранённые на устройстве. */
     @Query("SELECT * FROM investigations ORDER BY updatedAt DESC")
     suspend fun getAllInvestigations(): List<InvestigationEntity>
 
-    /** Inserts or updates a local investigation record. */
+    /** Добавляет или обновляет локальную запись расследования. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertInvestigation(item: InvestigationEntity)
 
-    /** Inserts the link between an investigation and a collected clue. */
+    /** Добавляет связь расследования с найденной уликой. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun collectClue(item: CollectedClueEntity): Long
 
-    /** Inserts the link between an investigation and a solved puzzle. */
+    /** Добавляет связь расследования с решённой головоломкой. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun markPuzzleSolved(item: SolvedPuzzleEntity): Long
 
-    /** Lists the identifiers of clues already collected in the investigation. */
+    /** Возвращает идентификаторы найденных улик расследования. */
     @Query("SELECT clueId FROM collected_clues WHERE investigationId = :investigationId ORDER BY collectedAt")
     suspend fun collectedClueIds(investigationId: Int): List<Int>
 
-    /** Observes the identifiers of clues earned in the selected investigation. */
+    /** Отслеживает изменения списка идентификаторов улик, найденных в расследовании. */
     @Query(
         """
         SELECT DISTINCT captured.clueId FROM collected_clues AS captured
@@ -147,29 +147,29 @@ interface CaseDao {
         userId: String,
     ): Flow<List<Int>>
 
-    /** Lists the identifiers of puzzles already solved in the investigation. */
+    /** Возвращает идентификаторы решённых головоломок расследования. */
     @Query("SELECT puzzleId FROM solved_puzzles WHERE investigationId = :investigationId")
     suspend fun solvedPuzzleIds(investigationId: Int): List<Int>
 
-    /** Moves collected clue links to the synchronized investigation identifier. */
+    /** Привязывает найденные улики к серверному идентификатору расследования. */
     @Query("UPDATE collected_clues SET investigationId = :newId WHERE investigationId = :oldId")
     suspend fun remapCollected(
         oldId: Int,
         newId: Int,
     )
 
-    /** Moves solved puzzle links to the synchronized investigation identifier. */
+    /** Привязывает решённые головоломки к серверному идентификатору расследования. */
     @Query("UPDATE solved_puzzles SET investigationId = :newId WHERE investigationId = :oldId")
     suspend fun remapSolved(
         oldId: Int,
         newId: Int,
     )
 
-    /** Deletes the local investigation record matching the identifier. */
+    /** Удаляет локальную запись расследования по идентификатору. */
     @Query("DELETE FROM investigations WHERE id = :id")
     suspend fun deleteInvestigation(id: Int)
 
-    /** Changes the identifier of a locally created investigation after sync. */
+    /** Заменяет идентификатор локально созданного расследования после синхронизации. */
     @Query("UPDATE investigations SET id = :newId WHERE id = :oldId")
     suspend fun remapInvestigation(
         oldId: Int,
@@ -177,30 +177,30 @@ interface CaseDao {
     )
 }
 
-/** Stores conversation history and provisional messages for synchronization. */
+/** Хранит историю диалогов и временные сообщения до синхронизации. */
 @Dao interface DialogueDao {
-    /** Observes locally stored messages for a case and suspect. */
+    /** Отслеживает локальные сообщения для пары «дело и подозреваемый». */
     @Query("SELECT * FROM dialogue_messages WHERE caseId = :caseId AND suspectId = :suspectId ORDER BY createdAt, id")
     fun observeHistory(
         caseId: Int,
         suspectId: Int,
     ): Flow<List<DialogueMessageEntity>>
 
-    /** Returns locally stored messages for a case and suspect. */
+    /** Возвращает локальные сообщения для указанного дела и подозреваемого. */
     @Query("SELECT * FROM dialogue_messages WHERE caseId = :caseId AND suspectId = :suspectId ORDER BY createdAt, id")
     suspend fun getHistory(
         caseId: Int,
         suspectId: Int,
     ): List<DialogueMessageEntity>
 
-    /** Returns the history for the selected suspect in an investigation. */
+    /** Возвращает историю диалога с выбранным подозреваемым в расследовании. */
     @Query("SELECT * FROM dialogue_messages WHERE investigationId = :investigationId AND suspectId = :suspectId ORDER BY createdAt, id")
     suspend fun getInvestigationHistory(
         investigationId: Int,
         suspectId: Int,
     ): List<DialogueMessageEntity>
 
-    /** Removes temporary local messages when the confirmed history is available. */
+    /** Удаляет временные сообщения, когда доступна подтверждённая история. */
     @Query(
         "DELETE FROM dialogue_messages WHERE investigationId = :investigationId AND suspectId = :suspectId AND id IN (:ids) AND synced = 1",
     )
@@ -210,19 +210,19 @@ interface CaseDao {
         ids: List<Long>,
     )
 
-    /** Inserts or replaces the supplied message. */
+    /** Добавляет или заменяет переданное сообщение. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: DialogueMessageEntity)
 
-    /** Reads one locally stored dialogue message. */
+    /** Читает одно локально сохранённое сообщение. */
     @Query("SELECT * FROM dialogue_messages WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): DialogueMessageEntity?
 
-    /** Deletes the stored message matching the given identifier. */
+    /** Удаляет сохранённое сообщение по идентификатору. */
     @Query("DELETE FROM dialogue_messages WHERE id = :id")
     suspend fun delete(id: Long)
 
-    /** Moves dialogue messages from a provisional investigation to its synchronized identifier. */
+    /** Переносит сообщения с временного идентификатора расследования на серверный. */
     @Query("UPDATE dialogue_messages SET investigationId = :newId WHERE investigationId = :oldId")
     suspend fun remapInvestigation(
         oldId: Int,
@@ -230,40 +230,40 @@ interface CaseDao {
     )
 }
 
-/** Stores investigation notes and tracks whether their changes have been synchronized. */
+/** Хранит заметки расследования и отмечает, синхронизированы ли их изменения. */
 @Dao interface NoteDao {
-    /** Returns the latest note for the selected investigation. */
+    /** Возвращает последнюю заметку выбранного расследования. */
     @Query("SELECT * FROM notes WHERE investigationId = :investigationId ORDER BY localUpdatedAt DESC LIMIT 1")
     suspend fun latest(investigationId: Int): NoteEntity?
 
-    /** Observes the notes for an investigation, starting with the most recently updated. */
+    /** Отслеживает заметки расследования в порядке от последнего изменения. */
     @Query("SELECT * FROM notes WHERE investigationId = :investigationId ORDER BY localUpdatedAt DESC")
     fun observe(investigationId: Int): Flow<List<NoteEntity>>
 
-    /** Inserts or updates a note in Room. */
+    /** Добавляет или обновляет заметку в Room. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: NoteEntity)
 
-    /** Deletes the stored note matching the given identifier. */
+    /** Удаляет сохранённую заметку по идентификатору. */
     @Query("DELETE FROM notes WHERE id = :id")
     suspend fun delete(id: Int)
 
-    /** Lists local notes that still need synchronization. */
+    /** Возвращает локальные заметки, ожидающие синхронизации. */
     @Query("SELECT * FROM notes WHERE synced = 0 ORDER BY localUpdatedAt")
     suspend fun pending(): List<NoteEntity>
 
-    /** Marks the note as synchronized with the server. */
+    /** Помечает заметку как синхронизированную с сервером. */
     @Query("UPDATE notes SET synced = 1 WHERE id = :id")
     suspend fun markSynced(id: Int)
 
-    /** Updates notes to reference the synchronized investigation identifier. */
+    /** Перепривязывает заметки к серверному идентификатору расследования. */
     @Query("UPDATE notes SET investigationId = :newId WHERE investigationId = :oldId")
     suspend fun remapInvestigation(
         oldId: Int,
         newId: Int,
     )
 
-    /** Replaces the local note identifier with the server identifier and marks the note as synchronized. */
+    /** Заменяет локальный идентификатор заметки серверным и отмечает её синхронизированной. */
     @Query("UPDATE notes SET id = :newId, synced = 1 WHERE id = :oldId")
     suspend fun remapNote(
         oldId: Int,
@@ -271,31 +271,31 @@ interface CaseDao {
     )
 }
 
-/** Maintains pending operations, retry details, and camera submissions. */
+/** Хранит очередь операций, сведения о повторах и отправленные снимки улик. */
 @Dao interface SyncQueueDao {
-    /** Returns queued operations waiting for a synchronization attempt. */
+    /** Возвращает операции, ожидающие попытки синхронизации. */
     @Query("SELECT * FROM sync_queue ORDER BY createdAt, id")
     suspend fun pending(): List<SyncQueueEntity>
 
-    /** Adds an operation to the persistent synchronization queue. */
+    /** Добавляет операцию в сохраняемую очередь синхронизации. */
     @Insert suspend fun enqueue(item: SyncQueueEntity): Long
 
-    /** Removes the completed operation from the queue. */
+    /** Удаляет выполненную операцию из очереди. */
     @Query("DELETE FROM sync_queue WHERE id = :id")
     suspend fun remove(id: Long)
 
-    /** Records an attempt and its error for a queued operation. */
+    /** Записывает попытку и её ошибку для операции в очереди. */
     @Query("UPDATE sync_queue SET attempts = attempts + 1, lastError = :error WHERE id = :id")
     suspend fun recordFailure(
         id: Long,
         error: String,
     )
 
-    /** Observes the number of pending operations. */
+    /** Отслеживает количество операций в очереди. */
     @Query("SELECT COUNT(*) FROM sync_queue")
     fun observeCount(): Flow<Int>
 
-    /** Observes a queued camera capture for the specified investigation and puzzle. */
+    /** Отслеживает состояние снимка улики для указанного расследования и головоломки. */
     @Query(
         """
         SELECT CASE
@@ -311,11 +311,11 @@ interface CaseDao {
         key: String,
     ): Flow<Int>
 
-    /** Observes the last error for a queued camera capture. */
+    /** Отслеживает последнюю ошибку снимка улики в очереди. */
     @Query("SELECT lastError FROM sync_queue WHERE entityType = 'camera_capture' AND entityId = :key ORDER BY id DESC LIMIT 1")
     fun observeCameraCaptureError(key: String): Flow<String?>
 
-    /** Updates the serialized request for the queued operation. */
+    /** Обновляет сериализованный запрос операции в очереди. */
     @Query("UPDATE sync_queue SET payload = replace(payload, :oldValue, :newValue) WHERE payload LIKE '%' || :oldValue || '%'")
     suspend fun replacePayload(
         oldValue: String,
@@ -323,35 +323,35 @@ interface CaseDao {
     )
 }
 
-/** Maintains the outbox of locally stored clue photos. */
+/** Хранит очередь отправки локально сохранённых фотографий улик. */
 @Dao interface PendingPhotoDao {
-    /** Returns the photos still waiting to be uploaded. */
+    /** Возвращает фотографии, ожидающие загрузки. */
     @Query("SELECT * FROM pending_photo_uploads ORDER BY createdAt")
     suspend fun pending(): List<PendingPhotoUploadEntity>
 
-    /** Adds a clue photo to the upload outbox. */
+    /** Добавляет фотографию улики в очередь загрузки. */
     @Insert suspend fun enqueue(item: PendingPhotoUploadEntity): Long
 
-    /** Removes a completed photo upload from the outbox. */
+    /** Удаляет из очереди запись о загруженной фотографии. */
     @Query("DELETE FROM pending_photo_uploads WHERE id = :id")
     suspend fun remove(id: Long)
 
-    /** Increments the recorded retry count for a photo upload. */
+    /** Увеличивает счётчик попыток загрузки фотографии. */
     @Query("UPDATE pending_photo_uploads SET attempts = attempts + 1 WHERE id = :id")
     suspend fun incrementAttempts(id: Long)
 }
 
-/** Queries and updates cached puzzle metadata. */
+/** Читает и обновляет метаданные головоломок в кеше. */
 @Dao interface PuzzleDao {
-    /** Returns the cached puzzle metadata for the identifier. */
+    /** Возвращает метаданные головоломки из кеша по идентификатору. */
     @Query("SELECT * FROM puzzles WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): PuzzleEntity?
 
-    /** Returns the cached puzzle metadata for the selected case. */
+    /** Возвращает метаданные головоломок выбранного дела из кеша. */
     @Query("SELECT * FROM puzzles WHERE caseId = :caseId ORDER BY id")
     suspend fun getByCase(caseId: Int): List<PuzzleEntity>
 
-    /** Inserts or updates the supplied puzzle records. */
+    /** Добавляет или обновляет переданные записи головоломок. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<PuzzleEntity>)
 }

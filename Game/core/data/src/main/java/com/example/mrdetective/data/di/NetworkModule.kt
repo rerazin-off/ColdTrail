@@ -18,19 +18,19 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import javax.inject.Singleton
 
-/** Provides the shared Supabase HTTP client and Retrofit APIs. */
+/** Предоставляет общий HTTP-клиент Supabase и интерфейсы Retrofit. */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    /** Provides the JSON serializer shared by the data layer. */
+    /** Предоставляет общий сериализатор JSON для слоя данных. */
     @Provides @Singleton
     fun provideGson(): Gson = Gson()
 
-    /** Provides logging configured for the current build type. */
+    /** Предоставляет журналирование, настроенное для текущего типа сборки. */
     @Provides @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor = NetworkClientFactory.logging(BuildConfig.DEBUG)
 
-    /** Creates the shared authenticated HTTP client. */
+    /** Создаёт общий HTTP-клиент с поддержкой авторизации. */
     @Provides @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
@@ -45,19 +45,19 @@ object NetworkModule {
             networkAvailabilityInterceptor,
         )
 
-    /** Creates the Retrofit instance for the Supabase base URL. */
+    /** Создаёт экземпляр Retrofit с базовым URL Supabase. */
     @Provides @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit = NetworkClientFactory.retrofit(client)
 
-    /** Creates the Retrofit implementation of the table REST API. */
+    /** Создаёт реализацию Retrofit для REST API таблиц. */
     @Provides @Singleton
     fun provideSupabaseRestApi(retrofit: Retrofit): SupabaseRestApi = retrofit.create(SupabaseRestApi::class.java)
 
-    /** Creates the Retrofit implementation of the authentication API. */
+    /** Создаёт реализацию Retrofit для API авторизации. */
     @Provides @Singleton
     fun provideSupabaseAuthApi(retrofit: Retrofit): SupabaseAuthApi = retrofit.create(SupabaseAuthApi::class.java)
 
-    /** Creates the Retrofit implementation of the investigation and synchronization API. */
+    /** Создаёт реализацию Retrofit для API расследований и синхронизации. */
     @Provides @Singleton
     fun provideOfflineApi(retrofit: Retrofit): OfflineApi = retrofit.create(OfflineApi::class.java)
 }

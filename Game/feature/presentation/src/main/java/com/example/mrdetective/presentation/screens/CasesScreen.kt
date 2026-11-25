@@ -223,7 +223,7 @@ private fun CaseListCard(
     }
 }
 
-/** Provides loading, empty, error, and populated cases for Compose previews. */
+/** Предоставляет данные для предпросмотра списка дел в состояниях загрузки, пустоты, ошибки и результата. */
 class CasesPreviewStates : PreviewParameterProvider<CasesUiState> {
     override val values =
         sequenceOf(

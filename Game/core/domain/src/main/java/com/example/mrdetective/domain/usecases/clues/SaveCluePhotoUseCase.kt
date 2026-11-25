@@ -4,13 +4,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.PhotoRepository
 import javax.inject.Inject
 
-/** Saves a captured clue photo through the photo repository. */
+/** Сохраняет снимок улики через репозиторий фотографий. */
 class SaveCluePhotoUseCase
     @Inject
     constructor(
         private val repository: PhotoRepository,
     ) {
-        /** Delegates persistence of the captured clue photo to the photo repository. */
+        /** Передаёт репозиторию фотографий сохранение снимка улики. */
         suspend operator fun invoke(
             clueId: Int,
             filePath: String,

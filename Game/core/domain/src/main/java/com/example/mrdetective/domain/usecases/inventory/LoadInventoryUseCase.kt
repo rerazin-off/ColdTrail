@@ -5,13 +5,13 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.InventoryRepository
 import javax.inject.Inject
 
-/** Retrieves the clues held by an investigation. */
+/** Загружает улики, собранные в расследовании. */
 class LoadInventoryUseCase
     @Inject
     constructor(
         private val repository: InventoryRepository,
     ) {
-        /** Returns the clues stored for an investigation. */
+        /** Возвращает сохранённые улики расследования. */
         suspend operator fun invoke(investigationId: Int): Result<List<Clue>> {
             if (investigationId == 0) {
                 return Result.failure(

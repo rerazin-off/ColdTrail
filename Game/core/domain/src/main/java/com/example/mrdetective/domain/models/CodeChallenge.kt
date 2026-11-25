@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Describes a numeric puzzle and whether its reward has been claimed. */
+/** Описывает числовую головоломку и состояние получения награды. */
 data class CodeChallenge(
     val id: Int,
     val title: String,
@@ -10,5 +10,5 @@ data class CodeChallenge(
     val rewardClaimed: Boolean,
 )
 
-/** Groups numeric puzzles by investigation. */
+/** Группирует числовые головоломки по расследованию. */
 data class CodeChallenges(val investigationId: Int, val puzzles: List<CodeChallenge>)

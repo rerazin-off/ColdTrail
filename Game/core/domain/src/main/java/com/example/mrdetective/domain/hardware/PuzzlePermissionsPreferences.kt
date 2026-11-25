@@ -1,10 +1,10 @@
 package com.example.mrdetective.domain.hardware
 
-/** Tracks whether the puzzle permissions introduction has been shown per player. */
+/** Отслеживает, был ли показан экран разрешений каждому игроку. */
 interface PuzzlePermissionsPreferences {
-    /** Checks whether the permissions introduction has been shown to the specified player. */
+    /** Проверяет, был ли показан экран разрешений указанному игроку. */
     suspend fun hasSeenPuzzlePermissions(userId: String): Boolean
 
-    /** Records that the specified player has seen the permissions introduction. */
+    /** Отмечает, что указанный игрок увидел экран разрешений. */
     suspend fun markPuzzlePermissionsSeen(userId: String)
 }

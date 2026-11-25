@@ -7,7 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Persists the Supabase session and restores it for authenticated requests. */
+/** Сохраняет сессию Supabase и восстанавливает её для авторизованных запросов. */
 @Singleton
 class SessionTokenStore
     @Inject
@@ -25,7 +25,7 @@ class SessionTokenStore
 
         private var generation = 0L
 
-        /** Holds the access token, refresh token, and associated player identifier. */
+        /** Хранит токен доступа, токен обновления и идентификатор связанного игрока. */
         internal data class Session(val generation: Long, val access: String, val refresh: String?)
 
         @Synchronized
@@ -34,7 +34,7 @@ class SessionTokenStore
                 Session(generation, it, preferences.getString(KEY_REFRESH, null))
             }
 
-        /** Saves the session and makes it available to subsequent requests. */
+        /** Сохраняет сессию для последующих запросов. */
         @Synchronized
         fun setSession(
             accessToken: String,
@@ -65,14 +65,14 @@ class SessionTokenStore
                 .apply()
         }
 
-        /** Removes the persisted account and token information. */
+        /** Удаляет сохранённые сведения об аккаунте и токенах. */
         @Synchronized
         fun clear() {
             generation++
             writeTokens(null, null)
         }
 
-        /** Defines the shared access to the persistent session store. */
+        /** Предоставляет общий доступ к хранилищу сессии. */
         private companion object {
             const val KEY_ACCESS = "access_token"
             const val KEY_REFRESH = "refresh_token"

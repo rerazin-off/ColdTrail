@@ -1,6 +1,6 @@
 package com.example.mrdetective.domain.models
 
-/** Describes a camera puzzle and the clue it can award. */
+/** Описывает головоломку с камерой и улику, которую можно получить. */
 data class CameraChallenge(
     val id: Int,
     val investigationId: Int,

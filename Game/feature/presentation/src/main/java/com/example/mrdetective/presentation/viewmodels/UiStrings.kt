@@ -8,7 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 
-/** Resolves localized resources for state and errors produced outside Compose. */
+/** Получает локализованные строки для состояний и ошибок вне Compose. */
 class UiStrings
     @Inject
     constructor(
@@ -32,13 +32,13 @@ class UiStrings
             ).associateBy { source.getString(it) }
         }
 
-        /** Reads a formatted string resource for the current app locale. */
+        /** Читает форматированную строку ресурсов для текущего языка приложения. */
         fun get(
             @StringRes resource: Int,
             vararg arguments: Any,
         ): String = if (arguments.isEmpty()) context.getString(resource) else context.getString(resource, *arguments)
 
-        /** Localizes recognized domain feedback and preserves other messages. */
+        /** Локализует известные сообщения домена, остальные возвращает как есть. */
         fun domainMessage(
             message: String?,
             fallback: String,

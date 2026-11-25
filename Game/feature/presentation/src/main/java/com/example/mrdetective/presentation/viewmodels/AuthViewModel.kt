@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Stores authentication form mode, progress, and feedback. */
+/** Хранит режим формы авторизации, состояние отправки и обратную связь. */
 data class AuthUiState(
     val checkingSession: Boolean = true,
     val signedIn: Boolean = false,
@@ -25,7 +25,7 @@ data class AuthUiState(
     val confirmationRequired: Boolean = false,
 )
 
-/** Validates and submits authentication forms and exposes the current session. */
+/** Проверяет и отправляет формы авторизации, предоставляет текущее состояние сессии. */
 @HiltViewModel
 class AuthViewModel
     @Inject
@@ -53,14 +53,14 @@ class AuthViewModel
             }
         }
 
-        /** Clears the feedback shown for the current authentication attempt. */
+        /** Сбрасывает сообщение о текущей попытке авторизации. */
         fun clearMessage() {
             if (!state.value.busy) {
                 mutableState.value = state.value.copy(message = null, confirmationRequired = false)
             }
         }
 
-        /** Submits the active registration or sign-in form. */
+        /** Отправляет активную форму входа или регистрации. */
         fun submit(
             email: String,
             password: String,
@@ -103,7 +103,7 @@ class AuthViewModel
             }
         }
 
-        /** Signs the current account out of the game. */
+        /** Завершает сессию текущего аккаунта в игре. */
         fun signOut() {
             if (state.value.busy || !state.value.signedIn) return
             mutableState.value = state.value.copy(busy = true, message = null)

@@ -11,7 +11,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Unit tests for the behavior of [AddToInventoryUseCase] using controlled inputs and dependencies. */
+/** Проверяет [AddToInventoryUseCase] на заданных входных данных с тестовыми зависимостями. */
 class AddToInventoryUseCaseTest {
     private val repository = FakeInventoryRepository()
     private val useCase = AddToInventoryUseCase(repository)
@@ -35,7 +35,7 @@ class AddToInventoryUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [CollectClueUseCase] using controlled inputs and dependencies. */
+/** Проверяет [CollectClueUseCase] на заданных входных данных с тестовыми зависимостями. */
 class CollectClueUseCaseTest {
     private val repository = FakeClueRepository()
     private val useCase = CollectClueUseCase(repository)
@@ -57,7 +57,7 @@ class CollectClueUseCaseTest {
         }
 }
 
-/** Unit tests for the behavior of [ConfirmClueApproachUseCase] using controlled inputs and dependencies. */
+/** Проверяет [ConfirmClueApproachUseCase] на заданных входных данных с тестовыми зависимостями. */
 class ConfirmClueApproachUseCaseTest {
     private val useCase = ConfirmClueApproachUseCase()
 
@@ -74,7 +74,7 @@ class ConfirmClueApproachUseCaseTest {
     }
 }
 
-/** Unit tests for the behavior of [SaveCluePhotoUseCase] using controlled inputs and dependencies. */
+/** Проверяет [SaveCluePhotoUseCase] на заданных входных данных с тестовыми зависимостями. */
 class SaveCluePhotoUseCaseTest {
     private val repository = FakePhotoRepository()
     private val useCase = SaveCluePhotoUseCase(repository)
