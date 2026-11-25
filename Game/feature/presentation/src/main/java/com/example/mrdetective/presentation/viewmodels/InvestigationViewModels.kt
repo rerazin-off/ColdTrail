@@ -7,7 +7,9 @@ import androidx.navigation.toRoute
 import com.example.mrdetective.domain.models.Case
 import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.DialogueMessage
+import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.MessageAuthor
+import com.example.mrdetective.domain.models.Note
 import com.example.mrdetective.domain.models.Suspect
 import com.example.mrdetective.domain.repositories.CaseRepository
 import com.example.mrdetective.domain.repositories.ProgressRepository
@@ -18,6 +20,8 @@ import com.example.mrdetective.domain.usecases.dialogue.LoadDialogueHistoryUseCa
 import com.example.mrdetective.domain.usecases.dialogue.PresentClueToSuspectUseCase
 import com.example.mrdetective.domain.usecases.dialogue.SendSuspectMessageUseCase
 import com.example.mrdetective.domain.usecases.inventory.LoadInventoryUseCase
+import com.example.mrdetective.domain.usecases.notebook.LoadNotebookUseCase
+import com.example.mrdetective.domain.usecases.notebook.SaveNoteUseCase
 import com.example.mrdetective.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,15 +32,37 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Передаёт идентификатор открытого дела. */
+/**
+ * Передаёт идентификатор открытого дела.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ */
 @Serializable
 internal data class InvestigationRoute(val caseId: Int)
 
-/** Передаёт идентификаторы дела и подозреваемого для диалога. */
+/**
+ * Передаёт идентификаторы дела и подозреваемого для диалога.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ * @property suspectId Идентификатор подозреваемого.
+ */
 @Serializable
 internal data class InterrogationRoute(val caseId: Int, val suspectId: Int)
 
-/** Хранит данные дела, подозреваемых, прогресс поиска улик и доступные действия. */
+/**
+ * Хранит данные дела, подозреваемых, прогресс поиска улик и доступные действия.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property case Загруженные данные дела, если они уже доступны.
+ * @property suspects Подозреваемые, доступные на экране дела.
+ * @property suspectsUnavailable Не удалось загрузить список подозреваемых.
+ * @property suspectsError Причина ошибки загрузки подозреваемых, если она есть.
+ * @property starting Выполняется ли запуск расследования.
+ * @property started Начато ли расследование текущим игроком.
+ * @property status Текущее состояние дела или расследования.
+ * @property collectedClueIds Идентификаторы улик, которые игрок уже собрал.
+ * @property error Причина ошибки, если она возникла.
+ */
 internal data class InvestigationState(
     val loading: Boolean = true,
     val case: Case? = null,
@@ -54,22 +80,44 @@ internal data class InvestigationState(
     val hasRemainingClues get() = totalClueCount?.let { collectedClueCount < it } ?: true
 }
 
-/** Загружает подробности расследования и отслеживает прогресс поиска улик. */
+/**
+ * Загружает подробности расследования и отслеживает прогресс поиска улик.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param cases Репозиторий для загрузки сведений о деле.
+ * @param loadSuspects Сценарий загрузки подозреваемых указанного дела.
+ * @param startInvestigation Сценарий запуска расследования по выбранному делу.
+ * @param restoreProgress Сценарий восстановления расследования текущего игрока.
+ * @param progressRepository Репозиторий состояния расследования и найденных улик.
+ * @param loadNotebook Сценарий загрузки последней сохранённой заметки.
+ * @param saveNote Сценарий проверки и сохранения текста заметки.
+ */
 @HiltViewModel
 internal class InvestigationViewModel
     @Inject
     constructor(
         private val strings: UiStrings,
-        savedState: SavedStateHandle,
+        private val savedState: SavedStateHandle,
         private val cases: CaseRepository,
         private val loadSuspects: LoadSuspectsUseCase,
         private val startInvestigation: StartInvestigationUseCase,
         private val restoreProgress: RestoreInvestigationProgressUseCase,
         private val progressRepository: ProgressRepository,
+        private val loadNotebook: LoadNotebookUseCase,
+        private val saveNote: SaveNoteUseCase,
     ) : ViewModel() {
         private val caseId = savedState.toRoute<InvestigationRoute>().caseId
         private val mutableState = MutableStateFlow(InvestigationState())
         val state = mutableState.asStateFlow()
+        private val mutableNote = MutableStateFlow<Note?>(null)
+        val note = mutableNote.asStateFlow()
+        val noteEditorOpen = savedState.getStateFlow("noteEditorOpen", false)
+        val noteDraft = savedState.getStateFlow("noteDraft", "")
+        private val mutableNoteSaving = MutableStateFlow(false)
+        val noteSaving = mutableNoteSaving.asStateFlow()
+        private val mutableNoteError = MutableStateFlow<String?>(null)
+        val noteError = mutableNoteError.asStateFlow()
 
         init {
             viewModelScope.launch {
@@ -109,6 +157,11 @@ internal class InvestigationViewModel
                         error = null,
                     )
                 }
+                if (progress != null) {
+                    val previousNote = mutableNote.value
+                    val loaded = loadNotebook(progress.id).valueOrThrowCancellation()
+                    if (loaded != null) mutableNote.compareAndSet(previousNote, loaded)
+                }
             }
         }
 
@@ -131,20 +184,78 @@ internal class InvestigationViewModel
             if (current.case == null || current.loading || current.starting || current.started) return
             mutableState.value = current.copy(starting = true, error = null)
             viewModelScope.launch {
-                val started = startInvestigation(caseId).valueOrThrowCancellation() != null
+                val result = startInvestigation(caseId)
+                val started = result.valueOrThrowCancellation() != null
                 val status = if (started) restoreProgress(caseId).valueOrThrowCancellation()?.status ?: "in_progress" else null
                 mutableState.value =
                     state.value.copy(
                         starting = false,
                         started = started,
                         status = status,
-                        error = if (started) null else strings.get(R.string.investigation_start_error),
+                        error = result.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.investigation_start_error)),
                     )
+            }
+        }
+
+        /** Открывает редактор новой заметки. */
+        fun openNoteEditor() {
+            mutableNoteError.value = null
+            savedState["noteEditorOpen"] = true
+        }
+
+        /** Закрывает редактор и очищает черновик. */
+        fun closeNoteEditor() {
+            if (noteSaving.value) return
+            savedState["noteEditorOpen"] = false
+            savedState["noteDraft"] = ""
+        }
+
+        /** Обновляет черновик заметки, который сохраняется при повороте экрана. */
+        fun updateNoteDraft(text: String) {
+            if (noteSaving.value) return
+            savedState["noteDraft"] = text.take(1000)
+            mutableNoteError.value = null
+        }
+
+        /** Сохраняет заметку для текущего расследования и закрывает редактор после записи. */
+        fun submitNote() {
+            if (!noteEditorOpen.value || noteSaving.value) return
+            mutableNoteSaving.value = true
+            mutableNoteError.value = null
+            viewModelScope.launch {
+                try {
+                    val investigation = restoreProgress(caseId).getOrThrow()
+                    mutableNote.value = saveNote(investigation.id, noteDraft.value.trim()).getOrThrow()
+                    savedState["noteEditorOpen"] = false
+                    savedState["noteDraft"] = ""
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    mutableNoteError.value =
+                        when (error) {
+                            is DomainError.Validation -> strings.get(R.string.note_invalid)
+                            else -> error.uiMessage(strings, strings.get(R.string.note_save_error))
+                        }
+                } finally {
+                    mutableNoteSaving.value = false
+                }
             }
         }
     }
 
-/** Хранит диалог, черновик игрока и выбор прикрепляемой улики. */
+/**
+ * Хранит диалог, черновик игрока и выбор прикрепляемой улики.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property suspect Выбранный подозреваемый, если профиль уже загружен.
+ * @property messages Сообщения, отображаемые в текущем диалоге.
+ * @property animatedMessageIds Идентификаторы сообщений, для которых включена анимация появления.
+ * @property sending Ожидается ли ответ на отправленную реплику.
+ * @property historyUnavailable Не удалось получить историю диалога.
+ * @property historyError Причина сбоя загрузки истории или данных подозреваемого, если она известна.
+ * @property feedback Сообщение игроку о результате последнего действия.
+ * @property pendingFeedback Относится ли сообщение к реплике, которая ожидает синхронизации.
+ */
 internal data class InterrogationState(
     val loading: Boolean = true,
     val suspect: Suspect? = null,
@@ -162,14 +273,34 @@ internal sealed interface CluePickerState {
     /** Обозначает загрузку улик, доступных для прикрепления. */
     data object Loading : CluePickerState
 
-    /** Хранит состояние ошибки при выборе улики. */
-    data object Error : CluePickerState
+    /**
+     * Хранит состояние ошибки при выборе улики.
+     *
+     * @property message Сообщение, которое описывает состояние или ошибку.
+     */
+    data class Error(val message: String) : CluePickerState
 
-    /** Хранит найденные улики, которые можно прикрепить к сообщению. */
+    /**
+     * Хранит найденные улики, которые можно прикрепить к сообщению.
+     *
+     * @property clues Список улик, которые можно прикрепить к сообщению.
+     */
     data class Content(val clues: List<Clue>) : CluePickerState
 }
 
-/** Управляет историей диалога, черновиками, вложениями и повторной отправкой. */
+/**
+ * Управляет историей диалога, черновиками, вложениями и повторной отправкой.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param loadSuspects Сценарий загрузки подозреваемых указанного дела.
+ * @param history Сценарий загрузки сохранённых реплик подозреваемого.
+ * @param sendMessage Сценарий проверки и отправки вопроса подозреваемому.
+ * @param presentClue Сценарий отправки улики подозреваемому.
+ * @param restoreProgress Сценарий восстановления расследования текущего игрока.
+ * @param loadInventory Сценарий чтения инвентаря расследования.
+ * @param progressRepository Репозиторий состояния расследования и найденных улик.
+ */
 @HiltViewModel
 internal class InterrogationViewModel
     @Inject
@@ -204,8 +335,9 @@ internal class InterrogationViewModel
             viewModelScope.launch {
                 val previous = state.value
                 mutableState.value = previous.copy(loading = true, feedback = null)
+                val suspectsResult = if (previous.suspect == null) loadSuspects(route.caseId) else null
                 val suspect =
-                    previous.suspect ?: loadSuspects(route.caseId).valueOrThrowCancellation()
+                    previous.suspect ?: suspectsResult?.valueOrThrowCancellation()
                         ?.firstOrNull { it.id == route.suspectId }
                 val historyResult = if (suspect == null) null else history(route.caseId, route.suspectId)
                 val messages = historyResult?.valueOrThrowCancellation()
@@ -215,7 +347,9 @@ internal class InterrogationViewModel
                         suspect = suspect,
                         messages = messages ?: previous.messages,
                         historyUnavailable = messages == null,
-                        historyError = historyResult?.exceptionOrNull()?.uiMessage(strings, strings.get(R.string.history_error)),
+                        historyError =
+                            (suspectsResult?.exceptionOrNull() ?: historyResult?.exceptionOrNull())
+                                ?.uiMessage(strings, strings.get(R.string.history_error)),
                         feedback = null,
                         pendingFeedback = false,
                     )
@@ -233,13 +367,15 @@ internal class InterrogationViewModel
             mutableClues.value = CluePickerState.Loading
             inventoryJob =
                 viewModelScope.launch {
-                    val progress = restoreProgress(route.caseId).valueOrThrowCancellation()
-                    val items = progress?.let { loadInventory(it.id).valueOrThrowCancellation() }
                     mutableClues.value =
-                        if (items == null) {
-                            CluePickerState.Error
-                        } else {
+                        try {
+                            val progress = restoreProgress(route.caseId).getOrThrow()
+                            val items = loadInventory(progress.id).getOrThrow()
                             CluePickerState.Content(items.filter { it.caseId == route.caseId })
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            CluePickerState.Error(error.uiMessage(strings, strings.get(R.string.clues_load_error)))
                         }
                 }
         }

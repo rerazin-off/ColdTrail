@@ -15,7 +15,11 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-/** Связывает статус расследования с локализованной подписью. */
+/**
+ * Связывает статус расследования с локализованной подписью.
+ *
+ * @property label Ресурс локализованной подписи.
+ */
 enum class ChipStatus(val label: Int) {
     ClueFound(R.string.clue_found),
     Available(R.string.available),

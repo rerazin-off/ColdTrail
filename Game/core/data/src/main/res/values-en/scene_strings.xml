@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="warehouse_scene_instruction">Search the warehouse and tap the object that matches the sample.</string>
+</resources>

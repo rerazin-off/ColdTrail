@@ -12,7 +12,11 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 
-/** Содержит никнейм из записи профиля Supabase. */
+/**
+ * Содержит никнейм из записи профиля Supabase.
+ *
+ * @property nickname Никнейм игрока, указанный в профиле.
+ */
 data class ProfileNicknameDto(val nickname: String)
 
 /** Интерфейс Retrofit для чтения публичных данных и работы с заметками расследований. */
@@ -63,6 +67,13 @@ interface SupabaseRestApi {
     @Headers("Prefer: return=representation")
     @POST("rest/v1/notes")
     suspend fun insertNote(
+        @Body body: NoteInsertDto,
+    ): List<NoteDto>
+
+    /** Загружает заметку с повторяемым ключом, чтобы повтор запроса не создавал копию. */
+    @Headers("Prefer: resolution=merge-duplicates,return=representation")
+    @POST("rest/v1/notes?on_conflict=client_id")
+    suspend fun syncNote(
         @Body body: NoteInsertDto,
     ): List<NoteDto>
 

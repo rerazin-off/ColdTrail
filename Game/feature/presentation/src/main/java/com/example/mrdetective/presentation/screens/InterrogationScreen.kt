@@ -101,7 +101,7 @@ internal fun InterrogationScreen(
         if (state.loading) {
             ScreenProgress()
         } else if (suspect == null) {
-            ScreenRetry(stringResource(R.string.dialogue_open_error), viewModel::load)
+            ScreenRetry(state.historyError ?: stringResource(R.string.dialogue_open_error), viewModel::load)
         } else {
             if (!compact) InterrogationSuspect(suspect, compact = false)
 
@@ -331,7 +331,7 @@ private fun CluePickerSheet(
             }
             when (state) {
                 CluePickerState.Loading -> CircularProgressIndicator(color = colors.outline)
-                CluePickerState.Error -> ScreenRetry(stringResource(R.string.clues_load_error), onRetry)
+                is CluePickerState.Error -> ScreenRetry(state.message, onRetry)
                 is CluePickerState.Content ->
                     if (state.clues.isEmpty()) {
                         Text(stringResource(R.string.no_collected_clues), color = colors.text2)

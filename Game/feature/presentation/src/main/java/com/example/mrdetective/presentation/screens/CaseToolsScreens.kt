@@ -194,7 +194,7 @@ internal fun InventoryScreen(
         Spacer(Modifier.height(20.dp))
         when (val current = state) {
             CluePickerState.Loading -> ScreenProgress()
-            CluePickerState.Error -> ScreenRetry(stringResource(R.string.inventory_load_error), viewModel::load)
+            is CluePickerState.Error -> ScreenRetry(current.message, viewModel::load)
             is CluePickerState.Content ->
                 if (current.clues.isEmpty()) {
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {

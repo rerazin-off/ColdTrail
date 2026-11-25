@@ -6,14 +6,24 @@ import com.example.mrdetective.domain.repositories.ClueRepository
 import com.example.mrdetective.domain.repositories.InventoryRepository
 import javax.inject.Inject
 
-/** Загружает описание улики из инвентаря. */
+/**
+ * Загружает описание улики из инвентаря.
+ *
+ * @param clueRepository Репозиторий описаний и найденных улик.
+ * @param inventoryRepository Репозиторий инвентаря и найденных предметов.
+ */
 class InspectItemUseCase
     @Inject
     constructor(
         private val clueRepository: ClueRepository,
         private val inventoryRepository: InventoryRepository,
     ) {
-        /** Возвращает метаданные улики по идентификатору. */
+        /**
+         * Возвращает метаданные улики по идентификатору.
+         *
+         * @param itemId Идентификатор предмета в инвентаре.
+         * @return Найденная улика или ошибка поиска.
+         */
         suspend operator fun invoke(itemId: Int): Result<Clue> {
             if (itemId <= 0) {
                 return Result.failure(

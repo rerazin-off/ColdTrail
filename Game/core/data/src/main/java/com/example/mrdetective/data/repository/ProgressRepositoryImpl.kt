@@ -6,6 +6,7 @@ import com.example.mrdetective.data.local.AppDatabase
 import com.example.mrdetective.data.local.dao.InvestigationDao
 import com.example.mrdetective.data.local.dao.SyncQueueDao
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.sync.SyncScheduler
 import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.models.InvestigationProgress
@@ -19,7 +20,16 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Хранит прогресс в Room и планирует синхронизацию с Supabase. */
+/**
+ * Хранит прогресс в Room и планирует синхронизацию с Supabase.
+ *
+ * @param db Локальная база Room.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class ProgressRepositoryImpl
     @Inject
@@ -48,7 +58,7 @@ class ProgressRepositoryImpl
                     ),
                 )
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
         }
 
@@ -89,7 +99,7 @@ class ProgressRepositoryImpl
                 SyncScheduler.enqueue(context)
                 Result.success(Unit)
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
 
         /** Записывает итоговое состояние расследования. */
@@ -101,7 +111,7 @@ class ProgressRepositoryImpl
                 progress.upsertInvestigation(current.copy(status = "solved", updatedAt = System.currentTimeMillis()))
                 Result.success(Unit)
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
         }
 
@@ -111,6 +121,6 @@ class ProgressRepositoryImpl
                 SyncScheduler.enqueue(context)
                 Result.success(Unit)
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
     }

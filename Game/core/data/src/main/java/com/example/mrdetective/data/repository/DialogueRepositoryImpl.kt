@@ -24,7 +24,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Читает историю из кеша и отправляет новые вопросы в серверную функцию диалога. */
+/**
+ * Читает историю из кеша и отправляет новые вопросы в серверную функцию диалога.
+ *
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param dialogue DAO для сообщений и истории диалога.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param db Локальная база Room.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class DialogueRepositoryImpl
     @Inject

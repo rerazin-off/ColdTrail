@@ -6,7 +6,13 @@ import javax.inject.Inject
 class MatchFingerprintUseCase
     @Inject
     constructor() {
-        /** Сравнивает непустые строки отпечатков после удаления пробелов по краям. */
+        /**
+         * Сравнивает непустые строки отпечатков после удаления пробелов по краям.
+         *
+         * @param selectedFingerprint Выбранный игроком образец.
+         * @param correctFingerprint Образец, с которым сравнивается результат.
+         * @return `true`, если непустые значения совпадают после удаления пробелов по краям.
+         */
         operator fun invoke(
             selectedFingerprint: String,
             correctFingerprint: String,

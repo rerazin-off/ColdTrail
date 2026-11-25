@@ -9,6 +9,7 @@ import com.example.mrdetective.data.local.entity.ClueEntity
 import com.example.mrdetective.data.local.entity.CollectedClueEntity
 import com.example.mrdetective.data.local.entity.DialogueMessageEntity
 import com.example.mrdetective.data.local.entity.InvestigationEntity
+import com.example.mrdetective.data.local.entity.MorseSignalEntity
 import com.example.mrdetective.data.local.entity.NoteEntity
 import com.example.mrdetective.data.local.entity.PendingPhotoUploadEntity
 import com.example.mrdetective.data.local.entity.PuzzleEntity
@@ -232,6 +233,14 @@ interface CaseDao {
 
 /** Хранит заметки расследования и отмечает, синхронизированы ли их изменения. */
 @Dao interface NoteDao {
+    /** Читает заметку по локальному или серверному идентификатору. */
+    @Query("SELECT * FROM notes WHERE id = :id")
+    suspend fun getById(id: Int): NoteEntity?
+
+    /** Возвращает минимальный временный идентификатор, если есть локальные заметки. */
+    @Query("SELECT MIN(id) FROM notes WHERE id < 0")
+    suspend fun minLocalId(): Int?
+
     /** Возвращает последнюю заметку выбранного расследования. */
     @Query("SELECT * FROM notes WHERE investigationId = :investigationId ORDER BY localUpdatedAt DESC LIMIT 1")
     suspend fun latest(investigationId: Int): NoteEntity?
@@ -343,6 +352,14 @@ interface CaseDao {
 
 /** Читает и обновляет метаданные головоломок в кеше. */
 @Dao interface PuzzleDao {
+    /** Возвращает сохранённые сигналы Морзе указанного дела. */
+    @Query("SELECT * FROM morse_signals WHERE caseId = :caseId")
+    suspend fun getMorseSignals(caseId: Int): List<MorseSignalEntity>
+
+    /** Сохраняет сигналы отдельно от публичных метаданных головоломок. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveMorseSignals(items: List<MorseSignalEntity>)
+
     /** Возвращает метаданные головоломки из кеша по идентификатору. */
     @Query("SELECT * FROM puzzles WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): PuzzleEntity?

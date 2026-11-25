@@ -9,7 +9,11 @@ import com.example.mrdetective.domain.repositories.SuspectRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Загружает профили подозреваемых из Supabase и использует кеш без сети. */
+/**
+ * Загружает профили подозреваемых из Supabase и использует кеш без сети.
+ *
+ * @param api Retrofit API чтения и изменения таблиц Supabase.
+ */
 @Singleton
 class SuspectRepositoryImpl
     @Inject

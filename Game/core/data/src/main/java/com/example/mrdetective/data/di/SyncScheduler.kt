@@ -40,7 +40,12 @@ object SyncScheduler {
     }
 }
 
-/** Ставит попытку синхронизации в очередь при запуске периодической задачи. */
+/**
+ * Ставит попытку синхронизации в очередь при запуске периодической задачи.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ * @param params Параметры запуска, которые передаёт WorkManager.
+ */
 class ScheduleOfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     /** Запрашивает синхронизацию и завершает периодическую задачу. */
     override suspend fun doWork(): Result {

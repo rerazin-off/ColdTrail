@@ -16,7 +16,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Хранит режим формы авторизации, состояние отправки и обратную связь. */
+/**
+ * Хранит режим формы авторизации, состояние отправки и обратную связь.
+ *
+ * @property checkingSession Выполняется ли проверка сохранённой сессии при запуске.
+ * @property signedIn Есть ли у игрока активная сессия.
+ * @property busy Выполняется ли сейчас операция авторизации.
+ * @property message Сообщение о результате или ошибке авторизации.
+ * @property confirmationRequired Нужно ли игроку подтвердить адрес электронной почты.
+ */
 data class AuthUiState(
     val checkingSession: Boolean = true,
     val signedIn: Boolean = false,
@@ -25,7 +33,14 @@ data class AuthUiState(
     val confirmationRequired: Boolean = false,
 )
 
-/** Проверяет и отправляет формы авторизации, предоставляет текущее состояние сессии. */
+/**
+ * Проверяет и отправляет формы авторизации, предоставляет текущее состояние сессии.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param signIn Сценарий проверки данных и входа в аккаунт.
+ * @param signUp Сценарий проверки данных и регистрации аккаунта.
+ */
 @HiltViewModel
 class AuthViewModel
     @Inject

@@ -32,7 +32,11 @@ import kotlin.coroutines.resumeWithException
 import kotlin.math.asin
 import kotlin.math.atan2
 
-/** Реализует предпросмотр улики, съёмку и отслеживание ориентации на Android. */
+/**
+ * Реализует предпросмотр улики, съёмку и отслеживание ориентации на Android.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 class AndroidClueCamera
     @Inject
     constructor(

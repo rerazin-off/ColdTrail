@@ -3,7 +3,25 @@ package com.example.mrdetective.presentation.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-/** Хранит палитру ColdTrail для экранов и общих компонентов. */
+/**
+ * Хранит палитру ColdTrail для экранов и общих компонентов.
+ *
+ * @property bg Цвет фона экранов.
+ * @property surface Основной цвет поверхности карточек и диалогов.
+ * @property surface2 Цвет выделенной или вторичной поверхности.
+ * @property primary Основной цвет палитры.
+ * @property onPrimary Цвет содержимого поверх основного цвета темы.
+ * @property accent Акцентный цвет для выделенных элементов.
+ * @property onAccent Цвет текста и значков на акцентном фоне.
+ * @property text Основной цвет текста.
+ * @property text2 Цвет второстепенного текста и подписей.
+ * @property error Цвет текста и индикаторов ошибки.
+ * @property success Цвет подтверждённого результата или успешного действия.
+ * @property outline Цвет рамок и контуров компонентов.
+ * @property button Цвет фона основной кнопки.
+ * @property onButton Цвет текста и значков на фоне основной кнопки.
+ * @property isDark Используется ли тёмная палитра.
+ */
 @Immutable
 data class AppColors(
     val bg: Color,

@@ -4,13 +4,22 @@ import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.CaseRepository
 import javax.inject.Inject
 
-/** Начинает расследование для указанного игрока и дела. */
+/**
+ * Начинает расследование для указанного игрока и дела.
+ *
+ * @param repository Репозиторий данных дела и запуска расследования.
+ */
 class StartInvestigationUseCase
     @Inject
     constructor(
         private val repository: CaseRepository,
     ) {
-        /** Начинает выбранное дело через репозиторий. */
+        /**
+         * Начинает выбранное дело через репозиторий.
+         *
+         * @param caseId Идентификатор выбранного дела.
+         * @return Подтверждение запуска расследования или ошибка.
+         */
         suspend operator fun invoke(caseId: Int): Result<Unit> {
             if (caseId <= 0) {
                 return Result.failure(

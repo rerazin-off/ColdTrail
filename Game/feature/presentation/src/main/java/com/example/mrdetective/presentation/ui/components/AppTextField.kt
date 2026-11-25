@@ -25,7 +25,22 @@ import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.Sizes
 import com.example.mrdetective.presentation.ui.theme.Spacing
 
-/** Отображает поле ввода с подписью, доступной службам специальных возможностей. */
+/**
+ * Отображает поле ввода с подписью, доступной службам специальных возможностей.
+ *
+ * @param value Текущий текст, которым управляет вызывающий экран.
+ * @param onValueChange Получает новый текст после редактирования.
+ * @param placeholder Подпись пустого поля и его имя для TalkBack.
+ * @param modifier Модификатор внешнего контейнера.
+ * @param singleLine Ограничивает поле одной строкой.
+ * @param maxLines Максимальное количество видимых строк многострочного поля.
+ * @param enabled Разрешает ввод и фокусировку.
+ * @param keyboardOptions Настройки экранной клавиатуры.
+ * @param visualTransformation Отображение введённого текста, например маскирование пароля.
+ * @param textStyle Стиль текста из темы приложения.
+ * @param minLines Минимальное количество видимых строк многострочного поля.
+ * @param trailingContent Дополнительные элементы справа от текста.
+ */
 @Composable
 fun AppTextField(
     value: String,
@@ -38,6 +53,7 @@ fun AppTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    minLines: Int = 1,
     trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val c = AppTheme.colors
@@ -45,6 +61,7 @@ fun AppTextField(
         value = value,
         onValueChange = onValueChange,
         singleLine = singleLine,
+        minLines = minLines,
         maxLines = maxLines,
         enabled = enabled,
         keyboardOptions = keyboardOptions,

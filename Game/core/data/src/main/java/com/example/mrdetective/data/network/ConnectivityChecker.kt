@@ -9,7 +9,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Сообщает, подтвердил ли Android доступ в интернет для активной сети. */
+/**
+ * Сообщает, подтвердил ли Android доступ в интернет для активной сети.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class ConnectivityChecker
     @Inject

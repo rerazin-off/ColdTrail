@@ -37,7 +37,15 @@ fun ClueDto.toEntity() = ClueEntity(id, caseId, title, description, image, creat
 fun ClueEntity.toDomain() = Clue(id, caseId, title, description, image, createdAt)
 
 /** Преобразует серверную заметку для Room, сохраняя её временные метки. */
-fun NoteDto.toEntity() = NoteEntity(id, investigationId, text, createdAt, updatedAt)
+fun NoteDto.toEntity() =
+    NoteEntity(
+        id,
+        investigationId,
+        text,
+        createdAt,
+        updatedAt,
+        localUpdatedAt = runCatching { java.time.Instant.parse(createdAt).toEpochMilli() }.getOrDefault(0L),
+    )
 
 /** Создаёт модель заметки из сохранённого текста и временных меток. */
 fun NoteEntity.toDomain() = Note(id, investigationId, text, createdAt, updatedAt)

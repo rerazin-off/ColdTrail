@@ -23,6 +23,14 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 
 /**
  * Хранит состояние доступности и разрешения камеры и действия для запроса доступа и открытия настроек.
+ *
+ * @property available Поддерживает ли устройство необходимую возможность.
+ * @property granted Выдано ли приложению разрешение Android на доступ к камере.
+ * @property showRationale Рекомендует ли Android объяснить пользователю, зачем нужна камера.
+ * @property requestOrOpenSettings Запрашивает доступ к камере или предлагает настройки с учётом предыдущего
+ *   запроса.
+ * @property openSettings Открывает системные настройки и принимает флаг включения поиска камерой при выдаче
+ *   разрешения.
  */
 internal class CameraAccess(
     val available: Boolean,

@@ -5,7 +5,11 @@ import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Добавляет к запросам ключ Supabase и необходимый заголовок авторизации. */
+/**
+ * Добавляет к запросам ключ Supabase и необходимый заголовок авторизации.
+ *
+ * @param tokenStore Локальное хранилище токенов авторизации.
+ */
 @Singleton
 class AuthInterceptor
     @Inject

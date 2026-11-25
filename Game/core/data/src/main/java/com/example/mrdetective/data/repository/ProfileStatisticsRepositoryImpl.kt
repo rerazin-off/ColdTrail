@@ -12,7 +12,16 @@ import com.example.mrdetective.domain.repositories.ProfileStatistics
 import com.example.mrdetective.domain.repositories.ProfileStatisticsRepository
 import javax.inject.Inject
 
-/** Вычисляет статистику из записей расследований и загружает никнейм аккаунта. */
+/**
+ * Вычисляет статистику из записей расследований и загружает никнейм аккаунта.
+ *
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param investigations DAO расследований игрока.
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param profiles Retrofit API для чтения профиля игрока.
+ * @param settings Хранилище настроек приложения и данных профиля в DataStore.
+ */
 class ProfileStatisticsRepositoryImpl
     @Inject
     constructor(

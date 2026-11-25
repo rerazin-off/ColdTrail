@@ -23,14 +23,28 @@ sealed interface CasesUiState {
     /** Обозначает отсутствие доступных игроку дел. */
     data object Empty : CasesUiState
 
-    /** Хранит дела для отображения в списке. */
+    /**
+     * Хранит дела для отображения в списке.
+     *
+     * @property cases Дела, готовые к показу в списке.
+     */
     data class Content(val cases: List<Case>) : CasesUiState
 
-    /** Хранит ошибку, возникшую при загрузке списка дел. */
+    /**
+     * Хранит ошибку, возникшую при загрузке списка дел.
+     *
+     * @property unauthorized Возникла ли ошибка из-за отсутствия действующей сессии.
+     * @property message Сообщение, которое описывает состояние или ошибку.
+     */
     data class Error(val unauthorized: Boolean, val message: String? = null) : CasesUiState
 }
 
-/** Загружает и обновляет список дел для текущей сессии. */
+/**
+ * Загружает и обновляет список дел для текущей сессии.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param loadAvailableCases Сценарий загрузки каталога дел.
+ */
 @HiltViewModel
 class CasesViewModel
     @Inject

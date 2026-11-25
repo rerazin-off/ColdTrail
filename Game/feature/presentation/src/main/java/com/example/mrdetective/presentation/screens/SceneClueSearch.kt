@@ -105,7 +105,11 @@ internal fun SceneClueSearch(
         val targetIndex = items?.indexOfFirst { it.clueId == challenge.clueId } ?: -1
         ErrorNotice(state.sceneMessage, if (state.sceneRetry && targetIndex >= 0) ({ onSelect(targetIndex) }) else null)
         Text(
-            if (state.capturing) stringResource(R.string.checking_clue) else stringResource(R.string.choose_matching_clue),
+            if (state.capturing) {
+                stringResource(R.string.checking_clue)
+            } else {
+                state.sceneInstruction ?: stringResource(R.string.choose_matching_clue)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = colors.text2,
         )

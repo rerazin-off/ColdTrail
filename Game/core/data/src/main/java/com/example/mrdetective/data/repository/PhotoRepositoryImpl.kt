@@ -5,6 +5,7 @@ import com.example.mrdetective.data.local.dao.PendingPhotoDao
 import com.example.mrdetective.data.local.datastore.SettingsData
 import com.example.mrdetective.data.local.entity.PendingPhotoUploadEntity
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.sync.SyncScheduler
 import com.example.mrdetective.domain.models.DomainError
@@ -17,7 +18,15 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Сохраняет фотографии улик на устройстве и ставит их в очередь загрузки. */
+/**
+ * Сохраняет фотографии улик на устройстве и ставит их в очередь загрузки.
+ *
+ * @param pending DAO очереди ожидающих загрузки фотографий.
+ * @param settings Хранилище настроек приложения и данных профиля в DataStore.
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class PhotoRepositoryImpl
     @Inject
@@ -45,7 +54,7 @@ class PhotoRepositoryImpl
                     Result.success(Unit)
                 }
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
 
         /** Запрашивает отправку фотографий улик, ожидающих синхронизации. */
@@ -75,6 +84,6 @@ class PhotoRepositoryImpl
                 Result.success(Unit)
             } catch (error: Throwable) {
                 SyncScheduler.enqueue(context)
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
     }

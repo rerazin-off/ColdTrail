@@ -14,7 +14,11 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Преобразует символы и паузы Морзе в последовательность вибраций Android. */
+/**
+ * Преобразует символы и паузы Морзе в последовательность вибраций Android.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class AndroidMorseSignalPlayer
     @Inject

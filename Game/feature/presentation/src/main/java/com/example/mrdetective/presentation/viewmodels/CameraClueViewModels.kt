@@ -18,6 +18,7 @@ import com.example.mrdetective.domain.repositories.CameraSubmission
 import com.example.mrdetective.domain.repositories.ProgressRepository
 import com.example.mrdetective.domain.repositories.SceneClueImage
 import com.example.mrdetective.domain.repositories.SceneClueRepository
+import com.example.mrdetective.domain.repositories.WAREHOUSE_SCENE_ID
 import com.example.mrdetective.domain.usecases.clues.CaptureCameraClueUseCase
 import com.example.mrdetective.domain.usecases.clues.ChooseClueChallengeUseCase
 import com.example.mrdetective.domain.usecases.clues.ClueChallengeChoice
@@ -25,6 +26,7 @@ import com.example.mrdetective.domain.usecases.clues.ClueFramePosition
 import com.example.mrdetective.domain.usecases.clues.buildClueSearchScene
 import com.example.mrdetective.domain.usecases.clues.chooseClueAzimuth
 import com.example.mrdetective.domain.usecases.clues.cluePositionInFrame
+import com.example.mrdetective.domain.usecases.puzzles.InspectSceneUseCase
 import com.example.mrdetective.presentation.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -42,15 +44,31 @@ import java.io.File
 import javax.inject.Inject
 import kotlin.random.Random
 
-/** Указывает дело, для которого нужно выбрать следующую головоломку. */
+/**
+ * Указывает дело, для которого нужно выбрать следующую головоломку.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ */
 @Serializable
 internal data class ChooseClueChallengeRoute(val caseId: Int)
 
-/** Указывает головоломку с камерой, которую нужно открыть по делу. */
+/**
+ * Указывает головоломку с камерой, которую нужно открыть по делу.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ * @property puzzleId Идентификатор головоломки.
+ */
 @Serializable
 internal data class CameraClueRoute(val caseId: Int, val puzzleId: Int)
 
-/** Отражает состояние выбора головоломки и необходимость показа экрана разрешений. */
+/**
+ * Отражает состояние выбора головоломки и необходимость показа экрана разрешений.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property choice Головоломка, выбранная для получения следующей улики.
+ * @property permissionsRequired Нужно ли перед продолжением показать настройки разрешений.
+ * @property error Причина ошибки, если она возникла.
+ */
 internal data class ClueChoiceState(
     val loading: Boolean = true,
     val choice: ClueChallengeChoice? = null,
@@ -58,7 +76,16 @@ internal data class ClueChoiceState(
     val error: String? = null,
 )
 
-/** Выбирает головоломку и показывает экран разрешений перед первой попыткой. */
+/**
+ * Выбирает головоломку и показывает экран разрешений перед первой попыткой.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param chooseChallenge Сценарий выбора доступной головоломки по делу.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param permissions Хранилище отметки о показе вступительного экрана разрешений.
+ * @param cameraPreferences Настройки использования камеры в головоломках.
+ */
 @HiltViewModel
 internal class ClueChallengePickerViewModel
     @Inject
@@ -113,7 +140,21 @@ internal class ClueChallengePickerViewModel
         }
     }
 
-/** Описывает головоломку с камерой, запасную сцену и состояние отправки или награды. */
+/**
+ * Описывает головоломку с камерой, запасную сцену и состояние отправки или награды.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property challenge Текущая головоломка после успешной загрузки.
+ * @property capturing Выполняется ли съёмка или отправка выбранной улики.
+ * @property submission Состояние отправки решения для получения улики.
+ * @property loadMessage Сообщение о причине недоступности головоломки.
+ * @property captureMessage Сообщение о результате или ошибке съёмки.
+ * @property syncError Последняя ошибка фоновой отправки результата, если она есть.
+ * @property sceneItems Предметы, доступные для выбора на сцене, если они загружены.
+ * @property sceneInstruction Инструкция по поиску улик на открытой сцене.
+ * @property sceneMessage Сообщение о результате поиска или причине сбоя.
+ * @property sceneRetry Можно ли повторить подтверждение выбранного предмета.
+ */
 internal data class CameraClueUiState(
     val loading: Boolean = true,
     val challenge: CameraChallenge? = null,
@@ -123,11 +164,23 @@ internal data class CameraClueUiState(
     val captureMessage: String? = null,
     val syncError: String? = null,
     val sceneItems: List<SceneClueImage>? = null,
+    val sceneInstruction: String? = null,
     val sceneMessage: String? = null,
     val sceneRetry: Boolean = false,
 )
 
-/** Координирует съёмку улики, переход к поиску на сцене и синхронизацию награды. */
+/**
+ * Координирует съёмку улики, переход к поиску на сцене и синхронизацию награды.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param repository Репозиторий вызовов камеры, снимков и результатов проверки.
+ * @param camera Камера, привязываемая к жизненному циклу и компоненту предпросмотра.
+ * @param captureClue Сценарий съёмки, если искомая улика видна в кадре.
+ * @param scene Репозиторий изображений и подтверждений для поиска без камеры.
+ * @param inspectScene Сценарий получения описания сцены поиска без камеры.
+ * @param progress Репозиторий прогресса, через который запрашивается синхронизация.
+ */
 @HiltViewModel
 internal class CameraClueViewModel
     @Inject
@@ -138,6 +191,7 @@ internal class CameraClueViewModel
         private val camera: ClueCamera<Pair<LifecycleOwner, PreviewView>>,
         private val captureClue: CaptureCameraClueUseCase,
         private val scene: SceneClueRepository,
+        private val inspectScene: InspectSceneUseCase,
         private val progress: ProgressRepository,
     ) : ViewModel() {
         private val route = savedState.toRoute<CameraClueRoute>()
@@ -214,7 +268,8 @@ internal class CameraClueViewModel
                             decoys,
                             Random(challenge.id),
                         )
-                    mutableState.update { it.copy(sceneItems = items) }
+                    val instruction = inspectScene(route.caseId, WAREHOUSE_SCENE_ID).getOrNull()
+                    mutableState.update { it.copy(sceneItems = items, sceneInstruction = instruction) }
                 }
         }
 
@@ -235,8 +290,13 @@ internal class CameraClueViewModel
                     onSuccess = { mutableState.update { it.copy(capturing = false, submission = CameraSubmission.Awarded) } },
                     onFailure = { error ->
                         if (error is CancellationException) throw error
-                        val message = error.uiMessage(strings, strings.get(R.string.clue_confirmation_error))
-                        mutableState.update { it.copy(capturing = false, sceneMessage = message, sceneRetry = true) }
+                        if (error is DomainError.SyncPending) {
+                            mutableState.update { it.copy(capturing = false, submission = CameraSubmission.Pending) }
+                            observe(challenge)
+                        } else {
+                            val message = error.uiMessage(strings, strings.get(R.string.clue_confirmation_error))
+                            mutableState.update { it.copy(capturing = false, sceneMessage = message, sceneRetry = true) }
+                        }
                     },
                 )
             }

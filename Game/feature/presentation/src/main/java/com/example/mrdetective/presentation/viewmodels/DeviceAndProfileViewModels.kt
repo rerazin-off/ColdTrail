@@ -22,7 +22,17 @@ import kotlin.coroutines.cancellation.CancellationException
 @Serializable
 internal object DeviceSettingsRoute
 
-/** Хранит доступность вибрации, настройку игрока и состояние воспроизведения. */
+/**
+ * Хранит доступность вибрации, настройку игрока и состояние воспроизведения.
+ *
+ * @property available Поддерживает ли устройство необходимую возможность.
+ * @property enabled Сохранённый выбор игрока. `null` означает, что настройку ещё не задавали.
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property saving Выполняется ли запись выбранной настройки.
+ * @property playing Воспроизводится ли сигнал Морзе.
+ * @property settingsError Ошибка чтения или сохранения настройки, если она произошла.
+ * @property playbackError Ошибка воспроизведения вибрации, если она произошла.
+ */
 internal data class VibrationState(
     val available: Boolean,
     val enabled: Boolean? = null,
@@ -36,7 +46,13 @@ internal data class VibrationState(
         get() = available && enabled == true && playbackError == null
 }
 
-/** Загружает и меняет настройку вибрации, воспроизводит сигналы Морзе. */
+/**
+ * Загружает и меняет настройку вибрации, воспроизводит сигналы Морзе.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param preferences Хранилище настройки, которую меняет данный экран.
+ * @param playSignal Сценарий проверки и воспроизведения сигнала Морзе.
+ */
 @HiltViewModel
 internal class VibrationViewModel
     @Inject
@@ -113,7 +129,14 @@ internal class VibrationViewModel
         }
     }
 
-/** Хранит настройку камеры для экрана разрешений. */
+/**
+ * Хранит настройку камеры для экрана разрешений.
+ *
+ * @property enabled Сохранённый выбор игрока. `null` означает, что настройку ещё не задавали.
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property saving Выполняется ли запись выбранной настройки.
+ * @property error Причина ошибки, если она возникла.
+ */
 internal data class CameraSettingsState(
     val enabled: Boolean? = null,
     val loading: Boolean = true,
@@ -121,7 +144,12 @@ internal data class CameraSettingsState(
     val error: String? = null,
 )
 
-/** Загружает и изменяет настройку камеры игрока. */
+/**
+ * Загружает и изменяет настройку камеры игрока.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param preferences Хранилище настройки, которую меняет данный экран.
+ */
 @HiltViewModel
 internal class CameraSettingsViewModel
     @Inject
@@ -181,14 +209,27 @@ internal sealed interface ProfileStatisticsState {
     /** Обозначает загрузку статистики профиля. */
     data object Loading : ProfileStatisticsState
 
-    /** Хранит сообщение об ошибке загрузки статистики профиля. */
+    /**
+     * Хранит сообщение об ошибке загрузки статистики профиля.
+     *
+     * @property message Сообщение, которое описывает состояние или ошибку.
+     */
     data class Error(val message: String) : ProfileStatisticsState
 
-    /** Хранит статистику для отображения в профиле игрока. */
+    /**
+     * Хранит статистику для отображения в профиле игрока.
+     *
+     * @property statistics Сводка по расследованиям игрока.
+     */
     data class Content(val statistics: ProfileStatistics) : ProfileStatisticsState
 }
 
-/** Загружает статистику профиля и никнейм игрока. */
+/**
+ * Загружает статистику профиля и никнейм игрока.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param repository Репозиторий статистики расследований и никнейма игрока.
+ */
 @HiltViewModel
 internal class ProfileStatisticsViewModel
     @Inject

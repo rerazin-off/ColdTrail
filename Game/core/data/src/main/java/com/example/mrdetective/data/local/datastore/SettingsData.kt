@@ -17,7 +17,11 @@ import javax.inject.Singleton
 
 private val Context.settingsDataStore by preferencesDataStore(name = "coldtrail_settings")
 
-/** Хранит настройки игры и данные игрока в DataStore. */
+/**
+ * Хранит настройки игры и данные игрока в DataStore.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class SettingsData
     @Inject

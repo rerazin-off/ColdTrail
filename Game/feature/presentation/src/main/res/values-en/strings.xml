@@ -215,4 +215,11 @@
     <string name="rear_camera_error">Could not open the rear camera.</string>
     <string name="wait_for_sync">Wait for the investigation to sync.</string>
     <string name="background_sync_error">Could not send the data. Check your connection and try again.</string>
+    <string name="network_timeout">The server did not respond in time. Try again.</string>
+    <string name="add_note">Add note</string>
+    <string name="latest_note">Latest note</string>
+    <string name="note_input">Note text</string>
+    <string name="save_note">Save</string>
+    <string name="note_invalid">Enter between 1 and 1000 characters.</string>
+    <string name="note_save_error">Could not save the note.</string>
 </resources>

@@ -56,7 +56,13 @@ import com.example.mrdetective.presentation.ui.theme.LocalAppWindow
 import com.example.mrdetective.presentation.ui.theme.isMediumWidth
 import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
-/** Определяет разделы основной навигации. */
+/**
+ * Определяет разделы основной навигации.
+ *
+ * @property route Маршрут раздела в графе навигации.
+ * @property label Ресурс локализованной подписи.
+ * @property icon Ресурс значка раздела.
+ */
 private enum class Tab(val route: String, val label: Int, val icon: Int) {
     Cases("cases", R.string.cases, R.drawable.ic_cases),
     Profile("profile", R.string.profile, R.drawable.ic_profile),

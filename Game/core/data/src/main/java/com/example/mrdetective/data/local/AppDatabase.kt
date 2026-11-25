@@ -19,6 +19,7 @@ import com.example.mrdetective.data.local.entity.ClueEntity
 import com.example.mrdetective.data.local.entity.CollectedClueEntity
 import com.example.mrdetective.data.local.entity.DialogueMessageEntity
 import com.example.mrdetective.data.local.entity.InvestigationEntity
+import com.example.mrdetective.data.local.entity.MorseSignalEntity
 import com.example.mrdetective.data.local.entity.NoteEntity
 import com.example.mrdetective.data.local.entity.PendingPhotoUploadEntity
 import com.example.mrdetective.data.local.entity.PuzzleEntity
@@ -26,15 +27,20 @@ import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
 import com.example.mrdetective.data.local.entity.SuspectEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 
-/** Хранит кеш игры, прогресс и очередь синхронизации в Room. */
+/**
+ * Хранит кеш игры, прогресс и очередь синхронизации в Room.
+ *
+ * Сетевые операции читают задания из очереди после восстановления связи. Миграции сохраняют существующие
+ * данные при добавлении таблиц кеша и очереди.
+ */
 @Database(
     entities = [
         CaseEntity::class, SuspectEntity::class, ClueEntity::class,
         InvestigationEntity::class, CollectedClueEntity::class, SolvedPuzzleEntity::class,
         DialogueMessageEntity::class, NoteEntity::class, PuzzleEntity::class, SyncQueueEntity::class,
-        PendingPhotoUploadEntity::class,
+        PendingPhotoUploadEntity::class, MorseSignalEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -67,6 +73,18 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** Хранит миграции локальной базы игры. */
     companion object {
+        /** Добавляет кеш сигналов Морзе и сохраняет существующий прогресс. */
+        val MIGRATION_3_4 =
+            object : Migration(3, 4) {
+                override suspend fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS morse_signals " +
+                            "(puzzleId INTEGER NOT NULL PRIMARY KEY, caseId INTEGER NOT NULL, signal TEXT NOT NULL)",
+                    )
+                    connection.execSQL("CREATE INDEX IF NOT EXISTS index_morse_signals_caseId ON morse_signals(caseId)")
+                }
+            }
+
         /**
          * Первая версия содержит исходный кеш игры. Вторая добавляет сохраняемые очереди синхронизации и
          * загрузки фото.

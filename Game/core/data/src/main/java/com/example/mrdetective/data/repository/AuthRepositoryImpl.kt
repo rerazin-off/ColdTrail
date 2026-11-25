@@ -16,7 +16,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Работает с Supabase Auth и хранит сессию игрока на устройстве. */
+/**
+ * Работает с Supabase Auth и хранит сессию игрока на устройстве.
+ *
+ * @param api Retrofit API входа, регистрации и выхода из сессии.
+ * @param tokenStore Локальное хранилище токенов авторизации.
+ * @param settings Хранилище настроек приложения и данных профиля в DataStore.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class AuthRepositoryImpl
     @Inject

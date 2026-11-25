@@ -5,7 +5,12 @@ import com.example.mrdetective.domain.hardware.ClueCamera
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
-/** Относительная позиция улики в кадре камеры. */
+/**
+ * Относительная позиция улики в кадре камеры.
+ *
+ * @property x Нормализованная горизонтальная координата в кадре от 0 до 1.
+ * @property y Нормализованная вертикальная координата в кадре от 0 до 1.
+ */
 data class ClueFramePosition(val x: Float, val y: Float)
 
 /** Выбирает азимут улики за пределами начального кадра камеры. */
@@ -34,7 +39,14 @@ fun cluePositionInFrame(
 class CaptureCameraClueUseCase
     @Inject
     constructor() {
-        /** Возвращает путь к снимку, только если цель находится в видоискателе. */
+        /**
+         * Возвращает путь к снимку, только если цель находится в видоискателе.
+         *
+         * @param targetAzimuth Направление на улику в градусах.
+         * @param direction Текущий азимут и наклон камеры.
+         * @param camera Камера, которая делает снимок при попадании улики в кадр.
+         * @return Путь к снимку либо `null`, если улика не видна.
+         */
         suspend operator fun invoke(
             targetAzimuth: Float,
             direction: CameraDirection,

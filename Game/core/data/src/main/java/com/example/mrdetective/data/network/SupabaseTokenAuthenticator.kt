@@ -11,7 +11,11 @@ import okhttp3.Route
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Обновляет просроченную сессию Supabase, когда авторизованный запрос получает HTTP 401. */
+/**
+ * Обновляет просроченную сессию Supabase, когда авторизованный запрос получает HTTP 401.
+ *
+ * @param tokenStore Локальное хранилище токенов авторизации.
+ */
 @Singleton
 class SupabaseTokenAuthenticator
     @Inject

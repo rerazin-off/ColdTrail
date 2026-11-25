@@ -9,7 +9,11 @@ import com.example.mrdetective.domain.repositories.ClueRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Читает метаданные улик и сохраняет найденные улики для синхронизации. */
+/**
+ * Читает метаданные улик и сохраняет найденные улики для синхронизации.
+ *
+ * @param api Retrofit API чтения и изменения таблиц Supabase.
+ */
 @Singleton
 class ClueRepositoryImpl
     @Inject

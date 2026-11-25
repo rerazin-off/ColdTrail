@@ -9,6 +9,7 @@ import com.example.mrdetective.data.local.dao.SyncQueueDao
 import com.example.mrdetective.data.local.entity.CollectedClueEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toDomain
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.sync.SyncScheduler
 import com.example.mrdetective.domain.models.Clue
 import com.example.mrdetective.domain.models.CollectedClue
@@ -19,7 +20,16 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Читает найденные улики из инвентаря и добавляет новые записи. */
+/**
+ * Читает найденные улики из инвентаря и добавляет новые записи.
+ *
+ * @param clues DAO кеша улик и инвентаря.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param db Локальная база Room.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class InventoryRepositoryImpl
     @Inject
@@ -36,7 +46,7 @@ class InventoryRepositoryImpl
             try {
                 Result.success(clues.getInventory(investigationId).map { it.toDomain() })
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
 
         /** Добавляет указанную улику в инвентарь расследования. */
@@ -65,6 +75,6 @@ class InventoryRepositoryImpl
                 SyncScheduler.enqueue(context)
                 Result.success(CollectedClue(investigationId, clueId, collectedAt))
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
     }

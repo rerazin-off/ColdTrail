@@ -11,13 +11,18 @@ import com.example.mrdetective.data.local.entity.NoteEntity
 import com.example.mrdetective.data.local.entity.PuzzleEntity
 import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
 import com.example.mrdetective.data.local.toEntity
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.network.SupabaseConfig
+import com.example.mrdetective.data.network.apiCall
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.api.SupabaseRestApi
 import com.example.mrdetective.data.remote.dto.CameraCaptureDto
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.remote.dto.InvestigationInsertDto
+import com.example.mrdetective.data.remote.dto.NoteInsertDto
 import com.example.mrdetective.data.remote.dto.NpcChatRequestDto
+import com.example.mrdetective.data.repository.cacheMorseChallenges
+import com.example.mrdetective.domain.models.DomainError
 import com.example.mrdetective.domain.repositories.AuthRepository
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -50,7 +55,12 @@ interface SyncWorkerEntryPoint {
     fun auth(): AuthRepository
 }
 
-/** WorkManager повторяет операции при временных сбоях и запускает задачу при наличии сетевого подключения. */
+/**
+ * WorkManager повторяет операции при временных сбоях и запускает задачу при наличии сетевого подключения.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ * @param params Параметры запуска, которые передаёт WorkManager.
+ */
 class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     /** Отправляет доступные операции из очереди и ожидающие загрузки фото для активного аккаунта. */
     override suspend fun doWork(): Result =
@@ -66,6 +76,25 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                     val op = db.syncQueueDao().pending().firstOrNull { it.id !in deferredOps } ?: break
                     try {
                         when (op.entityType) {
+                            "note_create" -> {
+                                val noteId = checkNotNull(op.entityId.toIntOrNull())
+                                val local = db.noteDao().getById(noteId)
+                                if (local != null) {
+                                    val investigation = db.investigationDao().getInvestigation(local.investigationId)
+                                    if (investigation?.userId != userId || local.investigationId <= 0) {
+                                        deferredOps.add(op.id)
+                                        continue
+                                    }
+                                    val saved = restApi.syncNote(NoteInsertDto(local.investigationId, local.text, op.payload)).first()
+                                    db.withWriteTransaction {
+                                        db.noteDao().upsert(saved.toEntity().copy(localUpdatedAt = local.localUpdatedAt))
+                                        db.noteDao().delete(noteId)
+                                        db.syncQueueDao().remove(op.id)
+                                    }
+                                    continue
+                                }
+                            }
+
                             "collected_clue" ->
                                 api.postQueued(
                                     SupabaseConfig.baseUrl + "rest/v1/collected_clues",
@@ -192,20 +221,23 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                                     deferredOps.add(op.id)
                                     continue
                                 }
-                                val file = File(request.filePath)
-                                if (!file.isFile) {
+                                val file = if (op.operation == "scene") null else File(request.filePath)
+                                if (file != null && !file.isFile) {
                                     db.syncQueueDao().remove(op.id)
                                     continue
                                 }
-                                api.uploadPhoto(
-                                    "clue-photos",
-                                    "$userId/${request.clueId}.jpg",
-                                    file.readBytes().toRequestBody("image/jpeg".toMediaType()),
-                                ).close()
+                                val parameters = mapOf("p_investigation" to request.investigationId, "p_puzzle" to request.puzzleId)
                                 val reward =
-                                    api.completeCameraPuzzle(
-                                        mapOf("p_investigation" to request.investigationId, "p_puzzle" to request.puzzleId),
-                                    )
+                                    if (file == null) {
+                                        api.completeSceneCameraPuzzle(parameters + ("p_selected_clue" to request.clueId))
+                                    } else {
+                                        api.uploadPhoto(
+                                            "clue-photos",
+                                            "$userId/${request.clueId}.jpg",
+                                            file.readBytes().toRequestBody("image/jpeg".toMediaType()),
+                                        ).close()
+                                        api.completeCameraPuzzle(parameters)
+                                    }
                                 val now = System.currentTimeMillis().toString()
                                 db.withWriteTransaction {
                                     db.investigationDao().markPuzzleSolved(
@@ -216,7 +248,7 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                                     )
                                     db.syncQueueDao().remove(op.id)
                                 }
-                                file.delete()
+                                file?.delete()
                                 continue
                             }
 
@@ -236,15 +268,21 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
                         if (e is HttpException && e.code() in 400..499 && e.code() !in listOf(408, 429)) {
                             // Ошибка данных не исправится повтором. Операция остаётся локально видимой, но снимается с автоповтора.
                             db.syncQueueDao().recordFailure(op.id, "HTTP ${e.code()}: ${e.message()}")
-                            if (op.entityType == "camera_capture") {
+                            if (op.entityType == "note_create") {
+                                deferredOps.add(op.id)
+                                continue
+                            }
+                            if (op.entityType == "camera_capture" && op.operation != "scene") {
                                 val request = GsonHolder.gson.fromJson(op.payload, CameraCaptureDto::class.java)
                                 File(request.filePath).delete()
                             }
                             db.syncQueueDao().remove(op.id)
                         } else {
                             val message =
-                                when {
-                                    e is HttpException && e.code() >= 500 -> "Сервер временно недоступен. Попробуйте ещё раз позже."
+                                when ((NetworkErrorHandler.map(e) as? DomainError.Network)?.kind) {
+                                    DomainError.Network.Kind.Server -> "Сервер временно недоступен. Попробуйте ещё раз позже."
+                                    DomainError.Network.Kind.Offline -> "Нет подключения к интернету. Проверьте сеть и повторите."
+                                    DomainError.Network.Kind.Timeout -> "Сервер не ответил вовремя. Попробуйте ещё раз."
                                     else -> "Не удалось отправить данные. Проверьте подключение и повторите."
                                 }
                             db.syncQueueDao().recordFailure(op.id, message)
@@ -314,6 +352,10 @@ class OfflineSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
             )
 
             val investigation = db.investigationDao().getByCaseForUser(case.id, userId) ?: continue
+            if (investigation.id <= 0) continue
+            apiCall {
+                db.cacheMorseChallenges(case.id, investigation.id, api.getMorseChallenges(mapOf("p_investigation" to investigation.id)))
+            }
             api.getCollectedClues("eq.${investigation.id}").forEach { row ->
                 val clueId = (row["clue_id"] as? Number)?.toInt() ?: return@forEach
                 val collectedAt = row["collected_at"]?.toString() ?: System.currentTimeMillis().toString()

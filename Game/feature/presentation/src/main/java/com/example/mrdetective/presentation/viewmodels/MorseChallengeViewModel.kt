@@ -23,7 +23,21 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Описывает активную головоломку Морзе, введённый ответ и состояние отправки. */
+/**
+ * Описывает активную головоломку Морзе, введённый ответ и состояние отправки.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property challenge Текущая головоломка после успешной загрузки.
+ * @property investigationId Идентификатор расследования. Для локально начатого дела до синхронизации он может
+ *   быть отрицательным.
+ * @property submitting Выполняется ли отправка результата на проверку.
+ * @property solved Подтверждено ли правильное решение головоломки.
+ * @property reward Полученная улика, если награда подтверждена.
+ * @property loadError Сообщение об ошибке загрузки, если она произошла.
+ * @property answerError Сообщение об ошибке проверки ответа, если она произошла.
+ * @property retrySync Нужно ли повторить синхронизацию сохранённого решения.
+ * @property retryAnswer Можно ли повторно отправить введённый ответ.
+ */
 internal data class MorseGameState(
     val loading: Boolean = true,
     val challenge: MorseChallenge? = null,
@@ -37,7 +51,16 @@ internal data class MorseGameState(
     val retryAnswer: Boolean = false,
 )
 
-/** Загружает головоломку Морзе, управляет проверкой ответа и показом награды. */
+/**
+ * Загружает головоломку Морзе, управляет проверкой ответа и показом награды.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param challenges Источник сигналов Морзе и прогресса по головоломкам дела.
+ * @param playPuzzle Сценарий передачи ответа в репозиторий головоломок.
+ * @param loadInventory Сценарий чтения инвентаря расследования.
+ * @param progress Репозиторий прогресса, через который запрашивается синхронизация.
+ */
 @HiltViewModel
 internal class MorseChallengeViewModel
     @Inject

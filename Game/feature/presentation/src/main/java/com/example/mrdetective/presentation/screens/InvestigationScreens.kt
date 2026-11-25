@@ -7,12 +7,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -31,8 +38,10 @@ import com.example.mrdetective.presentation.R
 import com.example.mrdetective.presentation.ui.components.AppButton
 import com.example.mrdetective.presentation.ui.components.AppButtonStyle
 import com.example.mrdetective.presentation.ui.components.AppCard
+import com.example.mrdetective.presentation.ui.components.AppTextField
 import com.example.mrdetective.presentation.ui.components.ErrorNotice
 import com.example.mrdetective.presentation.ui.components.SuspectCard
+import com.example.mrdetective.presentation.ui.theme.AppShapes
 import com.example.mrdetective.presentation.ui.theme.AppTheme
 import com.example.mrdetective.presentation.ui.theme.usesWideLayout
 
@@ -46,6 +55,9 @@ internal fun InvestigationScreen(
     onInterrogate: (Int, Int) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val note by viewModel.note.collectAsStateWithLifecycle()
+    val noteEditorOpen by viewModel.noteEditorOpen.collectAsStateWithLifecycle()
+    if (noteEditorOpen) InvestigationNoteEditor(viewModel)
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshProgress() }
     LaunchedEffect(state.case?.id, state.status) {
         val caseId = state.case?.id ?: return@LaunchedEffect
@@ -73,6 +85,25 @@ internal fun InvestigationScreen(
                 }
                 val details: LazyListScope.() -> Unit = {
                     investigationDetails(case, state)
+                    if (state.started) {
+                        item {
+                            AppButton(
+                                stringResource(R.string.add_note),
+                                viewModel::openNoteEditor,
+                                style = AppButtonStyle.Outlined,
+                            )
+                        }
+                    }
+                    note?.let { saved ->
+                        item {
+                            AppCard(Modifier.fillMaxWidth(), outlined = true) {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(stringResource(R.string.latest_note), style = MaterialTheme.typography.titleMedium)
+                                    Text(saved.text)
+                                }
+                            }
+                        }
+                    }
                 }
                 val actions: LazyListScope.() -> Unit = {
                     investigationActions(case.id, state, viewModel::start, onFindClue, onAccusation)
@@ -97,6 +128,55 @@ internal fun InvestigationScreen(
             }
         }
     }
+}
+
+@Composable
+private fun InvestigationNoteEditor(viewModel: InvestigationViewModel) {
+    val draft by viewModel.noteDraft.collectAsStateWithLifecycle()
+    val saving by viewModel.noteSaving.collectAsStateWithLifecycle()
+    val error by viewModel.noteError.collectAsStateWithLifecycle()
+    val colors = AppTheme.colors
+    AlertDialog(
+        onDismissRequest = viewModel::closeNoteEditor,
+        title = {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.add_note), modifier = Modifier.weight(1f))
+                IconButton(onClick = viewModel::closeNoteEditor, enabled = !saving) {
+                    Icon(
+                        painterResource(R.drawable.ic_chat_close),
+                        contentDescription = stringResource(R.string.close),
+                        tint = colors.text,
+                    )
+                }
+            }
+        },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppTextField(
+                    value = draft,
+                    onValueChange = viewModel::updateNoteDraft,
+                    placeholder = stringResource(R.string.note_input),
+                    modifier = Modifier.heightIn(min = 224.dp),
+                    singleLine = false,
+                    maxLines = 12,
+                    minLines = 9,
+                    enabled = !saving,
+                )
+                error?.let { Text(it, color = colors.error, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        confirmButton = {
+            AppButton(
+                stringResource(if (error == null) R.string.save_note else R.string.retry),
+                viewModel::submitNote,
+                enabled = draft.isNotBlank() && !saving,
+            )
+        },
+        shape = AppShapes.card,
+        containerColor = colors.surface,
+        titleContentColor = colors.text,
+        textContentColor = colors.text,
+    )
 }
 
 @Composable

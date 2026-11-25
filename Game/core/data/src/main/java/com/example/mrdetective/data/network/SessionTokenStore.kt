@@ -7,7 +7,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Сохраняет сессию Supabase и восстанавливает её для авторизованных запросов. */
+/**
+ * Сохраняет сессию Supabase и восстанавливает её для авторизованных запросов.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class SessionTokenStore
     @Inject
@@ -25,7 +29,14 @@ class SessionTokenStore
 
         private var generation = 0L
 
-        /** Хранит токен доступа, токен обновления и идентификатор связанного игрока. */
+        /**
+         * Хранит токен доступа, токен обновления и идентификатор связанного игрока.
+         *
+         * @property generation Номер попытки загрузки, позволяющий отличать устаревший результат от
+         *   актуального.
+         * @property access Текущий токен доступа Supabase.
+         * @property refresh Токен обновления текущей сессии, если он доступен.
+         */
         internal data class Session(val generation: Long, val access: String, val refresh: String?)
 
         @Synchronized

@@ -15,6 +15,7 @@ import com.example.mrdetective.data.local.toDomain
 import com.example.mrdetective.data.local.toEntity
 import com.example.mrdetective.data.mapper.toDomain
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.network.apiCall
 import com.example.mrdetective.data.network.remoteOrCache
 import com.example.mrdetective.data.remote.api.OfflineApi
@@ -30,7 +31,23 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Загружает описания дел с резервным чтением из Room и запускает расследования. */
+/**
+ * Загружает описания дел с резервным чтением из Room и запускает расследования.
+ *
+ * @param db Локальная база Room.
+ * @param api Retrofit API чтения и изменения таблиц Supabase.
+ * @param offlineApi Retrofit API операций расследования и фоновой синхронизации.
+ * @param local DAO кешированных описаний дел.
+ * @param suspects DAO сохранённых профилей подозреваемых.
+ * @param clues DAO кеша улик и инвентаря.
+ * @param puzzles DAO кешированных метаданных головоломок.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class CaseRepositoryImpl
     @Inject
@@ -124,9 +141,19 @@ class CaseRepositoryImpl
                                     created.startedAt,
                                 ),
                             )
+                            apiCall {
+                                db.cacheMorseChallenges(
+                                    id,
+                                    created.id,
+                                    offlineApi.getMorseChallenges(mapOf("p_investigation" to created.id)),
+                                )
+                            }
+                            SyncScheduler.enqueue(context)
                             return Result.success(Unit)
                         }
-                    } catch (_: Exception) {
+                    } catch (error: Exception) {
+                        val failure = NetworkErrorHandler.map(error)
+                        if (failure !is DomainError.Network) return Result.failure(failure)
                         // Если серверный запуск не удался, создаём расследование локально.
                     }
                 }
@@ -147,7 +174,7 @@ class CaseRepositoryImpl
                 SyncScheduler.enqueue(context)
                 Result.success(Unit)
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
         }
     }

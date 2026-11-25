@@ -17,7 +17,14 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import com.example.mrdetective.domain.repositories.CodeChallengeRepository
 import javax.inject.Inject
 
-/** Формирует числовые головоломки по их метаданным и сохранённому прогрессу. */
+/**
+ * Формирует числовые головоломки по их метаданным и сохранённому прогрессу.
+ *
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param db Локальная база Room.
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ */
 class CodeChallengeRepositoryImpl
     @Inject
     constructor(

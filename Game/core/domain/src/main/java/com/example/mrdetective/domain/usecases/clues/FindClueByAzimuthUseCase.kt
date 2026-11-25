@@ -7,7 +7,14 @@ import javax.inject.Inject
 class FindClueByAzimuthUseCase
     @Inject
     constructor() {
-        /** Возвращает улику с наименьшей угловой разницей среди улик с заданным азимутом. */
+        /**
+         * Возвращает улику с наименьшей угловой разницей среди улик с заданным азимутом.
+         *
+         * @param clues Улики, среди которых нужно найти ближайшую по направлению.
+         * @param currentAzimuth Текущее направление устройства в градусах.
+         * @param clueAzimuths Азимуты улик в градусах по их идентификаторам.
+         * @return Ближайшая по углу улика или `null`, если ни у одной улики нет направления.
+         */
         operator fun invoke(
             clues: List<Clue>,
             currentAzimuth: Float,

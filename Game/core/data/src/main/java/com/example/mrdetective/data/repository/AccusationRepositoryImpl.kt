@@ -14,7 +14,14 @@ import com.example.mrdetective.domain.repositories.AuthRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Получает вердикты из Supabase и сохраняет итоговый статус расследования. */
+/**
+ * Получает вердикты из Supabase и сохраняет итоговый статус расследования.
+ *
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ */
 @Singleton
 class AccusationRepositoryImpl
     @Inject

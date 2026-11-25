@@ -22,24 +22,45 @@ import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Передаёт идентификатор дела на экран инвентаря. */
+/**
+ * Передаёт идентификатор дела на экран инвентаря.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ */
 @Serializable
 internal data class InventoryRoute(val caseId: Int)
 
-/** Передаёт идентификаторы дела и головоломки Морзе. */
+/**
+ * Передаёт идентификаторы дела и головоломки Морзе.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ * @property puzzleId Идентификатор головоломки. При отсутствии выбирается доступная головоломка Морзе.
+ */
 @Serializable
 internal data class MorseRoute(val caseId: Int, val puzzleId: Int? = null)
 
-/** Передаёт идентификатор дела на экран обвинения. */
+/**
+ * Передаёт идентификатор дела на экран обвинения.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ */
 @Serializable
 internal data class AccusationRoute(val caseId: Int)
 
-/** Загружает улики текущего расследования. */
+/**
+ * Загружает улики текущего расследования.
+ *
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param restoreProgress Сценарий восстановления расследования текущего игрока.
+ * @param loadInventory Сценарий чтения инвентаря расследования.
+ */
 @HiltViewModel
 internal class InventoryViewModel
     @Inject
     constructor(
         savedState: SavedStateHandle,
+        private val strings: UiStrings,
         private val restoreProgress: RestoreInvestigationProgressUseCase,
         private val loadInventory: LoadInventoryUseCase,
     ) : ViewModel() {
@@ -66,14 +87,23 @@ internal class InventoryViewModel
                             throw error
                         } catch (_: DomainError.NotFound) {
                             CluePickerState.Content(emptyList())
-                        } catch (_: Exception) {
-                            CluePickerState.Error
+                        } catch (error: Exception) {
+                            CluePickerState.Error(error.uiMessage(strings, strings.get(R.string.inventory_load_error)))
                         }
                 }
         }
     }
 
-/** Хранит список подозреваемых, текущий выбор и результат обвинения. */
+/**
+ * Хранит список подозреваемых, текущий выбор и результат обвинения.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property suspects Подозреваемые, среди которых игрок выбирает обвиняемого.
+ * @property submitting Выполняется ли отправка результата на проверку.
+ * @property result Полученный вердикт обвинения, если сервер уже его вернул.
+ * @property error Причина ошибки, если она возникла.
+ * @property closed Завершено ли расследование.
+ */
 internal data class AccusationState(
     val loading: Boolean = true,
     val suspects: List<Suspect> = emptyList(),
@@ -83,7 +113,16 @@ internal data class AccusationState(
     val closed: Boolean = false,
 )
 
-/** Отслеживает выбор подозреваемого и отправляет обвинение для получения вердикта. */
+/**
+ * Отслеживает выбор подозреваемого и отправляет обвинение для получения вердикта.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param loadSuspects Сценарий загрузки подозреваемых указанного дела.
+ * @param restoreProgress Сценарий восстановления расследования текущего игрока.
+ * @param submitAccusation Сценарий отправки обвинения и получения вердикта.
+ * @param accusations Репозиторий для чтения сохранённого вердикта.
+ */
 @HiltViewModel
 internal class AccusationViewModel
     @Inject

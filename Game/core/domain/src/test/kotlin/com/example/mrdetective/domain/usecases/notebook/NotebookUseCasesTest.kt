@@ -46,6 +46,14 @@ class SaveNoteUseCaseTest {
     private val repository = FakeNotebookRepository()
     private val useCase = SaveNoteUseCase(repository)
 
+    /** Передаёт временный идентификатор расследования в локальное хранилище. */
+    @Test
+    fun savesForLocallyStartedInvestigation() =
+        runTest {
+            useCase(-42, "Заметка без сети").getOrThrow()
+            assertEquals(listOf<Any?>(-42, "Заметка без сети"), repository.saveCalls.single())
+        }
+
     /** Проверяет сценарий «сохраняет заметку». */
     @Test
     fun `сохраняет заметку`() =

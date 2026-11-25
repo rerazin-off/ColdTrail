@@ -21,6 +21,15 @@ class NetworkErrorHandlerTest {
 
         assertEquals(DomainError.Network.Kind.Offline, offline.kind)
         assertEquals(DomainError.Network.Kind.Server, server.kind)
-        assertEquals(DomainError.Network.Kind.Connection, timeout.kind)
+        assertEquals(DomainError.Network.Kind.Timeout, timeout.kind)
+    }
+
+    /** Относит ответы о превышении времени ожидания к таймаутам. */
+    @Test
+    fun mapsHttpTimeouts() {
+        for (code in listOf(408, 504)) {
+            val failure = NetworkErrorHandler.map(HttpException(Response.error<Unit>(code, "".toResponseBody()))) as DomainError.Network
+            assertEquals(DomainError.Network.Kind.Timeout, failure.kind)
+        }
     }
 }

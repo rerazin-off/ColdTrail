@@ -8,7 +8,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 
-/** Получает локализованные строки для состояний и ошибок вне Compose. */
+/**
+ * Получает локализованные строки для состояний и ошибок вне Compose.
+ *
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 class UiStrings
     @Inject
     constructor(
@@ -28,6 +32,8 @@ class UiStrings
                 R.string.direction_sensor_error,
                 R.string.rear_camera_error,
                 R.string.network_server,
+                R.string.network_offline,
+                R.string.network_timeout,
                 R.string.background_sync_error,
             ).associateBy { source.getString(it) }
         }

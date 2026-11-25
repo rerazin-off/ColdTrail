@@ -23,11 +23,30 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
-/** Передаёт идентификаторы дела и числовой головоломки. */
+/**
+ * Передаёт идентификаторы дела и числовой головоломки.
+ *
+ * @property caseId Идентификатор дела, к которому относится запись или операция.
+ * @property puzzleId Идентификатор головоломки.
+ */
 @Serializable
 internal data class CodeChallengeRoute(val caseId: Int, val puzzleId: Int)
 
-/** Хранит числовую головоломку, введённые цифры и результат отправки. */
+/**
+ * Хранит числовую головоломку, введённые цифры и результат отправки.
+ *
+ * @property loading Выполняется ли первоначальная или повторная загрузка данных.
+ * @property investigationId Идентификатор расследования. Для локально начатого дела до синхронизации он может
+ *   быть отрицательным.
+ * @property challenge Текущая головоломка после успешной загрузки.
+ * @property submitting Выполняется ли отправка результата на проверку.
+ * @property solved Подтверждено ли правильное решение головоломки.
+ * @property reward Полученная улика, если награда подтверждена.
+ * @property loadError Сообщение об ошибке загрузки, если она произошла.
+ * @property answerError Сообщение об ошибке проверки ответа, если она произошла.
+ * @property retrySync Нужно ли повторить синхронизацию сохранённого решения.
+ * @property retryAnswer Можно ли повторно отправить введённый ответ.
+ */
 internal data class CodeChallengeState(
     val loading: Boolean = true,
     val investigationId: Int = 0,
@@ -41,7 +60,16 @@ internal data class CodeChallengeState(
     val retryAnswer: Boolean = false,
 )
 
-/** Управляет вводом числового ответа и получением улики-награды. */
+/**
+ * Управляет вводом числового ответа и получением улики-награды.
+ *
+ * @param strings Локализованные строки для сообщений и состояний экрана.
+ * @param savedState Аргументы маршрута и данные экрана, переживающие его пересоздание.
+ * @param challenges Источник числовых головоломок выбранного дела.
+ * @param playCode Сценарий проверки формата и отправки числового ответа.
+ * @param loadInventory Сценарий чтения инвентаря расследования.
+ * @param progress Репозиторий прогресса, через который запрашивается синхронизация.
+ */
 @HiltViewModel
 internal class CodeChallengeViewModel
     @Inject

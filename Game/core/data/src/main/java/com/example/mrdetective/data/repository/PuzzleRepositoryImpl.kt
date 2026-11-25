@@ -12,6 +12,7 @@ import com.example.mrdetective.data.local.entity.SolvedPuzzleEntity
 import com.example.mrdetective.data.local.entity.SyncQueueEntity
 import com.example.mrdetective.data.local.toDomain
 import com.example.mrdetective.data.network.ConnectivityChecker
+import com.example.mrdetective.data.network.NetworkErrorHandler
 import com.example.mrdetective.data.remote.api.OfflineApi
 import com.example.mrdetective.data.remote.dto.CheckPuzzleDto
 import com.example.mrdetective.data.sync.SyncScheduler
@@ -23,7 +24,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Кеширует публичные данные головоломок и проверяет ответы сразу или после подключения. */
+/**
+ * Кеширует публичные данные головоломок и проверяет ответы сразу или после подключения.
+ *
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param puzzles DAO кешированных метаданных головоломок.
+ * @param progress DAO текущих расследований и записей прогресса.
+ * @param outbox DAO очереди локальных изменений, ожидающих отправки.
+ * @param db Локальная база Room.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 @Singleton
 class PuzzleRepositoryImpl
     @Inject
@@ -49,7 +61,7 @@ class PuzzleRepositoryImpl
                 local?.let { Result.success(it.toDomain()) }
                     ?: Result.failure(DomainError.NotFound("Головоломка не сохранена на устройстве"))
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
 
         /** Отмечает головоломку решённой в соответствующем расследовании. */
@@ -64,7 +76,7 @@ class PuzzleRepositoryImpl
                 }
                 Result.success(Unit)
             } catch (error: Throwable) {
-                Result.failure(error)
+                Result.failure(NetworkErrorHandler.map(error))
             }
 
         /** Проверяет ответ на выбранную головоломку. */
@@ -76,7 +88,7 @@ class PuzzleRepositoryImpl
             try {
                 require(answer.isNotBlank()) { "Ответ не может быть пустым" }
                 val request = CheckPuzzleDto(investigationId, puzzleId, answer)
-                if (connectivity.isNetworkAvailable()) {
+                if (investigationId > 0 && connectivity.isNetworkAvailable()) {
                     val correct = api.checkPuzzle(request)
                     if (correct) {
                         val puzzle = puzzles.getById(puzzleId)

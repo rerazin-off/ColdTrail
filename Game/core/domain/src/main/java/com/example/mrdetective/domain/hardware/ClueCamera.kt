@@ -1,9 +1,20 @@
 package com.example.mrdetective.domain.hardware
 
-/** Азимут и наклон по данным датчиков ориентации устройства. */
+/**
+ * Азимут и наклон по данным датчиков ориентации устройства.
+ *
+ * @property azimuth Горизонтальное направление устройства в градусах относительно севера.
+ * @property elevation Вертикальный наклон устройства в градусах.
+ */
 data class CameraDirection(val azimuth: Float, val elevation: Float)
 
-/** Состояние доступности камеры и данные отслеживания ориентации. */
+/**
+ * Состояние доступности камеры и данные отслеживания ориентации.
+ *
+ * @property previewReady Готов ли предпросмотр камеры к показу кадра.
+ * @property direction Последнее направление устройства по данным датчика.
+ * @property error Причина ошибки, если она возникла.
+ */
 data class ClueCameraState(
     val previewReady: Boolean = false,
     val direction: CameraDirection? = null,

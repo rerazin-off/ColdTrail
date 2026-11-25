@@ -7,13 +7,23 @@ import com.example.mrdetective.domain.models.InvestigationProgress
 import com.example.mrdetective.domain.repositories.InventoryRepository
 import javax.inject.Inject
 
-/** Добавляет найденный предмет в инвентарь расследования. */
+/**
+ * Добавляет найденный предмет в инвентарь расследования.
+ *
+ * @param repository Репозиторий предметов и улик расследования.
+ */
 class AddToInventoryUseCase
     @Inject
     constructor(
         private val repository: InventoryRepository,
     ) {
-        /** Сохраняет выбранную улику в инвентаре расследования. */
+        /**
+         * Сохраняет выбранную улику в инвентаре расследования.
+         *
+         * @param item Улика, которую нужно добавить.
+         * @param investigation Расследование, в которое добавляется улика.
+         * @return Запись о найденной улике или ошибка добавления.
+         */
         suspend operator fun invoke(
             item: Clue,
             investigation: InvestigationProgress,

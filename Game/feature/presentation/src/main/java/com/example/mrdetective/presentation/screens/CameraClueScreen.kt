@@ -131,7 +131,8 @@ internal fun CameraClueScreen(
             state.submission == CameraSubmission.Awarded ->
                 ClueRewardDialog(challenge.clueTitle, challenge.clueDescription, onBack)
             state.submission == CameraSubmission.Pending -> {
-                CameraClueMessage(stringResource(R.string.photo_queued), stringResource(R.string.back_to_case), onBack)
+                val message = if (searchingScene || searchMode == ClueSearchMode.Picture) R.string.sync_pending else R.string.photo_queued
+                CameraClueMessage(stringResource(message), stringResource(R.string.back_to_case), onBack)
                 ErrorNotice(state.syncError, viewModel::retrySync)
             }
             settings.loading || settings.saving -> CameraClueLoading(stringResource(R.string.loading_camera_settings))

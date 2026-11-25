@@ -7,7 +7,11 @@ import okhttp3.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Отклоняет запрос, если у устройства нет сетевого подключения. */
+/**
+ * Отклоняет запрос, если у устройства нет сетевого подключения.
+ *
+ * @param connectivityChecker Проверка доступности сети перед сетевым запросом.
+ */
 @Singleton
 class NetworkAvailabilityInterceptor
     @Inject

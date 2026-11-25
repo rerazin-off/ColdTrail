@@ -24,7 +24,16 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import javax.inject.Inject
 
-/** Загружает головоломки с камерой и отправляет фото через очередь синхронизации. */
+/**
+ * Загружает головоломки с камерой и отправляет фото через очередь синхронизации.
+ *
+ * @param auth Источник активной сессии и идентификатора игрока.
+ * @param db Локальная база Room.
+ * @param api Retrofit API операций расследования, головоломок и синхронизации.
+ * @param connectivity Проверка доступности сети перед обращением к серверу.
+ * @param gson Сериализатор JSON для сетевых данных и записей очереди.
+ * @param context Контекст Android для доступа к ресурсам и системным службам.
+ */
 class CameraChallengeRepositoryImpl
     @Inject
     constructor(
